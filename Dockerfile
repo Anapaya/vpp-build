@@ -27,9 +27,6 @@ RUN UNATTENDED=y make -C /src/vpp install-dep
 RUN make -C /src/vpp build-release build
 #RUN make -C /src/vpp pkg-deb pkg-deb-debug
 
-#RUN cp -r /src/vpp/build-root/install-vpp-native/vpp /mnt/host/install-vpp-native
-#RUN cp -r /src/vpp/build-root/install-vpp_debug-native/vpp /mnt/host/install-vpp_debug-native
-
 CMD /bin/bash
 #
 #RUN setcap cap_net_raw,cap_net_admin+eip /usr/bin/vpp
