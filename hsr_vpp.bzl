@@ -51,3 +51,9 @@ def hsr_vpp_libs(release, path, version):
         mode = "0555",
         visibility = ["//visibility:public"],
     )
+
+    native.filegroup(
+        name = "vppapigen_"+release,
+        srcs = [ path+"/bin/vppapigen" ],
+        visibility = ["//visibility:public"],
+    )
