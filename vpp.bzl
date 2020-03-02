@@ -94,9 +94,3 @@ def vpp_libs(release, path, version):
         ]),
         visibility = ["//visibility:public"],
     )
-
-    native.filegroup(
-        name = "vppapigen_"+release,
-        srcs = [ path+"/bin/vppapigen" ],
-        visibility = ["//visibility:public"],
-    )
