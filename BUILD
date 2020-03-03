@@ -32,24 +32,16 @@ filegroup(
 
 load("@vpp_python_deps//:requirements.bzl", "requirement")
 
-vppapigen_fn = "install-vpp-native/bin/vppapigen"
 py_binary(
     name = "vppapigen",
     srcs = [
-        vppapigen_fn + ".py",
-        "install-vpp-native/share/vpp/vppapigen_c.py",
-        "install-vpp-native/share/vpp/vppapigen_json.py",
+        "vpp_src/tools/vppapigen/vppapigen.py",
+        "vpp_src/tools/vppapigen/vppapigen_c.py",
+        "vpp_src/tools/vppapigen/vppapigen_json.py",
     ],
     deps = [
         requirement("ply"),
     ],
     python_version = "PY3",
     visibility = ["//visibility:public"],
-)
-
-genrule(
-    name = "rename-vppapigen",
-    srcs = [ vppapigen_fn ],
-    outs = [ vppapigen_fn + ".py" ],
-    cmd = "mv $< $@",
 )

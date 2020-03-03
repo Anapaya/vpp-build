@@ -1,6 +1,8 @@
-_path = "external/com_github_anapaya_vpp_build/install-vpp-native/"
 
-def vppapigen_json(name, api, out):
+def vppapigen(name, api, out, type = "C"):
+    if type not in ["C", "JSON"]:
+        fail(type, "type")
+
     native.genrule(
         name = name,
         srcs = [ api ],
@@ -9,25 +11,9 @@ def vppapigen_json(name, api, out):
             "@com_github_anapaya_vpp_build//:vppapigen",
             "@com_github_anapaya_vpp_build//:include-dir",
         ],
-        cmd = "$(location @com_github_anapaya_vpp_build//:vppapigen)" +
-            " --pluginpath " + _path + "share/vpp" +
-            " --input $(location :" + api + ")" +
-            " --includedir " + _path + "include" +
-            " JSON --output $@",
-    )
-
-def vppapigen_h(name, api, out):
-    native.genrule(
-        name = name,
-        srcs = [ api ],
-        outs = [ out ],
-        tools = [
-            "@com_github_anapaya_vpp_build//:vppapigen",
-            "@com_github_anapaya_vpp_build//:include-dir",
-        ],
-        cmd = "$(location @com_github_anapaya_vpp_build//:vppapigen)" +
-            " --pluginpath " + _path + "share/vpp" +
-            " --input $(location :" + api + ")" +
-            " --includedir " + _path + "include" +
+        cmd = "$(execpath @com_github_anapaya_vpp_build//:vppapigen)" +
+            " --input $(rootpath :" + api + ")" +
+            " --includedir $(rootpath @com_github_anapaya_vpp_build//:include-dir)" +
+            " " + type +
             " --output $@",
     )
