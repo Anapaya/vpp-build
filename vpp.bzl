@@ -1,5 +1,4 @@
 def vpp_libs(release, path, version):
-
     # XXX cc_import.hdrs does not allow for files with .def extension.
     # https://github.com/bazelbuild/bazel/issues/6767
     native.cc_library(

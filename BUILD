@@ -16,13 +16,6 @@ filegroup(
 
 load("@vpp_python_deps//:requirements.bzl", "requirement")
 
-filegroup(
-    name = "python_reqs",
-    # XXX do not use glob as it flattens all the files
-    srcs = ["requirements.txt"],
-    visibility = ["//visibility:public"],
-)
-
 vppapigen_fn = "install-vpp-native/bin/vppapigen"
 py_binary(
     name = "vppapigen",
