@@ -27,8 +27,8 @@ filegroup(
 # Even with above fix we do not get the directory tree structure we want,
 # so go back to use a directory instead.
 filegroup(
-    name = "src",
-    srcs = [ "vpp_src" ],
+    name = "vpp_src",
+    srcs = [ "src" ],
     visibility = ["//visibility:public"],
 )
 
@@ -37,9 +37,9 @@ load("@vpp_python_deps//:requirements.bzl", "requirement")
 py_binary(
     name = "vppapigen",
     srcs = [
-        "vpp_src/tools/vppapigen/vppapigen.py",
-        "vpp_src/tools/vppapigen/vppapigen_c.py",
-        "vpp_src/tools/vppapigen/vppapigen_json.py",
+        "src/tools/vppapigen/vppapigen.py",
+        "src/tools/vppapigen/vppapigen_c.py",
+        "src/tools/vppapigen/vppapigen_json.py",
     ],
     deps = [
         requirement("ply"),

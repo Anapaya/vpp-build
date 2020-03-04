@@ -8,7 +8,7 @@ default:
 	docker create --name hsr_vpp hsr_vpp_build
 	docker cp hsr_vpp:/src/vpp/build-root/install-vpp-native/vpp/. install-vpp-native
 	docker cp hsr_vpp:/src/vpp/build-root/install-vpp_debug-native/vpp/. install-vpp_debug-native
-	docker cp hsr_vpp:/src/vpp/src/. vpp_src
+	docker cp hsr_vpp:/src/vpp/src/. src
 
 clean:
-	rm -rf install-vpp-native install-vpp_debug-native vpp_src
+	rm -rf install-vpp-native install-vpp_debug-native src
