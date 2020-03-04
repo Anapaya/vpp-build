@@ -7,9 +7,41 @@ vpp_libs("prod", "install-vpp-native", VPP_VERSION)
 
 vpp_libs("debug", "install-vpp_debug-native", VPP_VERSION)
 
+cc_library(
+    name = "include",
+    hdrs = glob([
+        "install-vpp-native/include/**/*.h",
+        "install-vpp-native/include/**/*.def",
+    ]),
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "include-dir",
+    srcs = [ "install-vpp-native/include" ],
+    visibility = ["//visibility:public"],
+)
+
 filegroup(
     name = "src",
-    # XXX do not use glob as it flattens all the files
-    srcs = ["vpp_src"],
+    srcs = glob([
+        "vpp_src/**",
+    ]),
+    visibility = ["//visibility:public"],
+)
+
+load("@vpp_python_deps//:requirements.bzl", "requirement")
+
+py_binary(
+    name = "vppapigen",
+    srcs = [
+        "vpp_src/tools/vppapigen/vppapigen.py",
+        "vpp_src/tools/vppapigen/vppapigen_c.py",
+        "vpp_src/tools/vppapigen/vppapigen_json.py",
+    ],
+    deps = [
+        requirement("ply"),
+    ],
+    python_version = "PY3",
     visibility = ["//visibility:public"],
 )

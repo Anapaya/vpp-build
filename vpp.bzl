@@ -1,5 +1,4 @@
 def vpp_libs(release, path, version):
-
     # XXX cc_import.hdrs does not allow for files with .def extension.
     # https://github.com/bazelbuild/bazel/issues/6767
     native.cc_library(
@@ -92,11 +91,5 @@ def vpp_libs(release, path, version):
         srcs = native.glob([
             path+"/bin/*",
         ]),
-        visibility = ["//visibility:public"],
-    )
-
-    native.filegroup(
-        name = "vppapigen_"+release,
-        srcs = [ path+"/bin/vppapigen" ],
         visibility = ["//visibility:public"],
     )
