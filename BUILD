@@ -28,7 +28,7 @@ filegroup(
 # so go back to use a directory instead.
 filegroup(
     name = "src",
-    srcs = "vpp_src",
+    srcs = [ "vpp_src" ],
     visibility = ["//visibility:public"],
 )
 
