@@ -22,11 +22,13 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
+# https://github.com/bazelbuild/rules_pkg/issues/131
+# https://github.com/bazelbuild/rules_pkg/pull/132
+# Even with above fix we do not get the directory tree structure we want,
+# so go back to use a directory instead.
 filegroup(
     name = "src",
-    srcs = glob([
-        "vpp_src/**",
-    ]),
+    srcs = "vpp_src",
     visibility = ["//visibility:public"],
 )
 
