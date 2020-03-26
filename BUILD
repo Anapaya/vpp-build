@@ -22,6 +22,14 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
+filegroup(
+    name = "exported-apis",
+    srcs = [
+        "src/vnet/ip/ip.api",
+    ],
+    visibility = ["//visibility:public"],
+)
+
 # https://github.com/bazelbuild/rules_pkg/issues/131
 # https://github.com/bazelbuild/rules_pkg/pull/132
 # Even with above fix we do not get the directory tree structure we want,
