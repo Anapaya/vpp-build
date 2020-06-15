@@ -1,24 +1,33 @@
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 load(":vpp.bzl", "vpp_libs")
 
-VPP_VERSION = "19.08"
+VPP_VERSION = "19.08.2"
 
 vpp_libs("prod", "install-vpp-native", VPP_VERSION)
 
 vpp_libs("debug", "install-vpp_debug-native", VPP_VERSION)
 
 cc_library(
-    name = "include",
+    name = "include_prod",
     hdrs = glob([
-        "install-vpp-native/include/**/*.h",
-        "install-vpp-native/include/**/*.def",
+        "include/**/*.h",
+        "include/**/*.def",
+    ]),
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "include_debug",
+    hdrs = glob([
+        "src/vpp/src/**/*.h",
+        "src/vpp/src/**/*.def",
     ]),
     visibility = ["//visibility:public"],
 )
 
 filegroup(
     name = "include-dir",
-    srcs = [ "install-vpp-native/include" ],
+    srcs = [ "include" ],
     visibility = ["//visibility:public"],
 )
 
@@ -37,9 +46,9 @@ load("@vpp_python_deps//:requirements.bzl", "requirement")
 py_binary(
     name = "vppapigen",
     srcs = [
-        "src/tools/vppapigen/vppapigen.py",
-        "src/tools/vppapigen/vppapigen_c.py",
-        "src/tools/vppapigen/vppapigen_json.py",
+        "src/vpp/src/tools/vppapigen/vppapigen.py",
+        "src/vpp/src/tools/vppapigen/vppapigen_c.py",
+        "src/vpp/src/tools/vppapigen/vppapigen_json.py",
     ],
     deps = [
         requirement("ply"),
