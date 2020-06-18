@@ -6,21 +6,21 @@ def vpp_libs(release, path, version):
     native.filegroup(
         name = "libs_"+release,
         srcs = [
-			"tarballs/tar_libs_"+release+".tar.xz",
+            "tarballs/tar_libs_"+release+".tar.xz",
         ],
         visibility = ["//visibility:public"],
     )
     native.filegroup(
         name = "plugins_"+release,
         srcs = [
-			"tarballs/tar_plugins_"+release+".tar.xz",
+            "tarballs/tar_plugins_"+release+".tar.xz",
         ],
         visibility = ["//visibility:public"],
     )
     native.filegroup(
         name = "bins_"+release,
         srcs = [
-			"tarballs/tar_bins_"+release+".tar.xz",
+            "tarballs/tar_bins_"+release+".tar.xz",
         ],
         visibility = ["//visibility:public"],
     )
@@ -34,7 +34,7 @@ def vpp_libs(release, path, version):
             path+"/lib/libvlibmemory.so."+version,
             path+"/lib/libvnet.so."+version,
         ],
-		extension = "tar.xz",
+        extension = "tar.xz",
         visibility = ["//visibility:public"],
     )
     # Set of VPP provided plugins we are using.
@@ -46,7 +46,7 @@ def vpp_libs(release, path, version):
             path+"/lib/vpp_plugins/rdma_plugin.so",
             #path+"/lib/vpp_plugins/perfmon_plugin.so",
         ],
-		extension = "tar.xz",
+        extension = "tar.xz",
         visibility = ["//visibility:public"],
     )
     pkg_tar(
@@ -54,7 +54,7 @@ def vpp_libs(release, path, version):
         srcs = native.glob([
             path+"/bin/*",
         ]),
-		extension = "tar.xz",
+        extension = "tar.xz",
         visibility = ["//visibility:public"],
     )
 
@@ -62,7 +62,7 @@ def mlx_libs(release, path, mlx4_glue_ver, mlx5_glue_ver):
     native.filegroup(
         name = "mlx_libs_"+release,
         srcs = [
-			"tarballs/tar_mlx_libs_"+release+".tar.xz",
+            "tarballs/tar_mlx_libs_"+release+".tar.xz",
         ],
         visibility = ["//visibility:public"],
     )
@@ -72,6 +72,6 @@ def mlx_libs(release, path, mlx4_glue_ver, mlx5_glue_ver):
             path+"/external/lib/librte_pmd_mlx4_glue.so."+mlx4_glue_ver,
             path+"/external/lib/librte_pmd_mlx5_glue.so."+mlx5_glue_ver,
         ],
-		extension = "tar.xz",
+        extension = "tar.xz",
         visibility = ["//visibility:public"],
     )
