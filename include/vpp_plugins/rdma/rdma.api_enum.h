@@ -1,7 +1,0 @@
-typedef enum {
-   VL_API_RDMA_CREATE,
-   VL_API_RDMA_CREATE_REPLY,
-   VL_API_RDMA_DELETE,
-   VL_API_RDMA_DELETE_REPLY,
-   VL_MSG_FIRST_AVAILABLE
-} vl_api_rdma_enum_t;

@@ -1,7 +1,0 @@
-typedef enum {
-   VL_API_AVF_CREATE,
-   VL_API_AVF_CREATE_REPLY,
-   VL_API_AVF_DELETE,
-   VL_API_AVF_DELETE_REPLY,
-   VL_MSG_FIRST_AVAILABLE
-} vl_api_avf_enum_t;

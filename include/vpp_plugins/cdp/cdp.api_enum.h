@@ -1,5 +1,0 @@
-typedef enum {
-   VL_API_CDP_ENABLE_DISABLE,
-   VL_API_CDP_ENABLE_DISABLE_REPLY,
-   VL_MSG_FIRST_AVAILABLE
-} vl_api_cdp_enum_t;

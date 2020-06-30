@@ -1,5 +1,0 @@
-typedef enum {
-   VL_API_MDATA_ENABLE_DISABLE,
-   VL_API_MDATA_ENABLE_DISABLE_REPLY,
-   VL_MSG_FIRST_AVAILABLE
-} vl_api_mdata_enum_t;
