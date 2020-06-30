@@ -12,23 +12,29 @@ DPDK_MLX5_GLUE = "20.02.0"
 mlx_libs("prod", "install-vpp-native", DPDK_MLX4_GLUE, DPDK_MLX5_GLUE)
 mlx_libs("debug", "install-vpp_debug-native", DPDK_MLX4_GLUE, DPDK_MLX5_GLUE)
 
-cc_library(
-    name = "include_prod",
-    hdrs = glob([
-        "include/**/*.h",
-        "include/**/*.def",
-    ]),
-    visibility = ["//visibility:public"],
-)
+#cc_library(
+#    name = "include_prod",
+#    hdrs = glob([
+#        "include/**/*.h",
+#        "include/**/*.def",
+#    ]),
+#    visibility = ["//visibility:public"],
+#)
 
-cc_library(
-    name = "include_debug",
-    hdrs = glob([
-        "src/vpp/src/**/*.h",
-        "src/vpp/src/**/*.def",
-    ]),
-    visibility = ["//visibility:public"],
-)
+#cc_library(
+#    name = "include_debug",
+#    hdrs = glob([
+#        "src/vpp/src/**/*.h",
+#        "src/vpp/src/**/*.def",
+#    ]),
+#    visibility = ["//visibility:public"],
+#)
+
+#filegroup(
+#    name = "include-dir",
+#    srcs = [ "include" ],
+#    visibility = ["//visibility:public"],
+#)
 
 filegroup(
     name = "vpp_include_prod",
@@ -65,12 +71,6 @@ pkg_tar(
         "src/vpp/src/**/*.api",
     ]),
     extension = "tar.xz",
-    visibility = ["//visibility:public"],
-)
-
-filegroup(
-    name = "include-dir",
-    srcs = [ "include" ],
     visibility = ["//visibility:public"],
 )
 
