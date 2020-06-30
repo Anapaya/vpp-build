@@ -43,6 +43,7 @@ pkg_tar(
     srcs = glob([
         "include/**/*.h",
         "include/**/*.def",
+        "include/**/*.api",
     ]),
     extension = "tar.xz",
     visibility = ["//visibility:public"],
@@ -61,6 +62,7 @@ pkg_tar(
     srcs = glob([
         "src/vpp/src/**/*.h",
         "src/vpp/src/**/*.def",
+        "src/vpp/src/**/*.api",
     ]),
     extension = "tar.xz",
     visibility = ["//visibility:public"],
