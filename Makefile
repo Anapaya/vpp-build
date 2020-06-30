@@ -16,6 +16,7 @@ default:
 	docker cp hsr_vpp:/src/vpp/build-root/install-vpp_debug-native/. install-vpp_debug-native
 	bazel build //:tar_libs_prod //:tar_plugins_prod //:tar_bins_prod //:tar_mlx_libs_prod
 	bazel build //:tar_libs_debug //:tar_plugins_debug //:tar_bins_debug //:tar_mlx_libs_debug
+	bazel build //:tar_vpp_src //:tar_include_prod //:tar_include_debug
 	rm -rf tarballs && mkdir -p tarballs && cp bazel-bin/*xz tarballs/
 	rm -rf include && cp -r install-vpp-native/vpp/include .
 	# manually copy missing .api and .def files

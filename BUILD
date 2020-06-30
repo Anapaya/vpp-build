@@ -31,6 +31,42 @@ cc_library(
 )
 
 filegroup(
+    name = "vpp_include_prod",
+    srcs = [
+        "tarballs/tar_include_prod.tar.xz",
+    ],
+    visibility = ["//visibility:public"],
+)
+pkg_tar(
+    name = "tar_include_prod",
+    strip_prefix = ".",
+    srcs = glob([
+        "include/**/*.h",
+        "include/**/*.def",
+    ]),
+    extension = "tar.xz",
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "vpp_include_debug",
+    srcs = [
+        "tarballs/tar_include_debug.tar.xz",
+    ],
+    visibility = ["//visibility:public"],
+)
+pkg_tar(
+    name = "tar_include_debug",
+    strip_prefix = ".",
+    srcs = glob([
+        "src/vpp/src/**/*.h",
+        "src/vpp/src/**/*.def",
+    ]),
+    extension = "tar.xz",
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
     name = "include-dir",
     srcs = [ "include" ],
     visibility = ["//visibility:public"],
@@ -42,7 +78,16 @@ filegroup(
 # so go back to use a directory instead.
 filegroup(
     name = "vpp_src",
+    srcs = [
+        "tarballs/tar_vpp_src.tar.xz",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+pkg_tar(
+    name = "tar_vpp_src",
     srcs = [ "src" ],
+    extension = "tar.xz",
     visibility = ["//visibility:public"],
 )
 
