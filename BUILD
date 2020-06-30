@@ -93,18 +93,35 @@ pkg_tar(
     visibility = ["//visibility:public"],
 )
 
-load("@vpp_python_deps//:requirements.bzl", "requirement")
+#load("@vpp_python_deps//:requirements.bzl", "requirement")
 
-py_binary(
+#py_binary(
+#    name = "vppapigen",
+#    srcs = [
+#        "src/vpp/src/tools/vppapigen/vppapigen.py",
+#        "src/vpp/src/tools/vppapigen/vppapigen_c.py",
+#        "src/vpp/src/tools/vppapigen/vppapigen_json.py",
+#    ],
+#    deps = [
+#        requirement("ply"),
+#    ],
+#    python_version = "PY3",
+#    visibility = ["//visibility:public"],
+#)
+
+filegroup(
     name = "vppapigen",
     srcs = [
-        "src/vpp/src/tools/vppapigen/vppapigen.py",
-        "src/vpp/src/tools/vppapigen/vppapigen_c.py",
-        "src/vpp/src/tools/vppapigen/vppapigen_json.py",
+        "tarballs/tar_vppapigen.tar.xz",
     ],
-    deps = [
-        requirement("ply"),
-    ],
-    python_version = "PY3",
+    visibility = ["//visibility:public"],
+)
+
+pkg_tar(
+    name = "tar_vppapigen",
+    srcs = glob([
+		"src/vpp/src/tools/vppapigen/*",
+	]),
+    extension = "tar.xz",
     visibility = ["//visibility:public"],
 )

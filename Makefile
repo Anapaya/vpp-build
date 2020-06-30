@@ -32,7 +32,7 @@ default: clean
 	# extarct RDMA core sources
 	docker cp hsr_vpp:$(VPP_EXTERNAL_SRC_DIR)/src-rdma-core .$(VPP_EXTERNAL_SRC_DIR)
 	#docker cp hsr_vpp:$(VPP_EXTERNAL_SRC_DIR)/src-ipsec-mb .$(VPP_EXTERNAL_SRC_DIR)
-	bazel build //:tar_vpp_src //:tar_include_prod //:tar_include_debug
+	bazel build //:tar_vpp_src //:tar_include_prod //:tar_include_debug //:tar_vppapigen
 	mkdir -p tarballs && cp bazel-bin/*xz tarballs/
 
 clean:
