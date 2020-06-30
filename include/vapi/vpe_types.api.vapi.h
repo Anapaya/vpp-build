@@ -30,7 +30,7 @@ typedef enum {
   VPE_API_LOG_LEVEL_INFO = 6,
   VPE_API_LOG_LEVEL_DEBUG = 7,
   VPE_API_LOG_LEVEL_DISABLED = 8,
-} vapi_enum_log_level;
+}  vapi_enum_log_level;
 
 #endif
 

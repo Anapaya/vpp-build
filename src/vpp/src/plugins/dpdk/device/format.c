@@ -15,7 +15,6 @@
 #include <vnet/vnet.h>
 #include <vppinfra/vec.h>
 #include <vppinfra/format.h>
-#include <vlib/unix/cj.h>
 #include <assert.h>
 
 #define __USE_GNU
@@ -44,28 +43,6 @@
   _ (rx_bytes_ok, q_ibytes)                     \
   _ (tx_bytes_ok, q_obytes)                     \
   _ (rx_errors, q_errors)
-
-#define foreach_dpdk_rss_hf                    \
-  _(ETH_RSS_FRAG_IPV4,          "ipv4-frag")   \
-  _(ETH_RSS_NONFRAG_IPV4_TCP,   "ipv4-tcp")    \
-  _(ETH_RSS_NONFRAG_IPV4_UDP,   "ipv4-udp")    \
-  _(ETH_RSS_NONFRAG_IPV4_SCTP,  "ipv4-sctp")   \
-  _(ETH_RSS_NONFRAG_IPV4_OTHER, "ipv4-other")  \
-  _(ETH_RSS_IPV4,               "ipv4")        \
-  _(ETH_RSS_IPV6_TCP_EX,        "ipv6-tcp-ex") \
-  _(ETH_RSS_IPV6_UDP_EX,        "ipv6-udp-ex") \
-  _(ETH_RSS_FRAG_IPV6,          "ipv6-frag")   \
-  _(ETH_RSS_NONFRAG_IPV6_TCP,   "ipv6-tcp")    \
-  _(ETH_RSS_NONFRAG_IPV6_UDP,   "ipv6-udp")    \
-  _(ETH_RSS_NONFRAG_IPV6_SCTP,  "ipv6-sctp")   \
-  _(ETH_RSS_NONFRAG_IPV6_OTHER, "ipv6-other")  \
-  _(ETH_RSS_IPV6_EX,            "ipv6-ex")     \
-  _(ETH_RSS_IPV6,               "ipv6")        \
-  _(ETH_RSS_L2_PAYLOAD,         "l2-payload")  \
-  _(ETH_RSS_PORT,               "port")        \
-  _(ETH_RSS_VXLAN,              "vxlan")       \
-  _(ETH_RSS_GENEVE,             "geneve")      \
-  _(ETH_RSS_NVGRE,              "nvgre")
 
 #define foreach_dpdk_pkt_rx_offload_flag                                \
   _ (PKT_RX_VLAN, "RX packet is a 802.1q VLAN packet")                  \
@@ -282,6 +259,10 @@ format_dpdk_device_type (u8 * s, va_list * args)
       dev_type = "Intel E810 Family";
       break;
 
+    case VNET_DPDK_PMD_IAVF:
+      dev_type = "Intel iAVF";
+      break;
+
     case VNET_DPDK_PMD_FM10K:
       dev_type = "Intel FM10000 Family Ethernet Switch";
       break;
@@ -362,6 +343,10 @@ format_dpdk_device_type (u8 * s, va_list * args)
       dev_type = "Microsoft Hyper-V Netvsc";
       break;
 
+    case VNET_DPDK_PMD_BNXT:
+      dev_type = "Broadcom NetXtreme E/S-Series";
+      break;
+
     default:
     case VNET_DPDK_PMD_UNKNOWN:
       dev_type = "### UNKNOWN ###";
@@ -395,7 +380,7 @@ format_dpdk_link_status (u8 * s, va_list * args)
   return s;
 }
 
-#define _(v, str)                                            \
+#define _(n, v, str)                                            \
 if (bitmap & v) {                                            \
   if (format_get_indent (s) > 72)                            \
     s = format(s,"\n%U", format_white_space, indent);        \
@@ -540,6 +525,20 @@ ptr2sname (void *p)
   return info.dli_sname;
 }
 
+static u8 *
+format_switch_info (u8 * s, va_list * args)
+{
+  struct rte_eth_switch_info *si =
+    va_arg (*args, struct rte_eth_switch_info *);
+
+  if (si->name)
+    s = format (s, "name %s ", si->name);
+
+  s = format (s, "domain id %d port id %d", si->domain_id, si->port_id);
+
+  return s;
+}
+
 u8 *
 format_dpdk_device (u8 * s, va_list * args)
 {
@@ -550,6 +549,7 @@ format_dpdk_device (u8 * s, va_list * args)
   u32 indent = format_get_indent (s);
   f64 now = vlib_time_now (dm->vlib_main);
   struct rte_eth_dev_info di;
+  struct rte_eth_burst_mode mode;
 
   dpdk_update_counters (xd, now);
   dpdk_update_link_state (xd, now);
@@ -560,6 +560,9 @@ format_dpdk_device (u8 * s, va_list * args)
 	      format_white_space, indent + 2, format_dpdk_link_status, xd);
   s = format (s, "%Uflags: %U\n",
 	      format_white_space, indent + 2, format_dpdk_device_flags, xd);
+  if (di.device->devargs && di.device->devargs->args)
+    s = format (s, "%UDevargs: %s\n",
+		format_white_space, indent + 2, di.device->devargs->args);
   s = format (s, "%Urx: queues %d (max %d), desc %d "
 	      "(min %d max %d align %d)\n",
 	      format_white_space, indent + 2, xd->rx_q_used, di.max_rx_queues,
@@ -602,6 +605,13 @@ format_dpdk_device (u8 * s, va_list * args)
 	  vec_free (s2);
 	}
 
+      if (di.switch_info.domain_id != RTE_ETH_DEV_SWITCH_DOMAIN_ID_INVALID)
+	{
+	  s =
+	    format (s, "%Uswitch info: %U\n", format_white_space, indent + 2,
+		    format_switch_info, &di.switch_info);
+	}
+
       if (1 < verbose)
 	{
 	  s = format (s, "%Umodule: %U\n", format_white_space, indent + 2,
@@ -638,12 +648,36 @@ format_dpdk_device (u8 * s, va_list * args)
 		  format_dpdk_rss_hf_name, di.flow_type_rss_offloads,
 		  format_white_space, indent + 2,
 		  format_dpdk_rss_hf_name, rss_conf.rss_hf);
-      s = format (s, "%Utx burst function: %s\n",
-		  format_white_space, indent + 2,
-		  ptr2sname (rte_eth_devices[xd->port_id].tx_pkt_burst));
-      s = format (s, "%Urx burst function: %s\n",
-		  format_white_space, indent + 2,
-		  ptr2sname (rte_eth_devices[xd->port_id].rx_pkt_burst));
+
+      if (rte_eth_tx_burst_mode_get (xd->port_id, 0, &mode) == 0)
+	{
+	  s = format (s, "%Utx burst mode: %s%s\n",
+		      format_white_space, indent + 2,
+		      mode.info,
+		      mode.flags & RTE_ETH_BURST_FLAG_PER_QUEUE ?
+		      " (per queue)" : "");
+	}
+      else
+	{
+	  s = format (s, "%Utx burst function: %s\n",
+		      format_white_space, indent + 2,
+		      ptr2sname (rte_eth_devices[xd->port_id].tx_pkt_burst));
+	}
+
+      if (rte_eth_rx_burst_mode_get (xd->port_id, 0, &mode) == 0)
+	{
+	  s = format (s, "%Urx burst mode: %s%s\n",
+		      format_white_space, indent + 2,
+		      mode.info,
+		      mode.flags & RTE_ETH_BURST_FLAG_PER_QUEUE ?
+		      " (per queue)" : "");
+	}
+      else
+	{
+	  s = format (s, "%Urx burst function: %s\n",
+		      format_white_space, indent + 2,
+		      ptr2sname (rte_eth_devices[xd->port_id].rx_pkt_burst));
+	}
     }
 
   /* $$$ MIB counters  */
@@ -891,7 +925,7 @@ unformat_rss_fn (unformat_input_t * input, uword * rss_fn)
       if (0)
 	;
 #undef _
-#define _(f, s)                                 \
+#define _(n, f, s)                                 \
       else if (unformat (input, s))             \
         *rss_fn |= f;
 
@@ -906,25 +940,6 @@ unformat_rss_fn (unformat_input_t * input, uword * rss_fn)
   return 0;
 }
 
-clib_error_t *
-unformat_hqos (unformat_input_t * input, dpdk_device_config_hqos_t * hqos)
-{
-  clib_error_t *error = 0;
-
-  while (unformat_check_input (input) != UNFORMAT_END_OF_INPUT)
-    {
-      if (unformat (input, "hqos-thread %u", &hqos->hqos_thread))
-	hqos->hqos_thread_valid = 1;
-      else
-	{
-	  error = clib_error_return (0, "unknown input `%U'",
-				     format_unformat_error, input);
-	  break;
-	}
-    }
-
-  return error;
-}
 
 /*
  * fd.io coding-style-patch-verification: ON

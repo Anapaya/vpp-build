@@ -1,5 +1,5 @@
 /*
- * VLIB API definitions 2020-06-13 06:01:52
+ * VLIB API definitions 2020-06-30 12:50:23
  * Input file: pot.api
  * Automatically generated: please edit the input file NOT this file!
  */
@@ -16,6 +16,9 @@
 #endif
 
 #define VL_API_PACKED(x) x __attribute__ ((packed))
+/* Imported API files */
+#ifndef vl_api_version
+#endif
 
 /****** Message ID / handler enum ******/
 
@@ -45,123 +48,32 @@ vl_msg_name(vl_api_pot_profile_show_config_details_t, 1)
 
 #ifdef vl_msg_name_crc_list
 #define foreach_vl_msg_name_crc_pot \
-_(VL_API_POT_PROFILE_ADD, pot_profile_add, e8f1d058) \
+_(VL_API_POT_PROFILE_ADD, pot_profile_add, ad5da3a3) \
 _(VL_API_POT_PROFILE_ADD_REPLY, pot_profile_add_reply, e8d4e804) \
-_(VL_API_POT_PROFILE_ACTIVATE, pot_profile_activate, eeada566) \
+_(VL_API_POT_PROFILE_ACTIVATE, pot_profile_activate, 0770af98) \
 _(VL_API_POT_PROFILE_ACTIVATE_REPLY, pot_profile_activate_reply, e8d4e804) \
-_(VL_API_POT_PROFILE_DEL, pot_profile_del, bb100832) \
+_(VL_API_POT_PROFILE_DEL, pot_profile_del, cd63f53b) \
 _(VL_API_POT_PROFILE_DEL_REPLY, pot_profile_del_reply, e8d4e804) \
 _(VL_API_POT_PROFILE_SHOW_CONFIG_DUMP, pot_profile_show_config_dump, 005b7d59) \
 _(VL_API_POT_PROFILE_SHOW_CONFIG_DETAILS, pot_profile_show_config_details, b7ce0618) 
 #endif
-
 /****** Typedefs ******/
 
 #ifdef vl_typedefs
-#ifndef included_pot_api
-#define included_pot_api
-#ifndef _vl_api_defined_pot_profile_add
-#define _vl_api_defined_pot_profile_add
-typedef VL_API_PACKED(struct _vl_api_pot_profile_add {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u8 id;
-    u8 validator;
-    u64 secret_key;
-    u64 secret_share;
-    u64 prime;
-    u8 max_bits;
-    u64 lpc;
-    u64 polynomial_public;
-    u8 list_name_len;
-    u8 list_name[0];
-}) vl_api_pot_profile_add_t;
+#include "pot.api_types.h"
 #endif
-
-#ifndef _vl_api_defined_pot_profile_add_reply
-#define _vl_api_defined_pot_profile_add_reply
-typedef VL_API_PACKED(struct _vl_api_pot_profile_add_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_pot_profile_add_reply_t;
-#endif
-
-#ifndef _vl_api_defined_pot_profile_activate
-#define _vl_api_defined_pot_profile_activate
-typedef VL_API_PACKED(struct _vl_api_pot_profile_activate {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u8 id;
-    u8 list_name_len;
-    u8 list_name[0];
-}) vl_api_pot_profile_activate_t;
-#endif
-
-#ifndef _vl_api_defined_pot_profile_activate_reply
-#define _vl_api_defined_pot_profile_activate_reply
-typedef VL_API_PACKED(struct _vl_api_pot_profile_activate_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_pot_profile_activate_reply_t;
-#endif
-
-#ifndef _vl_api_defined_pot_profile_del
-#define _vl_api_defined_pot_profile_del
-typedef VL_API_PACKED(struct _vl_api_pot_profile_del {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u8 list_name_len;
-    u8 list_name[0];
-}) vl_api_pot_profile_del_t;
-#endif
-
-#ifndef _vl_api_defined_pot_profile_del_reply
-#define _vl_api_defined_pot_profile_del_reply
-typedef VL_API_PACKED(struct _vl_api_pot_profile_del_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_pot_profile_del_reply_t;
-#endif
-
-#ifndef _vl_api_defined_pot_profile_show_config_dump
-#define _vl_api_defined_pot_profile_show_config_dump
-typedef VL_API_PACKED(struct _vl_api_pot_profile_show_config_dump {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u8 id;
-}) vl_api_pot_profile_show_config_dump_t;
-#endif
-
-#ifndef _vl_api_defined_pot_profile_show_config_details
-#define _vl_api_defined_pot_profile_show_config_details
-typedef VL_API_PACKED(struct _vl_api_pot_profile_show_config_details {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-    u8 id;
-    u8 validator;
-    u64 secret_key;
-    u64 secret_share;
-    u64 prime;
-    u64 bit_mask;
-    u64 lpc;
-    u64 polynomial_public;
-}) vl_api_pot_profile_show_config_details_t;
-#endif
-
-
-#endif
-#endif
-
 /****** Print functions *****/
 #ifdef vl_printfun
+#ifndef included_pot_printfun_types
+#define included_pot_printfun_types
+
+
+#endif
+#endif /* vl_printfun_types */
+/****** Print functions *****/
+#ifdef vl_printfun
+#ifndef included_pot_printfun
+#define included_pot_printfun
 
 #ifdef LP64
 #define _uword_fmt "%lld"
@@ -171,136 +83,155 @@ typedef VL_API_PACKED(struct _vl_api_pot_profile_show_config_details {
 #define _uword_cast long
 #endif
 
-#ifndef _vl_api_defined_pot_profile_add_t_print
-#define _vl_api_defined_pot_profile_add_t_print
-static inline void *vl_api_pot_profile_add_t_print (vl_api_pot_profile_add_t *a,void *handle)
+static inline void *vl_api_pot_profile_add_t_print (vl_api_pot_profile_add_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_pot_profile_add_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "id: %u\n", a->id);
-    vl_print(handle, "validator: %u\n", a->validator);
-    vl_print(handle, "secret_key: %llu\n", a->secret_key);
-    vl_print(handle, "secret_share: %llu\n", a->secret_share);
-    vl_print(handle, "prime: %llu\n", a->prime);
-    vl_print(handle, "max_bits: %u\n", a->max_bits);
-    vl_print(handle, "lpc: %llu\n", a->lpc);
-    vl_print(handle, "polynomial_public: %llu\n", a->polynomial_public);
-    vl_print(handle, "list_name_len: %u\n", a->list_name_len);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_pot_profile_add_t: */
+    s = format(s, "vl_api_pot_profile_add_t:");
+    s = format(s, "\n%Uid: %u", format_white_space, indent, a->id);
+    s = format(s, "\n%Uvalidator: %u", format_white_space, indent, a->validator);
+    s = format(s, "\n%Usecret_key: %llu", format_white_space, indent, a->secret_key);
+    s = format(s, "\n%Usecret_share: %llu", format_white_space, indent, a->secret_share);
+    s = format(s, "\n%Uprime: %llu", format_white_space, indent, a->prime);
+    s = format(s, "\n%Umax_bits: %u", format_white_space, indent, a->max_bits);
+    s = format(s, "\n%Ulpc: %llu", format_white_space, indent, a->lpc);
+    s = format(s, "\n%Upolynomial_public: %llu", format_white_space, indent, a->polynomial_public);
+    if (vl_api_string_len(&a->list_name) > 0) {
+        s = format(s, "\n%Ulist_name: %U", format_white_space, indent, vl_api_format_string, (&a->list_name));
+    } else {
+        s = format(s, "\n%Ulist_name:", format_white_space, indent);
+    }
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_pot_profile_add_reply_t_print
-#define _vl_api_defined_pot_profile_add_reply_t_print
-static inline void *vl_api_pot_profile_add_reply_t_print (vl_api_pot_profile_add_reply_t *a,void *handle)
+static inline void *vl_api_pot_profile_add_reply_t_print (vl_api_pot_profile_add_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_pot_profile_add_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_pot_profile_add_reply_t: */
+    s = format(s, "vl_api_pot_profile_add_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_pot_profile_activate_t_print
-#define _vl_api_defined_pot_profile_activate_t_print
-static inline void *vl_api_pot_profile_activate_t_print (vl_api_pot_profile_activate_t *a,void *handle)
+static inline void *vl_api_pot_profile_activate_t_print (vl_api_pot_profile_activate_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_pot_profile_activate_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "id: %u\n", a->id);
-    vl_print(handle, "list_name_len: %u\n", a->list_name_len);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_pot_profile_activate_t: */
+    s = format(s, "vl_api_pot_profile_activate_t:");
+    s = format(s, "\n%Uid: %u", format_white_space, indent, a->id);
+    if (vl_api_string_len(&a->list_name) > 0) {
+        s = format(s, "\n%Ulist_name: %U", format_white_space, indent, vl_api_format_string, (&a->list_name));
+    } else {
+        s = format(s, "\n%Ulist_name:", format_white_space, indent);
+    }
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_pot_profile_activate_reply_t_print
-#define _vl_api_defined_pot_profile_activate_reply_t_print
-static inline void *vl_api_pot_profile_activate_reply_t_print (vl_api_pot_profile_activate_reply_t *a,void *handle)
+static inline void *vl_api_pot_profile_activate_reply_t_print (vl_api_pot_profile_activate_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_pot_profile_activate_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_pot_profile_activate_reply_t: */
+    s = format(s, "vl_api_pot_profile_activate_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_pot_profile_del_t_print
-#define _vl_api_defined_pot_profile_del_t_print
-static inline void *vl_api_pot_profile_del_t_print (vl_api_pot_profile_del_t *a,void *handle)
+static inline void *vl_api_pot_profile_del_t_print (vl_api_pot_profile_del_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_pot_profile_del_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "list_name_len: %u\n", a->list_name_len);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_pot_profile_del_t: */
+    s = format(s, "vl_api_pot_profile_del_t:");
+    if (vl_api_string_len(&a->list_name) > 0) {
+        s = format(s, "\n%Ulist_name: %U", format_white_space, indent, vl_api_format_string, (&a->list_name));
+    } else {
+        s = format(s, "\n%Ulist_name:", format_white_space, indent);
+    }
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_pot_profile_del_reply_t_print
-#define _vl_api_defined_pot_profile_del_reply_t_print
-static inline void *vl_api_pot_profile_del_reply_t_print (vl_api_pot_profile_del_reply_t *a,void *handle)
+static inline void *vl_api_pot_profile_del_reply_t_print (vl_api_pot_profile_del_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_pot_profile_del_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_pot_profile_del_reply_t: */
+    s = format(s, "vl_api_pot_profile_del_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_pot_profile_show_config_dump_t_print
-#define _vl_api_defined_pot_profile_show_config_dump_t_print
-static inline void *vl_api_pot_profile_show_config_dump_t_print (vl_api_pot_profile_show_config_dump_t *a,void *handle)
+static inline void *vl_api_pot_profile_show_config_dump_t_print (vl_api_pot_profile_show_config_dump_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_pot_profile_show_config_dump_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "id: %u\n", a->id);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_pot_profile_show_config_dump_t: */
+    s = format(s, "vl_api_pot_profile_show_config_dump_t:");
+    s = format(s, "\n%Uid: %u", format_white_space, indent, a->id);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_pot_profile_show_config_details_t_print
-#define _vl_api_defined_pot_profile_show_config_details_t_print
-static inline void *vl_api_pot_profile_show_config_details_t_print (vl_api_pot_profile_show_config_details_t *a,void *handle)
+static inline void *vl_api_pot_profile_show_config_details_t_print (vl_api_pot_profile_show_config_details_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_pot_profile_show_config_details_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
-    vl_print(handle, "id: %u\n", a->id);
-    vl_print(handle, "validator: %u\n", a->validator);
-    vl_print(handle, "secret_key: %llu\n", a->secret_key);
-    vl_print(handle, "secret_share: %llu\n", a->secret_share);
-    vl_print(handle, "prime: %llu\n", a->prime);
-    vl_print(handle, "bit_mask: %llu\n", a->bit_mask);
-    vl_print(handle, "lpc: %llu\n", a->lpc);
-    vl_print(handle, "polynomial_public: %llu\n", a->polynomial_public);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_pot_profile_show_config_details_t: */
+    s = format(s, "vl_api_pot_profile_show_config_details_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    s = format(s, "\n%Uid: %u", format_white_space, indent, a->id);
+    s = format(s, "\n%Uvalidator: %u", format_white_space, indent, a->validator);
+    s = format(s, "\n%Usecret_key: %llu", format_white_space, indent, a->secret_key);
+    s = format(s, "\n%Usecret_share: %llu", format_white_space, indent, a->secret_share);
+    s = format(s, "\n%Uprime: %llu", format_white_space, indent, a->prime);
+    s = format(s, "\n%Ubit_mask: %llu", format_white_space, indent, a->bit_mask);
+    s = format(s, "\n%Ulpc: %llu", format_white_space, indent, a->lpc);
+    s = format(s, "\n%Upolynomial_public: %llu", format_white_space, indent, a->polynomial_public);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
+
 #endif
-
-
 #endif /* vl_printfun */
 
 /****** Endian swap functions *****/
 #ifdef vl_endianfun
+#ifndef included_pot_endianfun
+#define included_pot_endianfun
 
 #undef clib_net_to_host_uword
 #ifdef LP64
@@ -309,10 +240,9 @@ static inline void *vl_api_pot_profile_show_config_details_t_print (vl_api_pot_p
 #define clib_net_to_host_uword clib_net_to_host_u32
 #endif
 
-#ifndef _vl_api_defined_pot_profile_add_t_endian
-#define _vl_api_defined_pot_profile_add_t_endian
 static inline void vl_api_pot_profile_add_t_endian (vl_api_pot_profile_add_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
@@ -324,88 +254,67 @@ static inline void vl_api_pot_profile_add_t_endian (vl_api_pot_profile_add_t *a)
     /* a->max_bits = a->max_bits (no-op) */
     a->lpc = clib_net_to_host_u64(a->lpc);
     a->polynomial_public = clib_net_to_host_u64(a->polynomial_public);
-    /* a->list_name_len = a->list_name_len (no-op) */
+    /* a->list_name = a->list_name (no-op) */
 }
 
-#endif
-
-#ifndef _vl_api_defined_pot_profile_add_reply_t_endian
-#define _vl_api_defined_pot_profile_add_reply_t_endian
 static inline void vl_api_pot_profile_add_reply_t_endian (vl_api_pot_profile_add_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
-#endif
-
-#ifndef _vl_api_defined_pot_profile_activate_t_endian
-#define _vl_api_defined_pot_profile_activate_t_endian
 static inline void vl_api_pot_profile_activate_t_endian (vl_api_pot_profile_activate_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
     /* a->id = a->id (no-op) */
-    /* a->list_name_len = a->list_name_len (no-op) */
+    /* a->list_name = a->list_name (no-op) */
 }
 
-#endif
-
-#ifndef _vl_api_defined_pot_profile_activate_reply_t_endian
-#define _vl_api_defined_pot_profile_activate_reply_t_endian
 static inline void vl_api_pot_profile_activate_reply_t_endian (vl_api_pot_profile_activate_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
-#endif
-
-#ifndef _vl_api_defined_pot_profile_del_t_endian
-#define _vl_api_defined_pot_profile_del_t_endian
 static inline void vl_api_pot_profile_del_t_endian (vl_api_pot_profile_del_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
-    /* a->list_name_len = a->list_name_len (no-op) */
+    /* a->list_name = a->list_name (no-op) */
 }
 
-#endif
-
-#ifndef _vl_api_defined_pot_profile_del_reply_t_endian
-#define _vl_api_defined_pot_profile_del_reply_t_endian
 static inline void vl_api_pot_profile_del_reply_t_endian (vl_api_pot_profile_del_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
-#endif
-
-#ifndef _vl_api_defined_pot_profile_show_config_dump_t_endian
-#define _vl_api_defined_pot_profile_show_config_dump_t_endian
 static inline void vl_api_pot_profile_show_config_dump_t_endian (vl_api_pot_profile_show_config_dump_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
     /* a->id = a->id (no-op) */
 }
 
-#endif
-
-#ifndef _vl_api_defined_pot_profile_show_config_details_t_endian
-#define _vl_api_defined_pot_profile_show_config_details_t_endian
 static inline void vl_api_pot_profile_show_config_details_t_endian (vl_api_pot_profile_show_config_details_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
     /* a->id = a->id (no-op) */
     /* a->validator = a->validator (no-op) */
     a->secret_key = clib_net_to_host_u64(a->secret_key);
@@ -416,9 +325,8 @@ static inline void vl_api_pot_profile_show_config_details_t_endian (vl_api_pot_p
     a->polynomial_public = clib_net_to_host_u64(a->polynomial_public);
 }
 
+
 #endif
-
-
 #endif /* vl_endianfun */
 
 /****** Version tuple *****/
@@ -432,7 +340,7 @@ vl_api_version_tuple(pot.api, 1, 0, 0)
 /****** API CRC (whole file) *****/
 
 #ifdef vl_api_version
-vl_api_version(pot.api, 0x98eccbe7)
+vl_api_version(pot.api, 0xa9d8e55c)
 
 #endif
 

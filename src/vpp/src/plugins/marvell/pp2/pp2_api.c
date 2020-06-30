@@ -25,43 +25,10 @@
 #include <vlibmemory/api.h>
 
 /* define message IDs */
-#include <marvell/pp2/pp2_msg_enum.h>
-
-/* define message structures */
-#define vl_typedefs
-#include <marvell/pp2/pp2_all_api_h.h>
-#undef vl_typedefs
-
-/* define generated endian-swappers */
-#define vl_endianfun
-#include <marvell/pp2/pp2_all_api_h.h>
-#undef vl_endianfun
-
-/* instantiate all the print functions we know about */
-#define vl_print(handle, ...) vlib_cli_output (handle, __VA_ARGS__)
-
-/* get the API version number */
-#define vl_api_version(n,v) static u32 api_version=(v);
-#include <marvell/pp2/pp2_all_api_h.h>
-#undef vl_api_version
-
-/* Macro to finish up custom dump fns */
-#define FINISH                                  \
-    vec_add1 (s, 0);                            \
-    vl_print (handle, (char *)s);               \
-    vec_free (s);                               \
-    return handle;
+#include <marvell/pp2/pp2.api_enum.h>
+#include <marvell/pp2/pp2.api_types.h>
 
 #include <vlibapi/api_helper_macros.h>
-
-#define foreach_pp2_plugin_api_msg     \
-_(MRVL_PP2_CREATE, mrvl_pp2_create)    \
-_(MRVL_PP2_DELETE, mrvl_pp2_delete)
-
-
-#define vl_msg_name_crc_list
-#include <marvell/pp2/pp2_all_api_h.h>
-#undef vl_msg_name_crc_list
 
 static void
 vl_api_mrvl_pp2_create_t_handler (vl_api_mrvl_pp2_create_t * mp)
@@ -89,20 +56,6 @@ vl_api_mrvl_pp2_create_t_handler (vl_api_mrvl_pp2_create_t * mp)
   /* *INDENT-ON* */
 }
 
-static void *
-vl_api_mrvl_pp2_create_t_print (vl_api_mrvl_pp2_create_t * mp, void *handle)
-{
-  u8 *s;
-  s = format (0, "SCRIPT: mrvl_pp2_create ");
-  s = format (s, "if_name:%s ", mp->if_name);
-  if (mp->rx_q_sz)
-    s = format (s, "rx-queue-size:%u ", ntohs (mp->rx_q_sz));
-  if (mp->tx_q_sz)
-    s = format (s, "tx-queue-size %u ", ntohs (mp->tx_q_sz));
-
-  FINISH;
-}
-
 static void
 vl_api_mrvl_pp2_delete_t_handler (vl_api_mrvl_pp2_delete_t * mp)
 {
@@ -128,58 +81,16 @@ reply:
   REPLY_MACRO (VL_API_MRVL_PP2_DELETE_REPLY + pp2->msg_id_base);
 }
 
-static void *
-vl_api_mrvl_pp2_delete_t_print (vl_api_mrvl_pp2_delete_t * mp, void *handle)
-{
-  u8 *s;
-
-  s = format (0, "SCRIPT: mrvl_pp2_delete ");
-  s = format (s, "sw_if_index %d ", ntohl (mp->sw_if_index));
-
-  FINISH;
-}
-
-
-static void
-setup_message_id_table (mrvl_pp2_main_t * pp2, api_main_t * am)
-{
-#define _(id,n,crc) \
-  vl_msg_api_add_msg_name_crc (am, #n "_" #crc, id + pp2->msg_id_base);
-  foreach_vl_msg_name_crc_pp2;
-#undef _
-}
-
-
+#include <marvell/pp2/pp2.api.c>
 /* set up the API message handling tables */
 clib_error_t *
 mrvl_pp2_plugin_api_hookup (vlib_main_t * vm)
 {
   mrvl_pp2_main_t *pp2 = &mrvl_pp2_main;
-  api_main_t *am = &api_main;
-  u8 *name;
-
-  /* construct the API name */
-  name = format (0, "mrvl_pp2_%08x%c", api_version, 0);
 
   /* ask for a correctly-sized block of API message decode slots */
-  pp2->msg_id_base = vl_msg_api_get_msg_ids
-    ((char *) name, VL_MSG_FIRST_AVAILABLE);
+  pp2->msg_id_base = setup_message_id_table ();
 
-#define _(N,n)                                                  \
-    vl_msg_api_set_handlers((VL_API_##N + pp2->msg_id_base),    \
-                           #n,                                  \
-                           vl_api_##n##_t_handler,              \
-                           vl_noop_handler,                     \
-                           vl_api_##n##_t_endian,               \
-                           vl_api_##n##_t_print,                \
-                           sizeof(vl_api_##n##_t), 1);
-  foreach_pp2_plugin_api_msg;
-#undef _
-
-  /* set up the (msg_name, crc, message-id) table */
-  setup_message_id_table (pp2, am);
-
-  vec_free (name);
   return 0;
 }
 

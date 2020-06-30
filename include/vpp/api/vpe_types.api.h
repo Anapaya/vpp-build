@@ -1,5 +1,5 @@
 /*
- * VLIB API definitions 2020-06-13 05:56:05
+ * VLIB API definitions 2020-06-30 12:39:09
  * Input file: vpe_types.api
  * Automatically generated: please edit the input file NOT this file!
  */
@@ -16,6 +16,9 @@
 #endif
 
 #define VL_API_PACKED(x) x __attribute__ ((packed))
+/* Imported API files */
+#ifndef vl_api_version
+#endif
 
 /****** Message ID / handler enum ******/
 
@@ -30,54 +33,84 @@
 #ifdef vl_msg_name_crc_list
 #define foreach_vl_msg_name_crc_vpe_types 
 #endif
-
 /****** Typedefs ******/
 
 #ifdef vl_typedefs
-#ifndef included_vpe_types_api
-#define included_vpe_types_api
-#ifndef _vl_api_defined_version
-#define _vl_api_defined_version
-typedef VL_API_PACKED(struct _vl_api_version {
-    u32 major;
-    u32 minor;
-    u32 patch;
-    u8 pre_release[17];
-    u8 build_metadata[17];
-}) vl_api_version_t;
+#include "vpe_types.api_types.h"
 #endif
-
-#ifndef _vl_api_defined_timestamp
-#define _vl_api_defined_timestamp
-typedef f64 vl_api_timestamp_t;
-#endif
-
-#ifndef _vl_api_defined_timedelta
-#define _vl_api_defined_timedelta
-typedef f64 vl_api_timedelta_t;
-#endif
-
-#ifndef _vl_api_defined_log_level
-#define _vl_api_defined_log_level
-typedef enum {
-    VPE_API_LOG_LEVEL_EMERG = 0,
-    VPE_API_LOG_LEVEL_ALERT = 1,
-    VPE_API_LOG_LEVEL_CRIT = 2,
-    VPE_API_LOG_LEVEL_ERR = 3,
-    VPE_API_LOG_LEVEL_WARNING = 4,
-    VPE_API_LOG_LEVEL_NOTICE = 5,
-    VPE_API_LOG_LEVEL_INFO = 6,
-    VPE_API_LOG_LEVEL_DEBUG = 7,
-    VPE_API_LOG_LEVEL_DISABLED = 8,
-} vl_api_log_level_t;
-#endif
-
-
-#endif
-#endif
-
 /****** Print functions *****/
 #ifdef vl_printfun
+#ifndef included_vpe_types_printfun_types
+#define included_vpe_types_printfun_types
+
+static inline u8 *format_vl_api_version_t (u8 *s, va_list * args)
+{
+    vl_api_version_t *a = va_arg (*args, vl_api_version_t *);
+    u32 indent __attribute__((unused)) = va_arg (*args, u32);
+    int i __attribute__((unused));
+    indent += 2;
+    s = format(s, "\n%Umajor: %u", format_white_space, indent, a->major);
+    s = format(s, "\n%Uminor: %u", format_white_space, indent, a->minor);
+    s = format(s, "\n%Upatch: %u", format_white_space, indent, a->patch);
+    s = format(s, "\n%Upre_release: %U", format_white_space, indent, format_hex_bytes, a, 17);
+    s = format(s, "\n%Ubuild_metadata: %U", format_white_space, indent, format_hex_bytes, a, 17);
+    return s;
+}
+
+static inline u8 *format_vl_api_timestamp_t (u8 *s, va_list * args)
+{
+    vl_api_timestamp_t *a = va_arg (*args, vl_api_timestamp_t *);
+    u32 indent __attribute__((unused)) = va_arg (*args, u32);
+    int i __attribute__((unused));
+    indent += 2;
+    return format(s, "%.2f", *a);
+}
+
+static inline u8 *format_vl_api_timedelta_t (u8 *s, va_list * args)
+{
+    vl_api_timedelta_t *a = va_arg (*args, vl_api_timedelta_t *);
+    u32 indent __attribute__((unused)) = va_arg (*args, u32);
+    int i __attribute__((unused));
+    indent += 2;
+    return format(s, "%.2f", *a);
+}
+
+static inline u8 *format_vl_api_log_level_t (u8 *s, va_list * args)
+{
+    vl_api_log_level_t *a = va_arg (*args, vl_api_log_level_t *);
+    u32 indent __attribute__((unused)) = va_arg (*args, u32);
+    int i __attribute__((unused));
+    indent += 2;
+    switch(*a) {
+    case 0:
+        return format(s, "VPE_API_LOG_LEVEL_EMERG");
+    case 1:
+        return format(s, "VPE_API_LOG_LEVEL_ALERT");
+    case 2:
+        return format(s, "VPE_API_LOG_LEVEL_CRIT");
+    case 3:
+        return format(s, "VPE_API_LOG_LEVEL_ERR");
+    case 4:
+        return format(s, "VPE_API_LOG_LEVEL_WARNING");
+    case 5:
+        return format(s, "VPE_API_LOG_LEVEL_NOTICE");
+    case 6:
+        return format(s, "VPE_API_LOG_LEVEL_INFO");
+    case 7:
+        return format(s, "VPE_API_LOG_LEVEL_DEBUG");
+    case 8:
+        return format(s, "VPE_API_LOG_LEVEL_DISABLED");
+    }
+    return s;
+}
+
+
+#endif
+#endif /* vl_printfun_types */
+/****** Print functions *****/
+#ifdef vl_printfun
+#ifndef included_vpe_types_printfun
+#define included_vpe_types_printfun
 
 #ifdef LP64
 #define _uword_fmt "%lld"
@@ -87,28 +120,14 @@ typedef enum {
 #define _uword_cast long
 #endif
 
-#ifndef _vl_api_defined_version_t_print
-#define _vl_api_defined_version_t_print
-static inline void *vl_api_version_t_print (vl_api_version_t *a,void *handle)
-{
-    vl_print(handle, "vl_api_version_t:\n");
-    vl_print(handle, "major: %u\n", a->major);
-    vl_print(handle, "minor: %u\n", a->minor);
-    vl_print(handle, "patch: %u\n", a->patch);
-    return handle;
-}
 
 #endif
-
-/***** manual: vl_api_timestamp_t_print  *****/
-
-/***** manual: vl_api_timedelta_t_print  *****/
-
-
 #endif /* vl_printfun */
 
 /****** Endian swap functions *****/
 #ifdef vl_endianfun
+#ifndef included_vpe_types_endianfun
+#define included_vpe_types_endianfun
 
 #undef clib_net_to_host_uword
 #ifdef LP64
@@ -117,22 +136,36 @@ static inline void *vl_api_version_t_print (vl_api_version_t *a,void *handle)
 #define clib_net_to_host_uword clib_net_to_host_u32
 #endif
 
-#ifndef _vl_api_defined_version_t_endian
-#define _vl_api_defined_version_t_endian
 static inline void vl_api_version_t_endian (vl_api_version_t *a)
 {
+    int i __attribute__((unused));
     a->major = clib_net_to_host_u32(a->major);
     a->minor = clib_net_to_host_u32(a->minor);
     a->patch = clib_net_to_host_u32(a->patch);
+    /* a->pre_release = a->pre_release (no-op) */
+    /* a->build_metadata = a->build_metadata (no-op) */
 }
 
+static inline void vl_api_timestamp_t_endian (vl_api_timestamp_t *a)
+{
+    int i __attribute__((unused));
+    *a = clib_net_to_host_f64(*a);
+}
+
+static inline void vl_api_timedelta_t_endian (vl_api_timedelta_t *a)
+{
+    int i __attribute__((unused));
+    *a = clib_net_to_host_f64(*a);
+}
+
+static inline void vl_api_log_level_t_endian (vl_api_log_level_t *a)
+{
+    int i __attribute__((unused));
+    *a = clib_net_to_host_u32(*a);
+}
+
+
 #endif
-
-/***** manual: vl_api_timestamp_t_endian  *****/
-
-/***** manual: vl_api_timedelta_t_endian  *****/
-
-
 #endif /* vl_endianfun */
 
 /****** Version tuple *****/

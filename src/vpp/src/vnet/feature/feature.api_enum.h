@@ -1,0 +1,5 @@
+typedef enum {
+   VL_API_FEATURE_ENABLE_DISABLE,
+   VL_API_FEATURE_ENABLE_DISABLE_REPLY,
+   VL_MSG_FIRST_AVAILABLE
+} vl_api_feature_enum_t;

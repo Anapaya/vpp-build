@@ -21,6 +21,7 @@
 #include <vppinfra/hash.h>
 #include <vnet/bonding/node.h>
 #include <lacp/node.h>
+#include <vpp/stats/stat_segment.h>
 
 lacp_main_t lacp_main;
 
@@ -41,7 +42,7 @@ lacp_fill_pdu (lacp_pdu_t * lacpdu, slave_if_t * sif)
  * send a lacp pkt on an ethernet interface
  */
 static void
-lacp_send_ethernet_lacp_pdu (slave_if_t * sif)
+lacp_send_ethernet_lacp_pdu (vlib_main_t * vm, slave_if_t * sif)
 {
   lacp_main_t *lm = &lacp_main;
   u32 *to_next;
@@ -50,7 +51,6 @@ lacp_send_ethernet_lacp_pdu (slave_if_t * sif)
   u32 bi0;
   vlib_buffer_t *b0;
   vlib_frame_t *f;
-  vlib_main_t *vm = lm->vlib_main;
   vnet_main_t *vnm = lm->vnet_main;
 
   /*
@@ -89,7 +89,7 @@ lacp_send_ethernet_lacp_pdu (slave_if_t * sif)
 
   vlib_put_frame_to_node (vm, hw->output_node_index, f);
 
-  sif->last_lacpdu_sent_time = vlib_time_now (lm->vlib_main);
+  sif->last_lacpdu_sent_time = vlib_time_now (vm);
   sif->pdu_sent++;
 }
 
@@ -126,7 +126,7 @@ lacp_send_lacp_pdu (vlib_main_t * vm, slave_if_t * sif)
   switch (sif->packet_template_index)
     {
     case LACP_PACKET_TEMPLATE_ETHERNET:
-      lacp_send_ethernet_lacp_pdu (sif);
+      lacp_send_ethernet_lacp_pdu (vm, sif);
       break;
 
     default:
@@ -138,8 +138,9 @@ void
 lacp_periodic (vlib_main_t * vm)
 {
   bond_main_t *bm = &bond_main;
-  lacp_main_t *lm = &lacp_main;
   slave_if_t *sif;
+  bond_if_t *bif;
+  u8 actor_state, partner_state;
 
   /* *INDENT-OFF* */
   pool_foreach (sif, bm->neighbors,
@@ -147,25 +148,41 @@ lacp_periodic (vlib_main_t * vm)
     if (sif->port_enabled == 0)
       continue;
 
+    actor_state = sif->actor.state;
+    partner_state = sif->partner.state;
     if (lacp_timer_is_running (sif->current_while_timer) &&
-	lacp_timer_is_expired (lm->vlib_main, sif->current_while_timer))
+	lacp_timer_is_expired (vm, sif->current_while_timer))
       {
         lacp_machine_dispatch (&lacp_rx_machine, vm, sif,
 			       LACP_RX_EVENT_TIMER_EXPIRED, &sif->rx_state);
       }
 
     if (lacp_timer_is_running (sif->periodic_timer) &&
-	lacp_timer_is_expired (lm->vlib_main, sif->periodic_timer))
+	lacp_timer_is_expired (vm, sif->periodic_timer))
       {
         lacp_machine_dispatch (&lacp_ptx_machine, vm, sif,
 			       LACP_PTX_EVENT_TIMER_EXPIRED, &sif->ptx_state);
       }
     if (lacp_timer_is_running (sif->wait_while_timer) &&
-	lacp_timer_is_expired (lm->vlib_main, sif->wait_while_timer))
+	lacp_timer_is_expired (vm, sif->wait_while_timer))
       {
 	sif->ready_n = 1;
         lacp_stop_timer (&sif->wait_while_timer);
         lacp_selection_logic (vm, sif);
+      }
+    if (actor_state != sif->actor.state)
+      {
+	bif = bond_get_master_by_dev_instance (sif->bif_dev_instance);
+	stat_segment_set_state_counter (bm->stats[bif->sw_if_index]
+					[sif->sw_if_index].actor_state,
+					sif->actor.state);
+      }
+    if (partner_state != sif->partner.state)
+      {
+	bif = bond_get_master_by_dev_instance (sif->bif_dev_instance);
+	stat_segment_set_state_counter (bm->stats[bif->sw_if_index]
+					[sif->sw_if_index].partner_state,
+					sif->partner.state);
       }
   }));
   /* *INDENT-ON* */
@@ -356,10 +373,19 @@ lacp_init_neighbor (slave_if_t * sif, u8 * hw_address, u16 port_number,
 void
 lacp_init_state_machines (vlib_main_t * vm, slave_if_t * sif)
 {
+  bond_main_t *bm = &bond_main;
+  bond_if_t *bif = bond_get_master_by_dev_instance (sif->bif_dev_instance);
+
   lacp_init_tx_machine (vm, sif);
   lacp_init_mux_machine (vm, sif);
   lacp_init_ptx_machine (vm, sif);
   lacp_init_rx_machine (vm, sif);
+  stat_segment_set_state_counter (bm->stats[bif->sw_if_index]
+				  [sif->sw_if_index].actor_state,
+				  sif->actor.state);
+  stat_segment_set_state_counter (bm->stats[bif->sw_if_index]
+				  [sif->sw_if_index].partner_state,
+				  sif->partner.state);
 }
 
 VLIB_INIT_FUNCTION (lacp_periodic_init);

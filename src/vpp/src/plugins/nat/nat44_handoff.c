@@ -23,6 +23,7 @@
 #include <vnet/fib/ip4_fib.h>
 #include <vppinfra/error.h>
 #include <nat/nat.h>
+#include <nat/nat_inlines.h>
 
 typedef struct
 {
@@ -81,7 +82,6 @@ nat44_worker_handoff_fn_inline (vlib_main_t * vm,
   vlib_buffer_t *bufs[VLIB_FRAME_SIZE], **b = bufs;
   snat_main_t *sm = &snat_main;
 
-  snat_get_worker_function_t *get_worker;
   u32 fq_index, thread_index = vm->thread_index;
 
   from = vlib_frame_vector_args (frame);
@@ -92,16 +92,15 @@ nat44_worker_handoff_fn_inline (vlib_main_t * vm,
   if (is_in2out)
     {
       fq_index = is_output ? sm->fq_in2out_output_index : sm->fq_in2out_index;
-      get_worker = sm->worker_in2out_cb;
     }
   else
     {
       fq_index = sm->fq_out2in_index;
-      get_worker = sm->worker_out2in_cb;
     }
 
   while (n_left_from >= 4)
     {
+      u32 arc_next0, arc_next1, arc_next2, arc_next3;
       u32 sw_if_index0, sw_if_index1, sw_if_index2, sw_if_index3;
       u32 rx_fib_index0, rx_fib_index1, rx_fib_index2, rx_fib_index3;
       u32 iph_offset0 = 0, iph_offset1 = 0, iph_offset2 = 0, iph_offset3 = 0;
@@ -136,6 +135,16 @@ nat44_worker_handoff_fn_inline (vlib_main_t * vm,
       ip3 = (ip4_header_t *) ((u8 *) vlib_buffer_get_current (b[3]) +
 			      iph_offset3);
 
+      vnet_feature_next (&arc_next0, b[0]);
+      vnet_feature_next (&arc_next1, b[1]);
+      vnet_feature_next (&arc_next2, b[2]);
+      vnet_feature_next (&arc_next3, b[3]);
+
+      vnet_buffer2 (b[0])->nat.arc_next = arc_next0;
+      vnet_buffer2 (b[1])->nat.arc_next = arc_next1;
+      vnet_buffer2 (b[2])->nat.arc_next = arc_next2;
+      vnet_buffer2 (b[3])->nat.arc_next = arc_next3;
+
       sw_if_index0 = vnet_buffer (b[0])->sw_if_index[VLIB_RX];
       sw_if_index1 = vnet_buffer (b[1])->sw_if_index[VLIB_RX];
       sw_if_index2 = vnet_buffer (b[2])->sw_if_index[VLIB_RX];
@@ -146,10 +155,20 @@ nat44_worker_handoff_fn_inline (vlib_main_t * vm,
       rx_fib_index2 = ip4_fib_table_get_index_for_sw_if_index (sw_if_index2);
       rx_fib_index3 = ip4_fib_table_get_index_for_sw_if_index (sw_if_index3);
 
-      ti[0] = get_worker (ip0, rx_fib_index0, is_output);
-      ti[1] = get_worker (ip1, rx_fib_index1, is_output);
-      ti[2] = get_worker (ip2, rx_fib_index2, is_output);
-      ti[3] = get_worker (ip3, rx_fib_index3, is_output);
+      if (is_in2out)
+	{
+	  ti[0] = sm->worker_in2out_cb (ip0, rx_fib_index0, is_output);
+	  ti[1] = sm->worker_in2out_cb (ip1, rx_fib_index1, is_output);
+	  ti[2] = sm->worker_in2out_cb (ip2, rx_fib_index2, is_output);
+	  ti[3] = sm->worker_in2out_cb (ip3, rx_fib_index3, is_output);
+	}
+      else
+	{
+	  ti[0] = sm->worker_out2in_cb (b[0], ip0, rx_fib_index0, is_output);
+	  ti[1] = sm->worker_out2in_cb (b[1], ip1, rx_fib_index1, is_output);
+	  ti[2] = sm->worker_out2in_cb (b[2], ip2, rx_fib_index2, is_output);
+	  ti[3] = sm->worker_out2in_cb (b[3], ip3, rx_fib_index3, is_output);
+	}
 
       if (ti[0] == thread_index)
 	same_worker++;
@@ -178,6 +197,7 @@ nat44_worker_handoff_fn_inline (vlib_main_t * vm,
 
   while (n_left_from > 0)
     {
+      u32 arc_next0;
       u32 sw_if_index0;
       u32 rx_fib_index0;
       u32 iph_offset0 = 0;
@@ -190,10 +210,20 @@ nat44_worker_handoff_fn_inline (vlib_main_t * vm,
       ip0 = (ip4_header_t *) ((u8 *) vlib_buffer_get_current (b[0]) +
 			      iph_offset0);
 
+      vnet_feature_next (&arc_next0, b[0]);
+      vnet_buffer2 (b[0])->nat.arc_next = arc_next0;
+
       sw_if_index0 = vnet_buffer (b[0])->sw_if_index[VLIB_RX];
       rx_fib_index0 = ip4_fib_table_get_index_for_sw_if_index (sw_if_index0);
 
-      ti[0] = get_worker (ip0, rx_fib_index0, is_output);
+      if (is_in2out)
+	{
+	  ti[0] = sm->worker_in2out_cb (ip0, rx_fib_index0, is_output);
+	}
+      else
+	{
+	  ti[0] = sm->worker_out2in_cb (b[0], ip0, rx_fib_index0, is_output);
+	}
 
       if (ti[0] == thread_index)
 	same_worker++;
@@ -247,8 +277,6 @@ nat44_worker_handoff_fn_inline (vlib_main_t * vm,
   return frame->n_vectors;
 }
 
-
-
 VLIB_NODE_FN (snat_in2out_worker_handoff_node) (vlib_main_t * vm,
 						vlib_node_runtime_t * node,
 						vlib_frame_t * frame)
@@ -260,14 +288,11 @@ VLIB_NODE_FN (snat_in2out_worker_handoff_node) (vlib_main_t * vm,
 VLIB_REGISTER_NODE (snat_in2out_worker_handoff_node) = {
   .name = "nat44-in2out-worker-handoff",
   .vector_size = sizeof (u32),
+  .sibling_of = "nat-default",
   .format_trace = format_nat44_handoff_trace,
   .type = VLIB_NODE_TYPE_INTERNAL,
   .n_errors = ARRAY_LEN(nat44_handoff_error_strings),
   .error_strings = nat44_handoff_error_strings,
-  .n_next_nodes = 1,
-  .next_nodes = {
-    [0] = "error-drop",
-  },
 };
 /* *INDENT-ON* */
 
@@ -283,14 +308,11 @@ VLIB_NODE_FN (snat_in2out_output_worker_handoff_node) (vlib_main_t * vm,
 VLIB_REGISTER_NODE (snat_in2out_output_worker_handoff_node) = {
   .name = "nat44-in2out-output-worker-handoff",
   .vector_size = sizeof (u32),
+  .sibling_of = "nat-default",
   .format_trace = format_nat44_handoff_trace,
   .type = VLIB_NODE_TYPE_INTERNAL,
   .n_errors = ARRAY_LEN(nat44_handoff_error_strings),
   .error_strings = nat44_handoff_error_strings,
-  .n_next_nodes = 1,
-  .next_nodes = {
-    [0] = "error-drop",
-  },
 };
 /* *INDENT-ON* */
 
@@ -305,14 +327,11 @@ VLIB_NODE_FN (snat_out2in_worker_handoff_node) (vlib_main_t * vm,
 VLIB_REGISTER_NODE (snat_out2in_worker_handoff_node) = {
   .name = "nat44-out2in-worker-handoff",
   .vector_size = sizeof (u32),
+  .sibling_of = "nat-default",
   .format_trace = format_nat44_handoff_trace,
   .type = VLIB_NODE_TYPE_INTERNAL,
   .n_errors = ARRAY_LEN(nat44_handoff_error_strings),
   .error_strings = nat44_handoff_error_strings,
-  .n_next_nodes = 1,
-  .next_nodes = {
-    [0] = "error-drop",
-  },
 };
 /* *INDENT-ON* */
 

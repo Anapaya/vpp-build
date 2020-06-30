@@ -42,6 +42,7 @@
 
 #include <vnet/ip/ip4_packet.h>
 #include <vnet/ip/lookup.h>
+#include <vnet/ip/ip_interface.h>
 #include <vnet/buffer.h>
 #include <vnet/feature/feature.h>
 #include <vnet/ip/icmp46_packet.h>
@@ -178,6 +179,7 @@ typedef struct ip4_main_t
 
 /** Global ip4 main structure. */
 extern ip4_main_t ip4_main;
+extern char *ip4_error_strings[];
 
 /** Global ip4 input node.  Errors get attached to ip4 input node. */
 extern vlib_node_registration_t ip4_input_node;
@@ -189,6 +191,7 @@ extern vlib_node_registration_t ip4_rewrite_local_node;
 extern vlib_node_registration_t ip4_arp_node;
 extern vlib_node_registration_t ip4_glean_node;
 extern vlib_node_registration_t ip4_midchain_node;
+extern vlib_node_registration_t ip4_punt_node;
 
 always_inline uword
 ip4_destination_matches_route (const ip4_main_t * im,
@@ -230,7 +233,7 @@ ip4_src_address_for_packet (ip_lookup_main_t * lm,
 /* Find interface address which matches destination. */
 always_inline ip4_address_t *
 ip4_interface_address_matching_destination (ip4_main_t * im,
-					    ip4_address_t * dst,
+					    const ip4_address_t * dst,
 					    u32 sw_if_index,
 					    ip_interface_address_t **
 					    result_ia)
@@ -270,12 +273,6 @@ void ip4_directed_broadcast (u32 sw_if_index, u8 enable);
 void ip4_sw_interface_enable_disable (u32 sw_if_index, u32 is_enable);
 
 int ip4_address_compare (ip4_address_t * a1, ip4_address_t * a2);
-
-/* Send an ARP request to see if given destination is reachable on given interface. */
-clib_error_t *ip4_probe_neighbor (vlib_main_t * vm, ip4_address_t * dst,
-				  u32 sw_if_index, u8 refresh);
-
-clib_error_t *ip4_set_arp_limit (u32 arp_limit);
 
 uword
 ip4_udp_register_listener (vlib_main_t * vm,
@@ -367,6 +364,42 @@ u32 ip4_tcp_udp_validate_checksum (vlib_main_t * vm, vlib_buffer_t * p0);
 
 #define IP_DF 0x4000		/* don't fragment */
 
+always_inline void *
+vlib_buffer_push_ip4_custom (vlib_main_t * vm, vlib_buffer_t * b,
+			     ip4_address_t * src, ip4_address_t * dst,
+			     int proto, u8 csum_offload, u8 is_df)
+{
+  ip4_header_t *ih;
+
+  /* make some room */
+  ih = vlib_buffer_push_uninit (b, sizeof (ip4_header_t));
+
+  ih->ip_version_and_header_length = 0x45;
+  ih->tos = 0;
+  ih->length = clib_host_to_net_u16 (vlib_buffer_length_in_chain (vm, b));
+
+  /* No fragments */
+  ih->flags_and_fragment_offset = is_df ? clib_host_to_net_u16 (IP_DF) : 0;
+  ih->ttl = 255;
+  ih->protocol = proto;
+  ih->src_address.as_u32 = src->as_u32;
+  ih->dst_address.as_u32 = dst->as_u32;
+
+  vnet_buffer (b)->l3_hdr_offset = (u8 *) ih - b->data;
+  b->flags |= VNET_BUFFER_F_IS_IP4 | VNET_BUFFER_F_L3_HDR_OFFSET_VALID;
+
+  /* Offload ip4 header checksum generation */
+  if (csum_offload)
+    {
+      ih->checksum = 0;
+      b->flags |= VNET_BUFFER_F_OFFLOAD_IP_CKSUM;
+    }
+  else
+    ih->checksum = ip4_header_checksum (ih);
+
+  return ih;
+}
+
 /**
  * Push IPv4 header to buffer
  *
@@ -385,37 +418,18 @@ vlib_buffer_push_ip4 (vlib_main_t * vm, vlib_buffer_t * b,
 		      ip4_address_t * src, ip4_address_t * dst, int proto,
 		      u8 csum_offload)
 {
-  ip4_header_t *ih;
+  return vlib_buffer_push_ip4_custom (vm, b, src, dst, proto, csum_offload,
+				      1 /* is_df */ );
+}
 
-  /* make some room */
-  ih = vlib_buffer_push_uninit (b, sizeof (ip4_header_t));
-
-  ih->ip_version_and_header_length = 0x45;
-  ih->tos = 0;
-  ih->length = clib_host_to_net_u16 (vlib_buffer_length_in_chain (vm, b));
-
-  /* No fragments */
-  ih->flags_and_fragment_offset = clib_host_to_net_u16 (IP_DF);
-  ih->ttl = 255;
-  ih->protocol = proto;
-  ih->src_address.as_u32 = src->as_u32;
-  ih->dst_address.as_u32 = dst->as_u32;
-
-  /* Offload ip4 header checksum generation */
-  if (csum_offload)
-    {
-      ih->checksum = 0;
-      b->flags |= VNET_BUFFER_F_OFFLOAD_IP_CKSUM | VNET_BUFFER_F_IS_IP4;
-      vnet_buffer (b)->l3_hdr_offset = (u8 *) ih - b->data;
-      vnet_buffer (b)->l4_hdr_offset = vnet_buffer (b)->l3_hdr_offset +
-	sizeof (*ih);
-      b->flags |=
-	VNET_BUFFER_F_L3_HDR_OFFSET_VALID | VNET_BUFFER_F_L4_HDR_OFFSET_VALID;
-    }
-  else
-    ih->checksum = ip4_header_checksum (ih);
-
-  return ih;
+always_inline u32
+vlib_buffer_get_ip4_fib_index (vlib_buffer_t * b)
+{
+  u32 fib_index, sw_if_index;
+  sw_if_index = vnet_buffer (b)->sw_if_index[VLIB_RX];
+  fib_index = vnet_buffer (b)->sw_if_index[VLIB_TX];
+  return (fib_index == (u32) ~ 0) ?
+    vec_elt (ip4_main.fib_index_by_sw_if_index, sw_if_index) : fib_index;
 }
 #endif /* included_ip_ip4_h */
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import unittest
 import binascii
@@ -14,8 +14,6 @@ from scapy.packet import Raw
 from scapy.layers.l2 import Ether, Dot1Q
 from scapy.layers.inet6 import IPv6, UDP, IPv6ExtHdrSegmentRouting
 from scapy.layers.inet import IP, UDP
-
-from scapy.utils import inet_pton, inet_ntop
 
 from util import ppp
 
@@ -116,7 +114,7 @@ class TestSRv6(VppTestCase):
         if any(ipv6):
             self.logger.debug(self.vapi.cli("show ip6 neighbors"))
         if any(ipv4):
-            self.logger.debug(self.vapi.cli("show ip arp"))
+            self.logger.debug(self.vapi.cli("show ip4 neighbors"))
         self.logger.debug(self.vapi.cli("show interface"))
         self.logger.debug(self.vapi.cli("show hardware"))
 
@@ -509,10 +507,9 @@ class TestSRv6(VppTestCase):
 
         # configure SRv6 localSID End without PSP behavior
         localsid = VppSRv6LocalSID(
-                        self, localsid={'addr': 'A3::0'},
+                        self, localsid='A3::0',
                         behavior=SRv6LocalSIDBehaviors.SR_BEHAVIOR_END,
-                        nh_addr4='0.0.0.0',
-                        nh_addr6='::',
+                        nh_addr=0,
                         end_psp=0,
                         sw_if_index=0,
                         vlan_index=0,
@@ -548,9 +545,18 @@ class TestSRv6(VppTestCase):
 
         # TODO: test behavior with SL=0 packet (needs 2*SRH?)
 
+        expected_count = len(pkts)
+
+        # packets without SRH (should not crash)
+        packet_header = self.create_packet_header_IPv6('a3::')
+        # create traffic stream pg0->pg1
+        pkts.extend(self.create_stream(self.pg0, self.pg1, packet_header,
+                                       self.pg_packet_sizes, count))
+
         # send packets and verify received packets
         self.send_and_verify_pkts(self.pg0, pkts, self.pg1,
-                                  self.compare_rx_tx_packet_End)
+                                  self.compare_rx_tx_packet_End,
+                                  expected_count=expected_count)
 
         # log the localsid counters
         self.logger.info(self.vapi.cli("show sr localsid"))
@@ -579,10 +585,9 @@ class TestSRv6(VppTestCase):
 
         # configure SRv6 localSID End with PSP behavior
         localsid = VppSRv6LocalSID(
-                        self, localsid={'addr': 'A3::0'},
+                        self, localsid='A3::0',
                         behavior=SRv6LocalSIDBehaviors.SR_BEHAVIOR_END,
-                        nh_addr4='0.0.0.0',
-                        nh_addr6='::',
+                        nh_addr=0,
                         end_psp=1,
                         sw_if_index=0,
                         vlan_index=0,
@@ -652,10 +657,9 @@ class TestSRv6(VppTestCase):
         # configure SRv6 localSID End.X without PSP behavior
         # End.X points to interface pg1
         localsid = VppSRv6LocalSID(
-                        self, localsid={'addr': 'A3::C4'},
+                        self, localsid='A3::C4',
                         behavior=SRv6LocalSIDBehaviors.SR_BEHAVIOR_X,
-                        nh_addr4='0.0.0.0',
-                        nh_addr6=self.pg1.remote_ip6,
+                        nh_addr=self.pg1.remote_ip6,
                         end_psp=0,
                         sw_if_index=self.pg1.sw_if_index,
                         vlan_index=0,
@@ -728,10 +732,9 @@ class TestSRv6(VppTestCase):
 
         # configure SRv6 localSID End with PSP behavior
         localsid = VppSRv6LocalSID(
-                        self, localsid={'addr': 'A3::C4'},
+                        self, localsid='A3::C4',
                         behavior=SRv6LocalSIDBehaviors.SR_BEHAVIOR_X,
-                        nh_addr4='0.0.0.0',
-                        nh_addr6=self.pg1.remote_ip6,
+                        nh_addr=self.pg1.remote_ip6,
                         end_psp=1,
                         sw_if_index=self.pg1.sw_if_index,
                         vlan_index=0,
@@ -794,10 +797,9 @@ class TestSRv6(VppTestCase):
 
         # configure SRv6 localSID End.DX6 behavior
         localsid = VppSRv6LocalSID(
-                        self, localsid={'addr': 'A3::C4'},
+                        self, localsid='A3::C4',
                         behavior=SRv6LocalSIDBehaviors.SR_BEHAVIOR_DX6,
-                        nh_addr4='0.0.0.0',
-                        nh_addr6=self.pg1.remote_ip6,
+                        nh_addr=self.pg1.remote_ip6,
                         end_psp=0,
                         sw_if_index=self.pg1.sw_if_index,
                         vlan_index=0,
@@ -879,10 +881,9 @@ class TestSRv6(VppTestCase):
         # fib_table: where the localsid is installed
         # sw_if_index: in T-variants of localsid this is the vrf table_id
         localsid = VppSRv6LocalSID(
-                        self, localsid={'addr': 'A3::C4'},
+                        self, localsid='A3::C4',
                         behavior=SRv6LocalSIDBehaviors.SR_BEHAVIOR_DT6,
-                        nh_addr4='0.0.0.0',
-                        nh_addr6='::',
+                        nh_addr=0,
                         end_psp=0,
                         sw_if_index=vrf_1,
                         vlan_index=0,
@@ -945,10 +946,9 @@ class TestSRv6(VppTestCase):
 
         # configure SRv6 localSID End.DX4 behavior
         localsid = VppSRv6LocalSID(
-                        self, localsid={'addr': 'A3::C4'},
+                        self, localsid='A3::C4',
                         behavior=SRv6LocalSIDBehaviors.SR_BEHAVIOR_DX4,
-                        nh_addr4=self.pg1.remote_ip4,
-                        nh_addr6='::',
+                        nh_addr=self.pg1.remote_ip4,
                         end_psp=0,
                         sw_if_index=self.pg1.sw_if_index,
                         vlan_index=0,
@@ -1032,10 +1032,9 @@ class TestSRv6(VppTestCase):
         # fib_table: where the localsid is installed
         # sw_if_index: in T-variants of localsid: vrf table_id
         localsid = VppSRv6LocalSID(
-                        self, localsid={'addr': 'A3::C4'},
+                        self, localsid='A3::C4',
                         behavior=SRv6LocalSIDBehaviors.SR_BEHAVIOR_DT4,
-                        nh_addr4='0.0.0.0',
-                        nh_addr6='::',
+                        nh_addr=0,
                         end_psp=0,
                         sw_if_index=vrf_1,
                         vlan_index=0,
@@ -1097,10 +1096,9 @@ class TestSRv6(VppTestCase):
 
         # configure SRv6 localSID End.DX2 behavior
         localsid = VppSRv6LocalSID(
-                        self, localsid={'addr': 'A3::C4'},
+                        self, localsid='A3::C4',
                         behavior=SRv6LocalSIDBehaviors.SR_BEHAVIOR_DX2,
-                        nh_addr4='0.0.0.0',
-                        nh_addr6='::',
+                        nh_addr=0,
                         end_psp=0,
                         sw_if_index=self.pg1.sw_if_index,
                         vlan_index=0,
@@ -1466,8 +1464,8 @@ class TestSRv6(VppTestCase):
         self.assertEqual(rx_srh.segleft, len(tx_seglist)-1)
         # segleft should be equal to lastentry
         self.assertEqual(rx_srh.segleft, rx_srh.lastentry)
-        # nh should be "No Next Header" (59)
-        self.assertEqual(rx_srh.nh, 59)
+        # nh should be "No Next Header" (143)
+        self.assertEqual(rx_srh.nh, 143)
 
         # the whole rx'ed pkt beyond SRH should be equal to tx'ed pkt
         self.assertEqual(Ether(scapy.compat.raw(rx_srh.payload)), tx_ether)
@@ -1825,13 +1823,16 @@ class TestSRv6(VppTestCase):
         self.logger.info("Done creating packets")
         return pkts
 
-    def send_and_verify_pkts(self, input, pkts, output, compare_func):
+    def send_and_verify_pkts(self, input, pkts, output, compare_func,
+                             expected_count=None):
         """Send packets and verify received packets using compare_func
 
         :param input: ingress interface of DUT
         :param pkts: list of packets to transmit
         :param output: egress interface of DUT
         :param compare_func: function to compare in and out packets
+        :param expected_count: expected number of captured packets (if
+               different than len(pkts))
         """
         # add traffic stream to input interface
         input.add_stream(pkts)
@@ -1845,7 +1846,7 @@ class TestSRv6(VppTestCase):
 
         # get output capture
         self.logger.info("Getting packet capture")
-        capture = output.get_capture()
+        capture = output.get_capture(expected_count=expected_count)
 
         # assert nothing was captured on input interface
         input.assert_nothing_captured()
@@ -2032,7 +2033,7 @@ class TestSRv6(VppTestCase):
 
         p = (IPv6(src='1234::1', dst=sidlist[segleft]) /
              IPv6ExtHdrSegmentRouting(addresses=sidlist,
-                                      segleft=segleft, nh=59) /
+                                      segleft=segleft, nh=143) /
              eth)
         return p
 
@@ -2051,7 +2052,7 @@ class TestSRv6(VppTestCase):
         else:
             eth.type = etype
 
-        p = (IPv6(src='1234::1', dst=dst_outer, nh=59) / eth)
+        p = (IPv6(src='1234::1', dst=dst_outer, nh=143) / eth)
         return p
 
     def get_payload_info(self, packet):
@@ -2128,13 +2129,18 @@ class TestSRv6(VppTestCase):
                 self.logger.error(ppp("Unexpected or invalid packet:", packet))
                 raise
 
+        # FIXME: there is no need to check manually that all the packets
+        #        arrived (already done so by get_capture); checking here
+        #        prevents testing packets that are expected to be dropped, so
+        #        commenting this out for now
+
         # have all expected packets arrived?
-        for i in self.pg_interfaces:
-            remaining_packet = self.get_next_packet_info_for_interface2(
-                i.sw_if_index, dst_sw_if_index, last_info[i.sw_if_index])
-            self.assertTrue(remaining_packet is None,
-                            "Interface %s: Packet expected from interface %s "
-                            "didn't arrive" % (dst_if.name, i.name))
+        # for i in self.pg_interfaces:
+        #    remaining_packet = self.get_next_packet_info_for_interface2(
+        #        i.sw_if_index, dst_sw_if_index, last_info[i.sw_if_index])
+        #    self.assertTrue(remaining_packet is None,
+        #                    "Interface %s: Packet expected from interface %s "
+        #                    "didn't arrive" % (dst_if.name, i.name))
 
 
 if __name__ == '__main__':

@@ -96,7 +96,7 @@ typedef struct vlib_main_t
   u64 cpu_time_main_loop_start;
 
   /* Incremented once for each main loop. */
-  u32 main_loop_count;
+  volatile u32 main_loop_count;
 
   /* Count of vectors processed this main loop. */
   u32 main_loop_vectors_processed;
@@ -251,6 +251,14 @@ typedef struct vlib_main_t
    */
   int need_vlib_worker_thread_node_runtime_update;
 
+  /* Dispatch loop time accounting */
+  u64 loops_this_reporting_interval;
+  f64 loop_interval_end;
+  f64 loop_interval_start;
+  f64 loops_per_second;
+  f64 seconds_per_loop;
+  f64 damping_constant;
+
   /*
    * Barrier epoch - Set to current time, each time barrier_sync or
    * barrier_release is called with zero recursion.
@@ -267,6 +275,10 @@ typedef struct vlib_main_t
   uword *pending_rpc_requests;
   uword *processing_rpc_requests;
   clib_spinlock_t pending_rpc_lock;
+
+  /* buffer fault injector */
+  u32 buffer_alloc_success_seed;
+  f64 buffer_alloc_success_rate;
 
 } vlib_main_t;
 

@@ -115,7 +115,7 @@ app_listener_lookup (application_t * app, session_endpoint_cfg_t * sep_ext)
     }
 
   fib_proto = session_endpoint_fib_proto (sep);
-  table_index = application_session_table (app, fib_proto);
+  table_index = session_lookup_get_index_for_fib (fib_proto, sep->fib_index);
   handle = session_lookup_endpoint_listener (table_index, sep, 1);
   if (handle != SESSION_INVALID_HANDLE)
     {
@@ -133,10 +133,10 @@ app_listener_alloc_and_init (application_t * app,
 {
   app_listener_t *app_listener;
   transport_connection_t *tc;
+  u32 al_index, table_index;
   session_handle_t lh;
   session_type_t st;
   session_t *ls = 0;
-  u32 al_index;
   int rv;
 
   app_listener = app_listener_alloc (app);
@@ -151,7 +151,6 @@ app_listener_alloc_and_init (application_t * app,
       && session_endpoint_is_local ((session_endpoint_t *) sep))
     {
       session_type_t local_st;
-      u32 table_index;
 
       local_st = session_type_from_proto_and_ip (TRANSPORT_PROTO_NONE,
 						 sep->is_ip4);
@@ -213,7 +212,16 @@ app_listener_alloc_and_init (application_t * app,
        * connections */
       tc = session_get_transport (ls);
       if (!(tc->flags & TRANSPORT_CONNECTION_F_NO_LOOKUP))
-	session_lookup_add_connection (tc, lh);
+	{
+	  fib_protocol_t fib_proto;
+	  fib_proto = session_endpoint_fib_proto ((session_endpoint_t *) sep);
+	  table_index = session_lookup_get_index_for_fib (fib_proto,
+							  sep->fib_index);
+	  ASSERT (table_index != SESSION_TABLE_INVALID_INDEX);
+	  session_lookup_add_session_endpoint (table_index,
+					       (session_endpoint_t *) sep,
+					       lh);
+	}
     }
 
   if (!ls)
@@ -509,6 +517,10 @@ application_alloc_and_init (app_init_args_t * a)
   if (!application_verify_cfg (seg_type))
     return VNET_API_ERROR_APP_UNSUPPORTED_CFG;
 
+  if (options[APP_OPTIONS_PREALLOC_FIFO_PAIRS]
+      && options[APP_OPTIONS_PREALLOC_FIFO_HDRS])
+    return VNET_API_ERROR_APP_UNSUPPORTED_CFG;
+
   /* Check that the obvious things are properly set up */
   application_verify_cb_fns (a->session_cb_vft);
 
@@ -527,6 +539,7 @@ application_alloc_and_init (app_init_args_t * a)
   segment_manager_props_init (props);
   props->segment_size = options[APP_OPTIONS_SEGMENT_SIZE];
   props->prealloc_fifos = options[APP_OPTIONS_PREALLOC_FIFO_PAIRS];
+  props->prealloc_fifo_hdrs = options[APP_OPTIONS_PREALLOC_FIFO_HDRS];
   if (options[APP_OPTIONS_ADD_SEGMENT_SIZE])
     {
       props->add_segment_size = options[APP_OPTIONS_ADD_SEGMENT_SIZE];
@@ -542,6 +555,14 @@ application_alloc_and_init (app_init_args_t * a)
     props->use_mq_eventfd = 1;
   if (options[APP_OPTIONS_TLS_ENGINE])
     app->tls_engine = options[APP_OPTIONS_TLS_ENGINE];
+  if (options[APP_OPTIONS_MAX_FIFO_SIZE])
+    props->max_fifo_size = options[APP_OPTIONS_MAX_FIFO_SIZE];
+  if (options[APP_OPTIONS_HIGH_WATERMARK])
+    props->high_watermark = options[APP_OPTIONS_HIGH_WATERMARK];
+  if (options[APP_OPTIONS_LOW_WATERMARK])
+    props->low_watermark = options[APP_OPTIONS_LOW_WATERMARK];
+  if (options[APP_OPTIONS_PCT_FIRST_ALLOC])
+    props->pct_first_alloc = options[APP_OPTIONS_PCT_FIRST_ALLOC];
   props->segment_type = seg_type;
 
   /* Add app to lookup by api_client_index table */
@@ -591,8 +612,6 @@ application_free (application_t * app)
   if (application_is_builtin (app))
     application_name_table_del (app);
   vec_free (app->name);
-  vec_free (app->tls_cert);
-  vec_free (app->tls_key);
   pool_put (app_main.app_pool, app);
 }
 
@@ -692,8 +711,7 @@ application_alloc_worker_and_init (application_t * app, app_worker_t ** wrk)
   sm = segment_manager_alloc ();
   sm->app_wrk_index = app_wrk->wrk_index;
 
-  if ((rv = segment_manager_init (sm, app->sm_properties.segment_size,
-				  app->sm_properties.prealloc_fifos)))
+  if ((rv = segment_manager_init (sm)))
     {
       app_worker_free (app_wrk);
       return rv;
@@ -955,17 +973,17 @@ vnet_listen (vnet_listen_args_t * a)
 
   app = application_get_if_valid (a->app_index);
   if (!app)
-    return VNET_API_ERROR_APPLICATION_NOT_ATTACHED;
+    return SESSION_E_NOAPP;
 
   app_wrk = application_get_worker (app, a->wrk_map_index);
   if (!app_wrk)
-    return VNET_API_ERROR_INVALID_VALUE;
+    return SESSION_E_INVALID_APPWRK;
 
   a->sep_ext.app_wrk_index = app_wrk->wrk_index;
 
   session_endpoint_update_for_app (&a->sep_ext, app, 0 /* is_connect */ );
   if (!session_endpoint_in_ns (&a->sep))
-    return VNET_API_ERROR_INVALID_VALUE_2;
+    return SESSION_E_INVALID_NS;
 
   /*
    * Check if we already have an app listener
@@ -974,9 +992,9 @@ vnet_listen (vnet_listen_args_t * a)
   if (app_listener)
     {
       if (app_listener->app_index != app->app_index)
-	return VNET_API_ERROR_ADDRESS_IN_USE;
-      if (app_worker_start_listen (app_wrk, app_listener))
-	return -1;
+	return SESSION_E_ALREADY_LISTENING;
+      if ((rv = app_worker_start_listen (app_wrk, app_listener)))
+	return rv;
       a->handle = app_listener_handle (app_listener);
       return 0;
     }
@@ -1006,7 +1024,7 @@ vnet_connect (vnet_connect_args_t * a)
   ASSERT (vlib_thread_is_main_w_barrier ());
 
   if (session_endpoint_is_zero (&a->sep))
-    return VNET_API_ERROR_INVALID_VALUE;
+    return SESSION_E_INVALID_RMT_IP;
 
   client = application_get (a->app_index);
   session_endpoint_update_for_app (&a->sep_ext, client, 1 /* is_connect */ );
@@ -1026,13 +1044,12 @@ vnet_connect (vnet_connect_args_t * a)
       rv = app_worker_connect_session (client_wrk, &a->sep, a->api_context);
       if (rv <= 0)
 	return rv;
+      a->sep_ext.transport_proto = a->sep_ext.original_tp;
     }
   /*
    * Not connecting to a local server, propagate to transport
    */
-  if (app_worker_connect_session (client_wrk, &a->sep, a->api_context))
-    return VNET_API_ERROR_SESSION_CONNECT;
-  return 0;
+  return app_worker_connect_session (client_wrk, &a->sep, a->api_context);
 }
 
 int
@@ -1045,22 +1062,22 @@ vnet_unlisten (vnet_unlisten_args_t * a)
   ASSERT (vlib_thread_is_main_w_barrier ());
 
   if (!(app = application_get_if_valid (a->app_index)))
-    return VNET_API_ERROR_APPLICATION_NOT_ATTACHED;
+    return SESSION_E_NOAPP;
 
   if (!(al = app_listener_get_w_handle (a->handle)))
-    return -1;
+    return SESSION_E_NOLISTEN;
 
   if (al->app_index != app->app_index)
     {
       clib_warning ("app doesn't own handle %llu!", a->handle);
-      return -1;
+      return SESSION_E_OWNER;
     }
 
   app_wrk = application_get_worker (app, a->wrk_map_index);
   if (!app_wrk)
     {
       clib_warning ("no app %u worker %u", app->app_index, a->wrk_map_index);
-      return -1;
+      return SESSION_E_INVALID_APPWRK;
     }
 
   return app_worker_stop_listen (app_wrk, al);
@@ -1074,10 +1091,11 @@ vnet_disconnect_session (vnet_disconnect_args_t * a)
 
   s = session_get_from_handle_if_valid (a->handle);
   if (!s)
-    return VNET_API_ERROR_INVALID_VALUE;
+    return SESSION_E_NOSESSION;
+
   app_wrk = app_worker_get (s->app_wrk_index);
   if (app_wrk->app_index != a->app_index)
-    return VNET_API_ERROR_INVALID_VALUE;
+    return SESSION_E_OWNER;
 
   /* We're peeking into another's thread pool. Make sure */
   ASSERT (s->session_index == session_index_from_handle (a->handle));
@@ -1092,9 +1110,10 @@ application_change_listener_owner (session_t * s, app_worker_t * app_wrk)
   app_worker_t *old_wrk = app_worker_get (s->app_wrk_index);
   app_listener_t *app_listener;
   application_t *app;
+  int rv;
 
   if (!old_wrk)
-    return -1;
+    return SESSION_E_INVALID_APPWRK;
 
   hash_unset (old_wrk->listeners_table, listen_session_get_handle (s));
   if (session_transport_service_type (s) == TRANSPORT_SERVICE_CL
@@ -1103,7 +1122,7 @@ application_change_listener_owner (session_t * s, app_worker_t * app_wrk)
 
   app = application_get (old_wrk->app_index);
   if (!app)
-    return -1;
+    return SESSION_E_NOAPP;
 
   app_listener = app_listener_get (app, s->al_index);
 
@@ -1111,8 +1130,8 @@ application_change_listener_owner (session_t * s, app_worker_t * app_wrk)
   app_listener->workers = clib_bitmap_set (app_listener->workers,
 					   old_wrk->wrk_map_index, 0);
 
-  if (app_worker_start_listen (app_wrk, app_listener))
-    return -1;
+  if ((rv = app_worker_start_listen (app_wrk, app_listener)))
+    return rv;
 
   s->app_wrk_index = app_wrk->wrk_index;
 
@@ -1305,24 +1324,20 @@ application_get_segment_manager_properties (u32 app_index)
 clib_error_t *
 vnet_app_add_tls_cert (vnet_app_add_tls_cert_args_t * a)
 {
-  application_t *app;
-  app = application_get (a->app_index);
-  if (!app)
-    return clib_error_return_code (0, VNET_API_ERROR_APPLICATION_NOT_ATTACHED,
-				   0, "app %u doesn't exist", a->app_index);
-  app->tls_cert = vec_dup (a->cert);
+  /* Deprected, will be remove after 20.01 */
+  app_cert_key_pair_t *ckpair;
+  ckpair = app_cert_key_pair_get_default ();
+  ckpair->cert = vec_dup (a->cert);
   return 0;
 }
 
 clib_error_t *
 vnet_app_add_tls_key (vnet_app_add_tls_key_args_t * a)
 {
-  application_t *app;
-  app = application_get (a->app_index);
-  if (!app)
-    return clib_error_return_code (0, VNET_API_ERROR_APPLICATION_NOT_ATTACHED,
-				   0, "app %u doesn't exist", a->app_index);
-  app->tls_key = vec_dup (a->key);
+  /* Deprected, will be remove after 20.01 */
+  app_cert_key_pair_t *ckpair;
+  ckpair = app_cert_key_pair_get_default ();
+  ckpair->key = vec_dup (a->key);
   return 0;
 }
 
@@ -1373,6 +1388,70 @@ application_format_connects (application_t * app, int verbose)
     app_worker_format_connects (app_wrk, verbose);
   }));
   /* *INDENT-ON* */
+}
+
+u8 *
+format_cert_key_pair (u8 * s, va_list * args)
+{
+  app_cert_key_pair_t *ckpair = va_arg (*args, app_cert_key_pair_t *);
+  int key_len = 0, cert_len = 0;
+  cert_len = vec_len (ckpair->cert);
+  key_len = vec_len (ckpair->key);
+  if (ckpair->cert_key_index == 0)
+    s = format (s, "DEFAULT (cert:%d, key:%d)", cert_len, key_len);
+  else
+    s = format (s, "%d (cert:%d, key:%d)", ckpair->cert_key_index,
+		cert_len, key_len);
+  return s;
+}
+
+u8 *
+format_crypto_engine (u8 * s, va_list * args)
+{
+  u32 engine = va_arg (*args, u32);
+  switch (engine)
+    {
+    case CRYPTO_ENGINE_NONE:
+      return format (s, "none");
+    case CRYPTO_ENGINE_MBEDTLS:
+      return format (s, "mbedtls");
+    case CRYPTO_ENGINE_OPENSSL:
+      return format (s, "openssl");
+    case CRYPTO_ENGINE_PICOTLS:
+      return format (s, "picotls");
+    case CRYPTO_ENGINE_VPP:
+      return format (s, "vpp");
+    default:
+      return format (s, "unknown engine");
+    }
+  return s;
+}
+
+uword
+unformat_crypto_engine (unformat_input_t * input, va_list * args)
+{
+  u8 *a = va_arg (*args, u8 *);
+  if (unformat (input, "mbedtls"))
+    *a = CRYPTO_ENGINE_MBEDTLS;
+  else if (unformat (input, "openssl"))
+    *a = CRYPTO_ENGINE_OPENSSL;
+  else if (unformat (input, "picotls"))
+    *a = CRYPTO_ENGINE_PICOTLS;
+  else if (unformat (input, "vpp"))
+    *a = CRYPTO_ENGINE_VPP;
+  else
+    return 0;
+  return 1;
+}
+
+u8 *
+format_crypto_context (u8 * s, va_list * args)
+{
+  crypto_context_t *crctx = va_arg (*args, crypto_context_t *);
+  s = format (s, "[0x%x][sub%d,ckpair%x]", crctx->ctx_index,
+	      crctx->n_subscribers, crctx->ckpair_index);
+  s = format (s, "[%U]", format_crypto_engine, crctx->crypto_engine);
+  return s;
 }
 
 u8 *
@@ -1460,10 +1539,62 @@ application_format_all_clients (vlib_main_t * vm, int verbose)
 }
 
 static clib_error_t *
+show_certificate_command_fn (vlib_main_t * vm, unformat_input_t * input,
+			     vlib_cli_command_t * cmd)
+{
+  app_cert_key_pair_t *ckpair;
+  session_cli_return_if_not_enabled ();
+
+  /* *INDENT-OFF* */
+  pool_foreach (ckpair, app_main.cert_key_pair_store, ({
+    vlib_cli_output (vm, "%U", format_cert_key_pair, ckpair);
+  }));
+  /* *INDENT-ON* */
+  return 0;
+}
+
+static inline void
+appliction_format_app_mq (vlib_main_t * vm, application_t * app)
+{
+  app_worker_map_t *map;
+  app_worker_t *wrk;
+  /* *INDENT-OFF* */
+  pool_foreach (map, app->worker_maps, ({
+    wrk = app_worker_get (map->wrk_index);
+    vlib_cli_output (vm, "[A%d][%d]%U", app->app_index,
+		     map->wrk_index, format_svm_msg_q,
+		     wrk->event_queue);
+  }));
+  /* *INDENT-ON* */
+}
+
+static clib_error_t *
+appliction_format_all_app_mq (vlib_main_t * vm)
+{
+  application_t *app;
+  int i, n_threads;
+
+  n_threads = vec_len (vlib_mains);
+
+  for (i = 0; i < n_threads; i++)
+    {
+      vlib_cli_output (vm, "[Ctrl%d]%U", i, format_svm_msg_q,
+		       session_main_get_vpp_event_queue (i));
+    }
+
+  /* *INDENT-OFF* */
+  pool_foreach (app, app_main.app_pool, ({
+      appliction_format_app_mq (vm, app);
+  }));
+  /* *INDENT-ON* */
+  return 0;
+}
+
+static clib_error_t *
 show_app_command_fn (vlib_main_t * vm, unformat_input_t * input,
 		     vlib_cli_command_t * cmd)
 {
-  int do_server = 0, do_client = 0;
+  int do_server = 0, do_client = 0, do_mq = 0;
   application_t *app;
   u32 app_index = ~0;
   int verbose = 0;
@@ -1476,6 +1607,8 @@ show_app_command_fn (vlib_main_t * vm, unformat_input_t * input,
 	do_server = 1;
       else if (unformat (input, "client"))
 	do_client = 1;
+      else if (unformat (input, "mq"))
+	do_mq = 1;
       else if (unformat (input, "%u", &app_index))
 	;
       else if (unformat (input, "verbose"))
@@ -1483,6 +1616,22 @@ show_app_command_fn (vlib_main_t * vm, unformat_input_t * input,
       else
 	return clib_error_return (0, "unknown input `%U'",
 				  format_unformat_error, input);
+    }
+
+  if (do_mq && app_index != ~0)
+    {
+      app = application_get_if_valid (app_index);
+      if (!app)
+	return clib_error_return (0, "No app with index %u", app_index);
+
+      appliction_format_app_mq (vm, app);
+      return 0;
+    }
+
+  if (do_mq)
+    {
+      appliction_format_all_app_mq (vm);
+      return 0;
     }
 
   if (do_server)
@@ -1521,14 +1670,121 @@ show_app_command_fn (vlib_main_t * vm, unformat_input_t * input,
   return 0;
 }
 
+/* Certificate store */
+
+static app_cert_key_pair_t *
+app_cert_key_pair_alloc ()
+{
+  app_cert_key_pair_t *ckpair;
+  pool_get (app_main.cert_key_pair_store, ckpair);
+  clib_memset (ckpair, 0, sizeof (*ckpair));
+  ckpair->cert_key_index = ckpair - app_main.cert_key_pair_store;
+  return ckpair;
+}
+
+app_cert_key_pair_t *
+app_cert_key_pair_get_if_valid (u32 index)
+{
+  if (pool_is_free_index (app_main.cert_key_pair_store, index))
+    return 0;
+  return app_cert_key_pair_get (index);
+}
+
+app_cert_key_pair_t *
+app_cert_key_pair_get (u32 index)
+{
+  return pool_elt_at_index (app_main.cert_key_pair_store, index);
+}
+
+app_cert_key_pair_t *
+app_cert_key_pair_get_default ()
+{
+  /* To maintain legacy bapi */
+  return app_cert_key_pair_get (0);
+}
+
+int
+vnet_app_add_cert_key_pair (vnet_app_add_cert_key_pair_args_t * a)
+{
+  app_cert_key_pair_t *ckpair = app_cert_key_pair_alloc ();
+  ckpair->cert = vec_dup (a->cert);
+  ckpair->key = vec_dup (a->key);
+  a->index = ckpair->cert_key_index;
+  return 0;
+}
+
+int
+vnet_app_add_cert_key_interest (u32 index, u32 app_index)
+{
+  app_cert_key_pair_t *ckpair;
+  if (!(ckpair = app_cert_key_pair_get_if_valid (index)))
+    return -1;
+  if (vec_search (ckpair->app_interests, app_index) != ~0)
+    vec_add1 (ckpair->app_interests, app_index);
+  return 0;
+}
+
+int
+vnet_app_del_cert_key_pair (u32 index)
+{
+  app_cert_key_pair_t *ckpair;
+  application_t *app;
+  u32 *app_index;
+
+  if (!(ckpair = app_cert_key_pair_get_if_valid (index)))
+    return (VNET_API_ERROR_INVALID_VALUE);
+
+  vec_foreach (app_index, ckpair->app_interests)
+  {
+    if ((app = application_get_if_valid (*app_index))
+	&& app->cb_fns.app_cert_key_pair_delete_callback)
+      app->cb_fns.app_cert_key_pair_delete_callback (ckpair);
+  }
+
+  vec_free (ckpair->cert);
+  vec_free (ckpair->key);
+  pool_put (app_main.cert_key_pair_store, ckpair);
+  return 0;
+}
+
+clib_error_t *
+application_init (vlib_main_t * vm)
+{
+  /* Add a certificate with index 0 to support legacy apis */
+  (void) app_cert_key_pair_alloc ();
+  app_main.last_crypto_engine = CRYPTO_ENGINE_LAST;
+  return 0;
+}
+
 /* *INDENT-OFF* */
+VLIB_INIT_FUNCTION (application_init);
+
 VLIB_CLI_COMMAND (show_app_command, static) =
 {
   .path = "show app",
-  .short_help = "show app [server|client] [verbose]",
+  .short_help = "show app [app_id] [server|client] [mq] [verbose]",
   .function = show_app_command_fn,
 };
+
+VLIB_CLI_COMMAND (show_certificate_command, static) =
+{
+  .path = "show app certificate",
+  .short_help = "list app certs and keys present in store",
+  .function = show_certificate_command_fn,
+};
 /* *INDENT-ON* */
+
+crypto_engine_type_t
+app_crypto_engine_type_add (void)
+{
+  return (++app_main.last_crypto_engine);
+}
+
+u8
+app_crypto_engine_n_types (void)
+{
+  return (app_main.last_crypto_engine + 1);
+}
 
 /*
  * fd.io coding-style-patch-verification: ON

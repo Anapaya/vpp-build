@@ -17,12 +17,13 @@ enable_language(ASM)
 # Generate vppinfra/config.h
 ##############################################################################
 set(LOG2_CACHE_LINE_BYTES ${VPP_LOG2_CACHE_LINE_SIZE})
-option(VPP_USE_DLMALLOC "Use dlmalloc memory allocator." ON)
-if(VPP_USE_DLMALLOC)
-  set(DLMALLOC 1)
-else(VPP_USE_DLMALLOC)
-  set(DLMALLOC 0)
-endif(VPP_USE_DLMALLOC)
+
+option(VPP_VECTOR_GROW_BY_ONE "Vectors grow by one, instead of 3/2" OFF)
+if(VPP_VECTOR_GROW_BY_ONE)
+  set(VECTOR_GROW_BY_ONE 1)
+else(VPP_VECTOR_GROW_BY_ONE)
+  set(VECTOR_GROW_BY_ONE 0)
+endif(VPP_VECTOR_GROW_BY_ONE)
 
 configure_file(
   ${CMAKE_SOURCE_DIR}/vppinfra/config.h.in
@@ -42,11 +43,10 @@ set(VPPINFRA_SRCS
   backtrace.c
   bihash_all_vector.c
   cpu.c
-  cuckoo_template.c
+  dlmalloc.c
   elf.c
   elog.c
   error.c
-  fheap.c
   fifo.c
   format.c
   graph.c
@@ -55,39 +55,40 @@ set(VPPINFRA_SRCS
   longjmp.S
   macros.c
   maplog.c
+  mem_dlmalloc.c
   mhash.c
   mpcap.c
   pcap.c
   pmalloc.c
   pool.c
   ptclosure.c
-  random.c
   random_buffer.c
+  random.c
   random_isaac.c
   rbtree.c
   serialize.c
-  slist.c
   socket.c
   std-formats.c
   string.c
   time.c
   time_range.c
   timing_wheel.c
-  tw_timer_2t_1w_2048sl.c
-  tw_timer_16t_2w_512sl.c
+  tw_timer_2t_2w_512sl.c
   tw_timer_16t_1w_2048sl.c
-  tw_timer_4t_3w_256sl.c
+  tw_timer_16t_2w_512sl.c
   tw_timer_1t_3w_1024sl_ov.c
+  tw_timer_2t_1w_2048sl.c
+  tw_timer_4t_3w_256sl.c
   unformat.c
   unix-formats.c
   unix-misc.c
   valloc.c
   vec.c
   vector.c
-  zvec.c
 )
 
 set(VPPINFRA_HEADERS
+  sanitizer.h
   bihash_16_8.h
   bihash_24_8.h
   bihash_40_8.h
@@ -112,12 +113,8 @@ set(VPPINFRA_HEADERS
   elog.h
   error_bootstrap.h
   error.h
-  fheap.h
   fifo.h
   file.h
-  flowhash_24_16.h
-  flowhash_8_8.h
-  flowhash_template.h
   format.h
   graph.h
   hash.h
@@ -134,13 +131,11 @@ set(VPPINFRA_HEADERS
   memcpy_sse3.h
   mem.h
   mhash.h
-  mheap_bootstrap.h
   mheap.h
   mpcap.h
   os.h
   pcap.h
   pcap_funcs.h
-  pipeline.h
   pmalloc.h
   pool.h
   pmc.h
@@ -151,7 +146,6 @@ set(VPPINFRA_HEADERS
   rbtree.h
   serialize.h
   sha2.h
-  slist.h
   smp.h
   socket.h
   sparse_vec.h
@@ -159,6 +153,7 @@ set(VPPINFRA_HEADERS
   time.h
   time_range.h
   timing_wheel.h
+  tw_timer_2t_2w_512sl.h
   tw_timer_16t_1w_2048sl.h
   tw_timer_16t_2w_512sl.h
   tw_timer_1t_3w_1024sl_ov.h
@@ -169,7 +164,6 @@ set(VPPINFRA_HEADERS
   types.h
   atomics.h
   unix.h
-  valgrind.h
   valloc.h
   vec_bootstrap.h
   vec.h
@@ -180,9 +174,8 @@ set(VPPINFRA_HEADERS
   vector.h
   vector_neon.h
   vector_sse42.h
+  warnings.h
   xxhash.h
-  xy.h
-  zvec.h
   linux/syscall.h
   linux/sysfs.h
 )
@@ -194,19 +187,6 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
     linux/sysfs.c
    )
 endif()
-
-
-if(VPP_USE_DLMALLOC)
-  list(APPEND VPPINFRA_SRCS
-    dlmalloc.c
-    mem_dlmalloc.c
-  )
-else(VPP_USE_DLMALLOC)
-  list(APPEND VPPINFRA_SRCS
-    mheap.c
-    mem_mheap.c
-  )
-endif(VPP_USE_DLMALLOC)
 
 add_vpp_library(vppinfra
   SOURCES ${VPPINFRA_SRCS}
@@ -222,12 +202,10 @@ option(VPP_BUILD_VPPINFRA_TESTS "Build vppinfra tests." OFF)
 if(VPP_BUILD_VPPINFRA_TESTS)
   foreach(test
     bihash_vec88
-    cuckoo_template
     dlist
     elf
     elog
     fifo
-    flowhash_template
     format
     fpool
     hash
@@ -242,16 +220,13 @@ if(VPP_BUILD_VPPINFRA_TESTS)
     random_isaac
     rwlock
     serialize
-    slist
     socket
     spinlock
     time
     time_range
-    timing_wheel
     tw_timer
     valloc
     vec
-    zvec
   )
     add_vpp_executable(test_${test}
       SOURCES test_${test}.c
@@ -259,7 +234,7 @@ if(VPP_BUILD_VPPINFRA_TESTS)
       )
   endforeach()
 
-  foreach(test bihash_template cuckoo_bihash)
+  foreach(test bihash_template)
     add_vpp_executable(test_${test}
       SOURCES test_${test}.c
       LINK_LIBRARIES vppinfra Threads::Threads

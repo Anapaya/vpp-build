@@ -151,11 +151,15 @@ ip6_fib_table_destroy (u32 fib_index)
     fib_table_t *fib_table = fib_table_get(fib_index, FIB_PROTOCOL_IP6);
     fib_source_t source;
 
-     /*
+    /*
      * validate no more routes.
      */
-    ASSERT(0 == fib_table->ft_total_route_counts);
-    FOR_EACH_FIB_SOURCE(source)
+#ifdef CLIB_DEBUG
+    if (0 != fib_table->ft_total_route_counts)
+        fib_table_assert_empty(fib_table);
+#endif
+
+    vec_foreach_index(source, fib_table->ft_src_route_counts)
     {
 	ASSERT(0 == fib_table->ft_src_route_counts[source]);
     }
@@ -164,6 +168,7 @@ ip6_fib_table_destroy (u32 fib_index)
     {
 	hash_unset (ip6_main.fib_index_by_table_id, fib_table->ft_table_id);
     }
+    vec_free(fib_table->ft_src_route_counts);
     pool_put_index(ip6_main.v6_fibs, fib_table->ft_index);
     pool_put(ip6_main.fibs, fib_table);
 }
@@ -243,14 +248,29 @@ ip6_fib_table_lookup_exact_match (u32 fib_index,
 static void
 compute_prefix_lengths_in_search_order (ip6_fib_table_instance_t *table)
 {
+    u8 *old, *prefix_lengths_in_search_order = NULL;
     int i;
-    vec_reset_length (table->prefix_lengths_in_search_order);
+
+    /*
+     * build the list in a scratch space then cutover so the workers
+     * can continue uninterrupted.
+     */
+    old = table->prefix_lengths_in_search_order;
+
     /* Note: bitmap reversed so this is in fact a longest prefix match */
     clib_bitmap_foreach (i, table->non_empty_dst_address_length_bitmap,
     ({
 	int dst_address_length = 128 - i;
-	vec_add1(table->prefix_lengths_in_search_order, dst_address_length);
+	vec_add1(prefix_lengths_in_search_order, dst_address_length);
     }));
+
+    table->prefix_lengths_in_search_order = prefix_lengths_in_search_order;
+
+    /*
+     * let the workers go once round the track before we free the old set
+     */
+    vlib_worker_wait_one_loop();
+    vec_free(old);
 }
 
 void
@@ -306,12 +326,13 @@ ip6_fib_table_entry_insert (u32 fib_index,
 
     clib_bihash_add_del_24_8(&table->ip6_hash, &kv, 1);
 
-    table->dst_address_length_refcounts[len]++;
-
-    table->non_empty_dst_address_length_bitmap =
-        clib_bitmap_set (table->non_empty_dst_address_length_bitmap, 
-			 128 - len, 1);
-    compute_prefix_lengths_in_search_order (table);
+    if (0 == table->dst_address_length_refcounts[len]++)
+    {
+        table->non_empty_dst_address_length_bitmap =
+            clib_bitmap_set (table->non_empty_dst_address_length_bitmap,
+                             128 - len, 1);
+        compute_prefix_lengths_in_search_order (table);
+    }
 }
 
 u32 ip6_fib_table_fwding_lookup_with_if_index (ip6_main_t * im,
@@ -358,12 +379,13 @@ ip6_fib_table_fwding_dpo_update (u32 fib_index,
 
     clib_bihash_add_del_24_8(&table->ip6_hash, &kv, 1);
 
-    table->dst_address_length_refcounts[len]++;
-
-    table->non_empty_dst_address_length_bitmap =
-        clib_bitmap_set (table->non_empty_dst_address_length_bitmap, 
-			 128 - len, 1);
-    compute_prefix_lengths_in_search_order (table);
+    if (0 == table->dst_address_length_refcounts[len]++)
+    {
+        table->non_empty_dst_address_length_bitmap =
+            clib_bitmap_set (table->non_empty_dst_address_length_bitmap,
+                             128 - len, 1);
+        compute_prefix_lengths_in_search_order (table);
+    }
 }
 
 void
@@ -588,7 +610,7 @@ typedef struct {
   u64 count_by_prefix_length[129];
 } count_routes_in_fib_at_prefix_length_arg_t;
 
-static void
+static int
 count_routes_in_fib_at_prefix_length (clib_bihash_kv_24_8_t * kvp,
                                       void *arg)
 {
@@ -596,11 +618,13 @@ count_routes_in_fib_at_prefix_length (clib_bihash_kv_24_8_t * kvp,
   int mask_width;
 
   if ((kvp->key[2]>>32) != ap->fib_index)
-    return;
+      return (BIHASH_WALK_CONTINUE);
 
   mask_width = kvp->key[2] & 0xFF;
 
   ap->count_by_prefix_length[mask_width]++;
+
+  return (BIHASH_WALK_CONTINUE);
 }
 
 static clib_error_t *
@@ -679,13 +703,16 @@ ip6_show_fib (vlib_main_t * vm,
         if (fib_table->ft_flags & FIB_TABLE_FLAG_IP6_LL)
             continue;
 
-	s = format(s, "%U, fib_index:%d, flow hash:[%U] locks:[",
+	s = format(s, "%U, fib_index:%d, flow hash:[%U] epoch:%d flags:%U locks:[",
                    format_fib_table_name, fib->index,
                    FIB_PROTOCOL_IP6,
                    fib->index,
                    format_ip_flow_hash_config,
-                   fib_table->ft_flow_hash_config);
-	FOR_EACH_FIB_SOURCE(source)
+                   fib_table->ft_flow_hash_config,
+                   fib_table->ft_epoch,
+                   format_fib_table_flags, fib_table->ft_flags);
+
+        vec_foreach_index(source, fib_table->ft_locks)
         {
             if (0 != fib_table->ft_locks[source])
             {

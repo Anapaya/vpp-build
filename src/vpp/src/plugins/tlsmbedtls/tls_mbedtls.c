@@ -80,7 +80,7 @@ mbedtls_ctx_alloc (void)
 
   clib_memset (*ctx, 0, sizeof (mbedtls_ctx_t));
   (*ctx)->ctx.c_thread_index = thread_index;
-  (*ctx)->ctx.tls_ctx_engine = TLS_ENGINE_MBEDTLS;
+  (*ctx)->ctx.tls_ctx_engine = CRYPTO_ENGINE_MBEDTLS;
   (*ctx)->mbedtls_ctx_index = ctx - tm->ctx_pool[thread_index];
   return ((*ctx)->mbedtls_ctx_index);
 }
@@ -276,8 +276,7 @@ mbedtls_ctx_init_server (tls_ctx_t * ctx)
 {
   mbedtls_ctx_t *mc = (mbedtls_ctx_t *) ctx;
   mbedtls_main_t *mm = &mbedtls_main;
-  app_worker_t *app_wrk;
-  application_t *app;
+  app_cert_key_pair_t *ckpair;
   void *ctx_ptr;
   int rv;
 
@@ -289,12 +288,11 @@ mbedtls_ctx_init_server (tls_ctx_t * ctx)
   /*
    * 1. Cert
    */
-  app_wrk = app_worker_get (ctx->parent_app_wrk_index);
-  if (!app_wrk)
+  ckpair = app_cert_key_pair_get_if_valid (ctx->ckpair_index);
+  if (!ckpair)
     return -1;
 
-  app = application_get (app_wrk->app_index);
-  if (!app->tls_cert || !app->tls_key)
+  if (!ckpair->cert || !ckpair->key)
     {
       TLS_DBG (1, " failed\n  ! tls cert and/or key not configured %d",
 	       ctx->parent_app_wrk_index);
@@ -302,8 +300,8 @@ mbedtls_ctx_init_server (tls_ctx_t * ctx)
     }
 
   rv = mbedtls_x509_crt_parse (&mc->srvcert,
-			       (const unsigned char *) app->tls_cert,
-			       vec_len (app->tls_cert));
+			       (const unsigned char *) ckpair->cert,
+			       vec_len (ckpair->cert));
   if (rv != 0)
     {
       TLS_DBG (1, " failed\n  !  mbedtls_x509_crt_parse returned %d", rv);
@@ -311,8 +309,8 @@ mbedtls_ctx_init_server (tls_ctx_t * ctx)
     }
 
   rv = mbedtls_pk_parse_key (&mc->pkey,
-			     (const unsigned char *) app->tls_key,
-			     vec_len (app->tls_key), NULL, 0);
+			     (const unsigned char *) ckpair->key,
+			     vec_len (ckpair->key), NULL, 0);
   if (rv != 0)
     {
       TLS_DBG (1, " failed\n  !  mbedtls_pk_parse_key returned %d", rv);
@@ -416,11 +414,11 @@ mbedtls_ctx_handshake_rx (tls_ctx_t * ctx)
 	   */
 	  if (ctx->srv_hostname)
 	    {
-	      tls_notify_app_connected (ctx, /* is failed */ 0);
+	      tls_notify_app_connected (ctx, SESSION_E_TLS_HANDSHAKE);
 	      return -1;
 	    }
 	}
-      tls_notify_app_connected (ctx, /* is failed */ 0);
+      tls_notify_app_connected (ctx, SESSION_E_NONE);
     }
   else
     {
@@ -433,7 +431,8 @@ mbedtls_ctx_handshake_rx (tls_ctx_t * ctx)
 }
 
 static int
-mbedtls_ctx_write (tls_ctx_t * ctx, session_t * app_session)
+mbedtls_ctx_write (tls_ctx_t * ctx, session_t * app_session,
+		   transport_send_params_t * sp)
 {
   mbedtls_ctx_t *mc = (mbedtls_ctx_t *) ctx;
   u8 thread_index = ctx->c_thread_index;
@@ -448,13 +447,14 @@ mbedtls_ctx_write (tls_ctx_t * ctx, session_t * app_session)
   if (!deq_max)
     return 0;
 
+  deq_max = clib_min (deq_max, sp->max_burst_size);
   tls_session = session_get_from_handle (ctx->tls_session_handle);
   enq_max = svm_fifo_max_enqueue_prod (tls_session->tx_fifo);
   deq_now = clib_min (deq_max, TLS_CHUNK_SIZE);
 
   if (PREDICT_FALSE (enq_max == 0))
     {
-      tls_add_vpp_q_builtin_tx_evt (app_session);
+      app_session->flags |= SESSION_F_CUSTOM_TX;
       return 0;
     }
 
@@ -464,7 +464,7 @@ mbedtls_ctx_write (tls_ctx_t * ctx, session_t * app_session)
   wrote = mbedtls_ssl_write (&mc->ssl, mm->tx_bufs[thread_index], deq_now);
   if (wrote <= 0)
     {
-      tls_add_vpp_q_builtin_tx_evt (app_session);
+      app_session->flags |= SESSION_F_CUSTOM_TX;
       return 0;
     }
 
@@ -473,7 +473,7 @@ mbedtls_ctx_write (tls_ctx_t * ctx, session_t * app_session)
   tls_add_vpp_q_tx_evt (tls_session);
 
   if (deq_now < deq_max)
-    tls_add_vpp_q_builtin_tx_evt (app_session);
+    app_session->flags |= SESSION_F_CUSTOM_TX;
 
   return 0;
 }
@@ -659,7 +659,7 @@ tls_mbedtls_init (vlib_main_t * vm)
   vec_validate (mm->rx_bufs, num_threads - 1);
   vec_validate (mm->tx_bufs, num_threads - 1);
 
-  tls_register_engine (&mbedtls_engine, TLS_ENGINE_MBEDTLS);
+  tls_register_engine (&mbedtls_engine, CRYPTO_ENGINE_MBEDTLS);
   return 0;
 }
 

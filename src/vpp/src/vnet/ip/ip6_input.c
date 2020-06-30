@@ -266,6 +266,15 @@ ip6_init (vlib_main_t * vm)
   /* Default hop limit for packets we generate. */
   ip6_main.host_config.ttl = 64;
 
+
+  uword *u = hash_get (ip_main.protocol_info_by_name, "IPV6_FRAGMENTATION");
+  if (u)
+    {
+      ip_protocol_info_t *info =
+	vec_elt_at_index (ip_main.protocol_infos, *u);
+      ASSERT (NULL == info->format_header);
+      info->format_header = format_ip6_frag_hdr;
+    }
   return /* no error */ 0;
 }
 

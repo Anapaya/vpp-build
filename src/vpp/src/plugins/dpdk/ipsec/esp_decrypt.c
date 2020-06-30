@@ -256,7 +256,10 @@ dpdk_esp_decrypt_inline (vlib_main_t * vm,
 	  if (is_ip6)
 	    priv->next = DPDK_CRYPTO_INPUT_NEXT_DECRYPT6_POST;
 	  else
-	    priv->next = DPDK_CRYPTO_INPUT_NEXT_DECRYPT4_POST;
+	    {
+	      priv->next = DPDK_CRYPTO_INPUT_NEXT_DECRYPT4_POST;
+	      b0->flags |= VNET_BUFFER_F_IS_IP4;
+	    }
 
 	  /* FIXME multi-seg */
 	  vlib_increment_combined_counter
@@ -613,16 +616,14 @@ dpdk_esp_decrypt_post_inline (vlib_main_t * vm,
 	      if ((ih4->ip_version_and_header_length & 0xF0) == 0x40)
 		{
 		  u16 ih4_len = ip4_header_bytes (ih4);
-		  vlib_buffer_advance (b0, -ih4_len - udp_encap_adv);
+		  vlib_buffer_advance (b0, -ih4_len);
 		  next0 = ESP_DECRYPT_NEXT_IP4_INPUT;
-		  if (!ipsec_sa_is_set_UDP_ENCAP (sa0))
-		    {
-		      oh4 = vlib_buffer_get_current (b0);
-		      memmove (oh4, ih4, ih4_len);
-		      oh4->protocol = f0->next_header;
-		      oh4->length = clib_host_to_net_u16 (b0->current_length);
-		      oh4->checksum = ip4_header_checksum (oh4);
-		    }
+
+		  oh4 = vlib_buffer_get_current (b0);
+		  memmove (oh4, ih4, ih4_len);
+		  oh4->protocol = f0->next_header;
+		  oh4->length = clib_host_to_net_u16 (b0->current_length);
+		  oh4->checksum = ip4_header_checksum (oh4);
 		}
 	      else if ((ih4->ip_version_and_header_length & 0xF0) == 0x60)
 		{

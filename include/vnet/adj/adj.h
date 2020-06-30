@@ -23,7 +23,7 @@
  *            'glean' mean use the packet's destination address as the target
  *            address in the ARP packet.
  *          UNSHARED. Only one per-interface.
- *   - midchain: a nighbour adj on a virtual/tunnel interface.
+ *   - midchain: a neighbour adj on a virtual/tunnel interface.
  *
  * The API to create and update the adjacency is very sub-type specific. This
  * is intentional as it encourages the user to carefully consider which adjacency
@@ -33,9 +33,9 @@
  * is important to enforce this approach as space in the adjacency is a premium,
  * as we need it to fit in 1 cache line.
  *
- * the API is also based around an index to an ajdacency not a raw pointer. This
+ * the API is also based around an index to an adjacency not a raw pointer. This
  * is so the user doesn't suffer the same limp inducing firearm injuries that
- * the author suffered as the adjacenices can realloc.
+ * the author suffered as the adjacencies can realloc.
  */
 
 #ifndef __ADJ_H__
@@ -81,10 +81,10 @@ typedef enum
   /** Multicast Adjacency. */
   IP_LOOKUP_NEXT_MCAST,
 
-  /** Broadcasr Adjacency. */
+  /** Broadcast Adjacency. */
   IP_LOOKUP_NEXT_BCAST,
 
-  /** Multicast Midchain Adjacency. An Adjacency for sending macst packets
+  /** Multicast Midchain Adjacency. An Adjacency for sending multicast packets
    *  on a tunnel/virtual interface */
   IP_LOOKUP_NEXT_MCAST_MIDCHAIN,
 
@@ -142,7 +142,7 @@ typedef enum
 extern const ip46_address_t ADJ_BCAST_ADDR;
 
 /**
- * Forward delcartion
+ * Forward declaration
  */
 struct ip_adjacency_t_;
 
@@ -150,7 +150,7 @@ struct ip_adjacency_t_;
  * @brief A function type for post-rewrite fixups on midchain adjacency
  */
 typedef void (*adj_midchain_fixup_t) (vlib_main_t * vm,
-				      struct ip_adjacency_t_ * adj,
+				      const struct ip_adjacency_t_ * adj,
 				      vlib_buffer_t * b0,
                                       const void *data);
 
@@ -167,7 +167,7 @@ typedef enum adj_attr_t_
     /**
      * Packets TX through the midchain do not increment the interface
      * counters. This should be used when the adj is associated with an L2
-     * interface and that L2 interface is in a bridege domain. In that case
+     * interface and that L2 interface is in a bridge domain. In that case
      * the packet will have traversed the interface's TX node, and hence have
      * been counted, before it traverses ths midchain
      */
@@ -181,6 +181,10 @@ typedef enum adj_attr_t_
      * If the midchain were to stack on its FIB entry a loop would form.
      */
     ADJ_ATTR_MIDCHAIN_LOOPED,
+    /**
+     * the fixup function is standard IP4o4 header
+     */
+    ADJ_ATTR_MIDCHAIN_FIXUP_IP4O4_HDR,
 }  adj_attr_t;
 
 #define ADJ_ATTR_NAMES {                                        \
@@ -188,11 +192,12 @@ typedef enum adj_attr_t_
     [ADJ_ATTR_MIDCHAIN_NO_COUNT] = "midchain-no-count",         \
     [ADJ_ATTR_MIDCHAIN_IP_STACK] = "midchain-ip-stack",         \
     [ADJ_ATTR_MIDCHAIN_LOOPED] = "midchain-looped",             \
+    [ADJ_ATTR_MIDCHAIN_FIXUP_IP4O4_HDR] = "midchain-ip4o4-hdr-fixup",   \
 }
 
-#define FOR_EACH_ADJ_ATTR(_attr)                 \
-    for (_attr = ADJ_ATTR_SYNC_WALK_ACTIVE;      \
-	 _attr <= ADJ_ATTR_MIDCHAIN_LOOPED;      \
+#define FOR_EACH_ADJ_ATTR(_attr)                        \
+    for (_attr = ADJ_ATTR_SYNC_WALK_ACTIVE;             \
+	 _attr <= ADJ_ATTR_MIDCHAIN_FIXUP_IP4O4_HDR;    \
 	 _attr++)
 
 /**
@@ -205,6 +210,7 @@ typedef enum adj_flags_t_
     ADJ_FLAG_MIDCHAIN_NO_COUNT = (1 << ADJ_ATTR_MIDCHAIN_NO_COUNT),
     ADJ_FLAG_MIDCHAIN_IP_STACK = (1 << ADJ_ATTR_MIDCHAIN_IP_STACK),
     ADJ_FLAG_MIDCHAIN_LOOPED = (1 << ADJ_ATTR_MIDCHAIN_LOOPED),
+    ADJ_FLAG_MIDCHAIN_FIXUP_IP4O4_HDR = (1 << ADJ_ATTR_MIDCHAIN_FIXUP_IP4O4_HDR),
 }  __attribute__ ((packed)) adj_flags_t;
 
 /**
@@ -227,32 +233,10 @@ typedef struct ip_adjacency_t_
    * has 8 byte alignment requirements.
    */
   fib_node_t ia_node;
-
   /**
-   * Next hop after ip4-lookup.
-   *  This is not accessed in the rewrite nodes.
-   * 1-bytes
+   * feature [arc] config index
    */
-  ip_lookup_next_t lookup_next_index;
-
-  /**
-   * link/ether-type
-   * 1 bytes
-   */
-  vnet_link_t ia_link;
-
-  /**
-   * The protocol of the neighbor/peer. i.e. the protocol with
-   * which to interpret the 'next-hop' attributes of the sub-types.
-   * 1-btyes
-   */
-  fib_protocol_t ia_nh_proto;
-
-  /**
-   * Flags on the adjacency
-   * 1-bytes
-   */
-  adj_flags_t ia_flags;
+  u32 ia_cfg_index;
 
   union
   {
@@ -269,7 +253,7 @@ typedef struct ip_adjacency_t_
        * IP_LOOKUP_NEXT_MIDCHAIN
        *
        * A nbr adj that is also recursive. Think tunnels.
-       * A nbr adj can transition to be of type MDICHAIN
+       * A nbr adj can transition to be of type MIDCHAIN
        * so be sure to leave the two structs with the next_hop
        * fields aligned.
        */
@@ -298,6 +282,10 @@ typedef struct ip_adjacency_t_
        * loop detection.
        */
       fib_node_index_t fei;
+
+      /** spare space */
+      u8 __ia_midchain_pad[4];
+
     } midchain;
     /**
      * IP_LOOKUP_NEXT_GLEAN
@@ -315,17 +303,54 @@ typedef struct ip_adjacency_t_
 
   CLIB_CACHE_LINE_ALIGN_MARK (cacheline1);
 
-  /* Rewrite in second/third cache lines */
-  vnet_declare_rewrite (VLIB_BUFFER_PRE_DATA_SIZE);
+  /** Rewrite in second and third cache lines */
+  VNET_DECLARE_REWRITE;
 
   /**
    * more control plane members that do not fit on the first cacheline
    */
+  CLIB_CACHE_LINE_ALIGN_MARK (cacheline3);
+
   /**
    * A sorted vector of delegates
    */
   struct adj_delegate_t_ *ia_delegates;
 
+  /**
+   * The VLIB node in which this adj is used to forward packets
+   */
+  u32 ia_node_index;
+
+  /**
+   * Next hop after ip4-lookup.
+   *  This is not accessed in the rewrite nodes.
+   * 1-bytes
+   */
+  ip_lookup_next_t lookup_next_index;
+
+  /**
+   * link/ether-type
+   * 1 bytes
+   */
+  vnet_link_t ia_link;
+
+  /**
+   * The protocol of the neighbor/peer. i.e. the protocol with
+   * which to interpret the 'next-hop' attributes of the sub-types.
+   * 1-bytes
+   */
+  fib_protocol_t ia_nh_proto;
+
+  /**
+   * Flags on the adjacency
+   * 1-bytes
+   */
+  adj_flags_t ia_flags;
+
+  /**
+   * Free space on the fourth cacheline (not used in the DP)
+   */
+  u8 __ia_pad[48];
 } ip_adjacency_t;
 
 STATIC_ASSERT ((STRUCT_OFFSET_OF (ip_adjacency_t, cacheline0) == 0),
@@ -333,6 +358,13 @@ STATIC_ASSERT ((STRUCT_OFFSET_OF (ip_adjacency_t, cacheline0) == 0),
 STATIC_ASSERT ((STRUCT_OFFSET_OF (ip_adjacency_t, cacheline1) ==
 		CLIB_CACHE_LINE_BYTES),
 	       "IP adjacency cacheline 1 is more than one cacheline size offset");
+#if defined __x86_64__
+STATIC_ASSERT ((STRUCT_OFFSET_OF (ip_adjacency_t, cacheline3) ==
+		3 * CLIB_CACHE_LINE_BYTES),
+	       "IP adjacency cacheline 3 is more than one cacheline size offset");
+/* An adj fits into 4 cachelines on your average machine */
+STATIC_ASSERT_SIZEOF (ip_adjacency_t, 4 * 64);
+#endif
 
 /**
  * @brief
@@ -348,7 +380,7 @@ extern void adj_unlock(adj_index_t adj_index);
 /**
  * @brief
  *  Add a child dependent to an adjacency. The child will
- *  thus be informed via its registerd back-walk function
+ *  thus be informed via its registered back-walk function
  *  when the adjacency state changes.
  */
 extern u32 adj_child_add(adj_index_t adj_index,
@@ -388,12 +420,6 @@ extern int adj_is_up (adj_index_t ai);
  * @brief Return the link type of the adjacency
  */
 extern const u8* adj_get_rewrite (adj_index_t ai);
-
-/**
- * @brief Notify the adjacency subsystem that the features settings for
- * an interface have changed
- */
-extern void adj_feature_update (u32 sw_if_index, u8 arc_index, u8 is_enable);
 
 /**
  * @brief descend the FIB graph looking for loops

@@ -4,9 +4,12 @@ import ply.lex as lex
 import ply.yacc as yacc
 import sys
 import argparse
+import keyword
 import logging
 import binascii
 import os
+import sys
+from subprocess import Popen, PIPE
 
 log = logging.getLogger('vppapigen')
 
@@ -20,10 +23,15 @@ sys.dont_write_bytecode = True
 # Global dictionary of new types (including enums)
 global_types = {}
 
+seen_imports = {}
+
 
 def global_type_add(name, obj):
     '''Add new type to the dictionary of types '''
     type_name = 'vl_api_' + name + '_t'
+    if type_name in global_types:
+        raise KeyError("Attempted redefinition of {!r} with {!r}.".format(
+            name, obj))
     global_types[type_name] = obj
 
 
@@ -76,6 +84,16 @@ class VPPAPILexer(object):
               'ID', 'NUM'] + list(reserved.values())
 
     t_ignore_LINE_COMMENT = '//.*'
+
+    def t_FALSE(self, t):
+        r'false'
+        t.value = False
+        return t
+
+    def t_TRUE(self, t):
+        r'false'
+        t.value = True
+        return t
 
     def t_NUM(self, t):
         r'0[xX][0-9a-fA-F]+|-?\d+\.?\d*'
@@ -186,12 +204,20 @@ class Typedef():
 
 
 class Using():
-    def __init__(self, name, alias):
+    def __init__(self, name, flags, alias):
         self.name = name
         self.vla = False
         self.block = []
         self.manual_print = True
         self.manual_endian = True
+
+        self.manual_print = False
+        self.manual_endian = False
+        for f in flags:
+            if f == 'manual_print':
+                self.manual_print = True
+            elif f == 'manual_endian':
+                self.manual_endian = True
 
         if isinstance(alias, Array):
             a = {'type': alias.fieldtype,
@@ -207,11 +233,17 @@ class Using():
 
 
 class Union():
-    def __init__(self, name, block):
+    def __init__(self, name, flags, block):
         self.type = 'Union'
         self.manual_print = False
         self.manual_endian = False
         self.name = name
+
+        for f in flags:
+            if f == 'manual_print':
+                self.manual_print = True
+            elif f == 'manual_endian':
+                self.manual_endian = True
 
         self.block = block
         self.crc = str(block).encode()
@@ -228,12 +260,12 @@ class Define():
         self.name = name
         self.flags = flags
         self.block = block
-        self.crc = str(block).encode()
         self.dont_trace = False
         self.manual_print = False
         self.manual_endian = False
         self.autoreply = False
         self.singular = False
+        self.options = {}
         for f in flags:
             if f == 'dont_trace':
                 self.dont_trace = True
@@ -244,13 +276,19 @@ class Define():
             elif f == 'autoreply':
                 self.autoreply = True
 
+        remove = []
         for b in block:
             if isinstance(b, Option):
                 if b[1] == 'singular' and b[2] == 'true':
                     self.singular = True
-                block.remove(b)
+                else:
+                    self.options[b.option] = b.value
+                remove.append(b)
 
+        block = [x for x in block if not x in remove]
+        self.block = block
         self.vla = vla_is_last_check(name, block)
+        self.crc = str(block).encode()
 
     def __repr__(self):
         return self.name + str(self.flags) + str(self.block)
@@ -279,28 +317,40 @@ class Enum():
 
 
 class Import():
-    def __init__(self, filename):
-        self.filename = filename
 
-        # Deal with imports
-        parser = VPPAPI(filename=filename)
-        dirlist = dirlist_get()
-        f = filename
-        for dir in dirlist:
-            f = os.path.join(dir, filename)
-            if os.path.exists(f):
-                break
+    def __new__(cls, *args, **kwargs):
+        if args[0] not in seen_imports:
+            instance = super().__new__(cls)
+            instance._initialized = False
+            seen_imports[args[0]] = instance
 
-        with open(f, encoding='utf-8') as fd:
-            self.result = parser.parse_file(fd, None)
+        return seen_imports[args[0]]
+
+    def __init__(self, filename, revision):
+        if self._initialized:
+            return
+        else:
+            self.filename = filename
+            # Deal with imports
+            parser = VPPAPI(filename=filename, revision=revision)
+            dirlist = dirlist_get()
+            f = filename
+            for dir in dirlist:
+                f = os.path.join(dir, filename)
+                if os.path.exists(f):
+                    break
+            self.result = parser.parse_filename(f, None)
+            self._initialized = True
 
     def __repr__(self):
         return self.filename
 
 
 class Option():
-    def __init__(self, option):
+    def __init__(self, option, value):
+        self.type = 'Option'
         self.option = option
+        self.value = value
         self.crc = str(option).encode()
 
     def __repr__(self):
@@ -339,6 +389,9 @@ class Field():
             raise ValueError("The string type {!r} is an "
                              "array type ".format(name))
 
+        if name in keyword.kwlist:
+            raise ValueError("Fieldname {!r} is a python keyword and is not "
+                             "accessible via the python API. ".format(name))
         self.fieldname = name
         self.limit = limit
 
@@ -376,10 +429,11 @@ class ParseError(Exception):
 class VPPAPIParser(object):
     tokens = VPPAPILexer.tokens
 
-    def __init__(self, filename, logger):
+    def __init__(self, filename, logger, revision=None):
         self.filename = filename
         self.logger = logger
         self.fields = []
+        self.revision = revision
 
     def _parse_error(self, msg, coord):
         raise ParseError("%s: %s" % (coord, msg))
@@ -424,7 +478,7 @@ class VPPAPIParser(object):
 
     def p_import(self, p):
         '''import : IMPORT STRING_LITERAL ';' '''
-        p[0] = Import(p[2])
+        p[0] = Import(p[2], revision=self.revision)
 
     def p_service(self, p):
         '''service : SERVICE '{' service_statements '}' ';' '''
@@ -494,7 +548,9 @@ class VPPAPIParser(object):
         '''define : flist DEFINE ID '{' block_statements_opt '}' ';' '''
         # Legacy typedef
         if 'typeonly' in p[1]:
-            p[0] = Typedef(p[3], p[1], p[5])
+            self._parse_error('legacy typedef. use typedef: {} {}[{}];'
+                              .format(p[1], p[2], p[4]),
+                              self._token_coord(p, 1))
         else:
             p[0] = Define(p[3], p[1], p[5])
 
@@ -520,9 +576,17 @@ class VPPAPIParser(object):
         '''typedef : TYPEDEF ID '{' block_statements_opt '}' ';' '''
         p[0] = Typedef(p[2], [], p[4])
 
+    def p_typedef_flist(self, p):
+        '''typedef : flist TYPEDEF ID '{' block_statements_opt '}' ';' '''
+        p[0] = Typedef(p[3], p[1], p[5])
+
     def p_typedef_alias(self, p):
         '''typedef : TYPEDEF declaration '''
-        p[0] = Using(p[2].fieldname, p[2])
+        p[0] = Using(p[2].fieldname, [], p[2])
+
+    def p_typedef_alias_flist(self, p):
+        '''typedef : flist TYPEDEF declaration '''
+        p[0] = Using(p[3].fieldname, p[1], p[3])
 
     def p_block_statements_opt(self, p):
         '''block_statements_opt : block_statements '''
@@ -584,7 +648,7 @@ class VPPAPIParser(object):
         elif len(p) == 4:
             p[0] = Field(p[1], p[2])
         else:
-            self._parse_error('ERROR')
+            self._parse_error('ERROR', self._token_coord(p, 1))
         self.fields.append(p[2])
 
     def p_declaration_array_vla(self, p):
@@ -616,7 +680,7 @@ class VPPAPIParser(object):
 
     def p_option(self, p):
         '''option : OPTION ID '=' assignee ';' '''
-        p[0] = Option([p[1], p[2], p[4]])
+        p[0] = Option(p[2], p[4])
 
     def p_assignee(self, p):
         '''assignee : NUM
@@ -649,7 +713,11 @@ class VPPAPIParser(object):
 
     def p_union(self, p):
         '''union : UNION ID '{' block_statements_opt '}' ';' '''
-        p[0] = Union(p[2], p[4])
+        p[0] = Union(p[2], [], p[4])
+
+    def p_union_flist(self, p):
+        '''union : flist UNION ID '{' block_statements_opt '}' ';' '''
+        p[0] = Union(p[3], p[1], p[5])
 
     # Error rule for syntax errors
     def p_error(self, p):
@@ -663,23 +731,42 @@ class VPPAPIParser(object):
 
 class VPPAPI(object):
 
-    def __init__(self, debug=False, filename='', logger=None):
+    def __init__(self, debug=False, filename='', logger=None, revision=None):
         self.lexer = lex.lex(module=VPPAPILexer(filename), debug=debug)
-        self.parser = yacc.yacc(module=VPPAPIParser(filename, logger),
+        self.parser = yacc.yacc(module=VPPAPIParser(filename, logger,
+                                                    revision=revision),
                                 write_tables=False, debug=debug)
         self.logger = logger
+        self.revision = revision
+        self.filename = filename
 
     def parse_string(self, code, debug=0, lineno=1):
         self.lexer.lineno = lineno
         return self.parser.parse(code, lexer=self.lexer, debug=debug)
 
-    def parse_file(self, fd, debug=0):
+    def parse_fd(self, fd, debug=0):
         data = fd.read()
         return self.parse_string(data, debug=debug)
 
-    def autoreply_block(self, name):
+    def parse_filename(self, filename, debug=0):
+        if self.revision:
+            git_show = f'git show  {self.revision}:{filename}'
+            with Popen(git_show.split(), stdout=PIPE, encoding='utf-8') as git:
+                return self.parse_fd(git.stdout, None)
+        else:
+            try:
+                with open(filename, encoding='utf-8') as fd:
+                    return self.parse_fd(fd, None)
+            except FileNotFoundError:
+                print(f'File not found: {filename}', file=sys.stderr)
+                sys.exit(2)
+
+    def autoreply_block(self, name, parent):
         block = [Field('u32', 'context'),
                  Field('i32', 'retval')]
+        # inherhit the parent's options
+        for k,v in parent.options.items():
+            block.append(Option(k, v))
         return Define(name + '_reply', [], block)
 
     def process(self, objs):
@@ -693,15 +780,15 @@ class VPPAPI(object):
         for o in objs:
             tname = o.__class__.__name__
             try:
-                crc = binascii.crc32(o.crc, crc)
+                crc = binascii.crc32(o.crc, crc) & 0xffffffff
             except AttributeError:
                 pass
             if isinstance(o, Define):
                 s[tname].append(o)
                 if o.autoreply:
-                    s[tname].append(self.autoreply_block(o.name))
+                    s[tname].append(self.autoreply_block(o.name, o))
             elif isinstance(o, Option):
-                s[tname][o[1]] = o[2]
+                s[tname][o.option] = o.value
             elif type(o) is list:
                 for o2 in o:
                     if isinstance(o2, Service):
@@ -796,9 +883,11 @@ class VPPAPI(object):
                                   isinstance(o, Using)):
                 continue
             if isinstance(o, Import):
-                self.process_imports(o.result, True, result)
+                result.append(o)
+                result = self.process_imports(o.result, True, result)
             else:
                 result.append(o)
+        return result
 
 
 # Add message ids to each message.
@@ -838,7 +927,7 @@ def foldup_blocks(block, crc):
 def foldup_crcs(s):
     for f in s:
         f.crc = foldup_blocks(f.block,
-                              binascii.crc32(f.crc))
+                              binascii.crc32(f.crc) & 0xffffffff)
 
 
 #
@@ -854,9 +943,8 @@ def main():
     cliparser = argparse.ArgumentParser(description='VPP API generator')
     cliparser.add_argument('--pluginpath', default=""),
     cliparser.add_argument('--includedir', action='append'),
-    cliparser.add_argument('--input',
-                           type=argparse.FileType('r', encoding='UTF-8'),
-                           default=sys.stdin)
+    cliparser.add_argument('--outputdir', action='store'),
+    cliparser.add_argument('--input')
     cliparser.add_argument('--output', nargs='?',
                            type=argparse.FileType('w', encoding='UTF-8'),
                            default=sys.stdout)
@@ -864,6 +952,8 @@ def main():
     cliparser.add_argument('output_module', nargs='?', default='C')
     cliparser.add_argument('--debug', action='store_true')
     cliparser.add_argument('--show-name', nargs=1)
+    cliparser.add_argument('--git-revision',
+                           help="Git revision to use for opening files")
     args = cliparser.parse_args()
 
     dirlist_add(args.includedir)
@@ -873,8 +963,8 @@ def main():
     # Filename
     if args.show_name:
         filename = args.show_name[0]
-    elif args.input != sys.stdin:
-        filename = args.input.name
+    elif args.input:
+        filename = args.input
     else:
         filename = ''
 
@@ -883,13 +973,26 @@ def main():
     else:
         logging.basicConfig()
 
-    parser = VPPAPI(debug=args.debug, filename=filename, logger=log)
-    parsed_objects = parser.parse_file(args.input, log)
+    parser = VPPAPI(debug=args.debug, filename=filename, logger=log,
+                    revision=args.git_revision)
+
+    try:
+        if not args.input:
+            parsed_objects = parser.parse_fd(sys.stdin, log)
+        else:
+            parsed_objects = parser.parse_filename(args.input, log)
+    except ParseError as e:
+        print('Parse error: ', e, file=sys.stderr)
+        sys.exit(1)
 
     # Build a list of objects. Hash of lists.
     result = []
-    parser.process_imports(parsed_objects, False, result)
-    s = parser.process(result)
+
+    if args.output_module == 'C':
+        s = parser.process(parsed_objects)
+    else:
+        result = parser.process_imports(parsed_objects, False, result)
+        s = parser.process(result)
 
     # Add msg_id field
     s['Define'] = add_msg_id(s['Define'])
@@ -941,7 +1044,7 @@ def main():
                       .format(module_path, err))
         return 1
 
-    result = plugin.run(filename, s)
+    result = plugin.run(args, filename, s)
     if result:
         print(result, file=args.output)
     else:

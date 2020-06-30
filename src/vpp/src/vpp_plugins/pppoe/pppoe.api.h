@@ -1,5 +1,5 @@
 /*
- * VLIB API definitions 2020-06-13 06:02:09
+ * VLIB API definitions 2020-06-30 12:50:45
  * Input file: pppoe.api
  * Automatically generated: please edit the input file NOT this file!
  */
@@ -16,6 +16,12 @@
 #endif
 
 #define VL_API_PACKED(x) x __attribute__ ((packed))
+/* Imported API files */
+#ifndef vl_api_version
+#include <vnet/interface_types.api.h>
+#include <vnet/ethernet/ethernet_types.api.h>
+#include <vnet/ip/ip_types.api.h>
+#endif
 
 /****** Message ID / handler enum ******/
 
@@ -37,74 +43,28 @@ vl_msg_name(vl_api_pppoe_session_details_t, 1)
 
 #ifdef vl_msg_name_crc_list
 #define foreach_vl_msg_name_crc_pppoe \
-_(VL_API_PPPOE_ADD_DEL_SESSION, pppoe_add_del_session, 766cbfeb) \
-_(VL_API_PPPOE_ADD_DEL_SESSION_REPLY, pppoe_add_del_session_reply, fda5941f) \
-_(VL_API_PPPOE_SESSION_DUMP, pppoe_session_dump, 529cb13f) \
-_(VL_API_PPPOE_SESSION_DETAILS, pppoe_session_details, 358fc7a8) 
+_(VL_API_PPPOE_ADD_DEL_SESSION, pppoe_add_del_session, 46ace853) \
+_(VL_API_PPPOE_ADD_DEL_SESSION_REPLY, pppoe_add_del_session_reply, 5383d31f) \
+_(VL_API_PPPOE_SESSION_DUMP, pppoe_session_dump, f9e6675e) \
+_(VL_API_PPPOE_SESSION_DETAILS, pppoe_session_details, 332bc742) 
 #endif
-
 /****** Typedefs ******/
 
 #ifdef vl_typedefs
-#ifndef included_pppoe_api
-#define included_pppoe_api
-#ifndef _vl_api_defined_pppoe_add_del_session
-#define _vl_api_defined_pppoe_add_del_session
-typedef VL_API_PACKED(struct _vl_api_pppoe_add_del_session {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u8 is_add;
-    u8 is_ipv6;
-    u16 session_id;
-    u8 client_ip[16];
-    u32 decap_vrf_id;
-    u8 client_mac[6];
-}) vl_api_pppoe_add_del_session_t;
+#include "pppoe.api_types.h"
 #endif
-
-#ifndef _vl_api_defined_pppoe_add_del_session_reply
-#define _vl_api_defined_pppoe_add_del_session_reply
-typedef VL_API_PACKED(struct _vl_api_pppoe_add_del_session_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-    u32 sw_if_index;
-}) vl_api_pppoe_add_del_session_reply_t;
-#endif
-
-#ifndef _vl_api_defined_pppoe_session_dump
-#define _vl_api_defined_pppoe_session_dump
-typedef VL_API_PACKED(struct _vl_api_pppoe_session_dump {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u32 sw_if_index;
-}) vl_api_pppoe_session_dump_t;
-#endif
-
-#ifndef _vl_api_defined_pppoe_session_details
-#define _vl_api_defined_pppoe_session_details
-typedef VL_API_PACKED(struct _vl_api_pppoe_session_details {
-    u16 _vl_msg_id;
-    u32 context;
-    u32 sw_if_index;
-    u8 is_ipv6;
-    u16 session_id;
-    u8 client_ip[16];
-    u32 encap_if_index;
-    u32 decap_vrf_id;
-    u8 local_mac[6];
-    u8 client_mac[6];
-}) vl_api_pppoe_session_details_t;
-#endif
-
-
-#endif
-#endif
-
 /****** Print functions *****/
 #ifdef vl_printfun
+#ifndef included_pppoe_printfun_types
+#define included_pppoe_printfun_types
+
+
+#endif
+#endif /* vl_printfun_types */
+/****** Print functions *****/
+#ifdef vl_printfun
+#ifndef included_pppoe_printfun
+#define included_pppoe_printfun
 
 #ifdef LP64
 #define _uword_fmt "%lld"
@@ -114,73 +74,81 @@ typedef VL_API_PACKED(struct _vl_api_pppoe_session_details {
 #define _uword_cast long
 #endif
 
-#ifndef _vl_api_defined_pppoe_add_del_session_t_print
-#define _vl_api_defined_pppoe_add_del_session_t_print
-static inline void *vl_api_pppoe_add_del_session_t_print (vl_api_pppoe_add_del_session_t *a,void *handle)
+static inline void *vl_api_pppoe_add_del_session_t_print (vl_api_pppoe_add_del_session_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_pppoe_add_del_session_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "is_add: %u\n", a->is_add);
-    vl_print(handle, "is_ipv6: %u\n", a->is_ipv6);
-    vl_print(handle, "session_id: %u\n", a->session_id);
-    vl_print(handle, "decap_vrf_id: %u\n", a->decap_vrf_id);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_pppoe_add_del_session_t: */
+    s = format(s, "vl_api_pppoe_add_del_session_t:");
+    s = format(s, "\n%Uis_add: %u", format_white_space, indent, a->is_add);
+    s = format(s, "\n%Usession_id: %u", format_white_space, indent, a->session_id);
+    s = format(s, "\n%Uclient_ip: %U", format_white_space, indent, format_vl_api_address_t, &a->client_ip, indent);
+    s = format(s, "\n%Udecap_vrf_id: %u", format_white_space, indent, a->decap_vrf_id);
+    s = format(s, "\n%Uclient_mac: %U", format_white_space, indent, format_vl_api_mac_address_t, &a->client_mac, indent);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_pppoe_add_del_session_reply_t_print
-#define _vl_api_defined_pppoe_add_del_session_reply_t_print
-static inline void *vl_api_pppoe_add_del_session_reply_t_print (vl_api_pppoe_add_del_session_reply_t *a,void *handle)
+static inline void *vl_api_pppoe_add_del_session_reply_t_print (vl_api_pppoe_add_del_session_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_pppoe_add_del_session_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
-    vl_print(handle, "sw_if_index: %u\n", a->sw_if_index);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_pppoe_add_del_session_reply_t: */
+    s = format(s, "vl_api_pppoe_add_del_session_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    s = format(s, "\n%Usw_if_index: %U", format_white_space, indent, format_vl_api_interface_index_t, &a->sw_if_index, indent);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_pppoe_session_dump_t_print
-#define _vl_api_defined_pppoe_session_dump_t_print
-static inline void *vl_api_pppoe_session_dump_t_print (vl_api_pppoe_session_dump_t *a,void *handle)
+static inline void *vl_api_pppoe_session_dump_t_print (vl_api_pppoe_session_dump_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_pppoe_session_dump_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "sw_if_index: %u\n", a->sw_if_index);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_pppoe_session_dump_t: */
+    s = format(s, "vl_api_pppoe_session_dump_t:");
+    s = format(s, "\n%Usw_if_index: %U", format_white_space, indent, format_vl_api_interface_index_t, &a->sw_if_index, indent);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_pppoe_session_details_t_print
-#define _vl_api_defined_pppoe_session_details_t_print
-static inline void *vl_api_pppoe_session_details_t_print (vl_api_pppoe_session_details_t *a,void *handle)
+static inline void *vl_api_pppoe_session_details_t_print (vl_api_pppoe_session_details_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_pppoe_session_details_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "sw_if_index: %u\n", a->sw_if_index);
-    vl_print(handle, "is_ipv6: %u\n", a->is_ipv6);
-    vl_print(handle, "session_id: %u\n", a->session_id);
-    vl_print(handle, "encap_if_index: %u\n", a->encap_if_index);
-    vl_print(handle, "decap_vrf_id: %u\n", a->decap_vrf_id);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_pppoe_session_details_t: */
+    s = format(s, "vl_api_pppoe_session_details_t:");
+    s = format(s, "\n%Usw_if_index: %U", format_white_space, indent, format_vl_api_interface_index_t, &a->sw_if_index, indent);
+    s = format(s, "\n%Usession_id: %u", format_white_space, indent, a->session_id);
+    s = format(s, "\n%Uclient_ip: %U", format_white_space, indent, format_vl_api_address_t, &a->client_ip, indent);
+    s = format(s, "\n%Uencap_if_index: %U", format_white_space, indent, format_vl_api_interface_index_t, &a->encap_if_index, indent);
+    s = format(s, "\n%Udecap_vrf_id: %u", format_white_space, indent, a->decap_vrf_id);
+    s = format(s, "\n%Ulocal_mac: %U", format_white_space, indent, format_vl_api_mac_address_t, &a->local_mac, indent);
+    s = format(s, "\n%Uclient_mac: %U", format_white_space, indent, format_vl_api_mac_address_t, &a->client_mac, indent);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
+
 #endif
-
-
 #endif /* vl_printfun */
 
 /****** Endian swap functions *****/
 #ifdef vl_endianfun
+#ifndef included_pppoe_endianfun
+#define included_pppoe_endianfun
 
 #undef clib_net_to_host_uword
 #ifdef LP64
@@ -189,75 +157,67 @@ static inline void *vl_api_pppoe_session_details_t_print (vl_api_pppoe_session_d
 #define clib_net_to_host_uword clib_net_to_host_u32
 #endif
 
-#ifndef _vl_api_defined_pppoe_add_del_session_t_endian
-#define _vl_api_defined_pppoe_add_del_session_t_endian
 static inline void vl_api_pppoe_add_del_session_t_endian (vl_api_pppoe_add_del_session_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
     /* a->is_add = a->is_add (no-op) */
-    /* a->is_ipv6 = a->is_ipv6 (no-op) */
     a->session_id = clib_net_to_host_u16(a->session_id);
+    vl_api_address_t_endian(&a->client_ip);
     a->decap_vrf_id = clib_net_to_host_u32(a->decap_vrf_id);
+    vl_api_mac_address_t_endian(&a->client_mac);
 }
 
-#endif
-
-#ifndef _vl_api_defined_pppoe_add_del_session_reply_t_endian
-#define _vl_api_defined_pppoe_add_del_session_reply_t_endian
 static inline void vl_api_pppoe_add_del_session_reply_t_endian (vl_api_pppoe_add_del_session_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
-    a->sw_if_index = clib_net_to_host_u32(a->sw_if_index);
+    a->retval = clib_net_to_host_i32(a->retval);
+    vl_api_interface_index_t_endian(&a->sw_if_index);
 }
 
-#endif
-
-#ifndef _vl_api_defined_pppoe_session_dump_t_endian
-#define _vl_api_defined_pppoe_session_dump_t_endian
 static inline void vl_api_pppoe_session_dump_t_endian (vl_api_pppoe_session_dump_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
-    a->sw_if_index = clib_net_to_host_u32(a->sw_if_index);
+    vl_api_interface_index_t_endian(&a->sw_if_index);
 }
 
-#endif
-
-#ifndef _vl_api_defined_pppoe_session_details_t_endian
-#define _vl_api_defined_pppoe_session_details_t_endian
 static inline void vl_api_pppoe_session_details_t_endian (vl_api_pppoe_session_details_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->sw_if_index = clib_net_to_host_u32(a->sw_if_index);
-    /* a->is_ipv6 = a->is_ipv6 (no-op) */
+    vl_api_interface_index_t_endian(&a->sw_if_index);
     a->session_id = clib_net_to_host_u16(a->session_id);
-    a->encap_if_index = clib_net_to_host_u32(a->encap_if_index);
+    vl_api_address_t_endian(&a->client_ip);
+    vl_api_interface_index_t_endian(&a->encap_if_index);
     a->decap_vrf_id = clib_net_to_host_u32(a->decap_vrf_id);
+    vl_api_mac_address_t_endian(&a->local_mac);
+    vl_api_mac_address_t_endian(&a->client_mac);
 }
 
+
 #endif
-
-
 #endif /* vl_endianfun */
 
 /****** Version tuple *****/
 
 #ifdef vl_api_version_tuple
 
-vl_api_version_tuple(pppoe.api, 1, 0, 0)
+vl_api_version_tuple(pppoe.api, 2, 0, 0)
 
 #endif /* vl_api_version_tuple */
 
 /****** API CRC (whole file) *****/
 
 #ifdef vl_api_version
-vl_api_version(pppoe.api, 0x4def67c4)
+vl_api_version(pppoe.api, 0xc75d2b4e)
 
 #endif
 

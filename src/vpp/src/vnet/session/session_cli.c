@@ -43,6 +43,52 @@ format_session_fifos (u8 * s, va_list * args)
   return s;
 }
 
+const char *session_state_str[] = {
+#define _(sym, str) str,
+  foreach_session_state
+#undef _
+};
+
+u8 *
+format_session_state (u8 * s, va_list * args)
+{
+  session_t *ss = va_arg (*args, session_t *);
+
+  if (ss->session_state < SESSION_N_STATES)
+    s = format (s, "%s", session_state_str[ss->session_state]);
+  else
+    s = format (s, "UNKNOWN STATE (%d)", ss->session_state);
+
+  return s;
+}
+
+const char *session_flags_str[] = {
+#define _(sym, str) str,
+  foreach_session_flag
+#undef _
+};
+
+u8 *
+format_session_flags (u8 * s, va_list * args)
+{
+  session_t *ss = va_arg (*args, session_t *);
+  int i, last = -1;
+
+  for (i = 0; i < SESSION_N_FLAGS; i++)
+    if (ss->flags & (1 << i))
+      last = i;
+
+  for (i = 0; i < last; i++)
+    {
+      if (ss->flags & (1 << i))
+	s = format (s, "%s, ", session_flags_str[i]);
+    }
+  if (last >= 0)
+    s = format (s, "%s", session_flags_str[last]);
+
+  return s;
+}
+
 /**
  * Format stream session as per the following format
  *
@@ -67,13 +113,10 @@ format_session (u8 * s, va_list * args)
 
   if (verbose == 1)
     {
-      u8 post_accept = ss->session_state >= SESSION_STATE_ACCEPTING;
-      u8 hasf = post_accept
-	|| session_transport_service_type (ss) == TRANSPORT_SERVICE_CL;
       u32 rxf, txf;
 
-      rxf = hasf ? svm_fifo_max_dequeue (ss->rx_fifo) : 0;
-      txf = hasf ? svm_fifo_max_dequeue (ss->tx_fifo) : 0;
+      rxf = ss->rx_fifo ? svm_fifo_max_dequeue (ss->rx_fifo) : 0;
+      txf = ss->tx_fifo ? svm_fifo_max_dequeue (ss->tx_fifo) : 0;
       str = format (0, "%-10u%-10u", rxf, txf);
     }
 
@@ -85,7 +128,12 @@ format_session (u8 * s, va_list * args)
       if (verbose == 1)
 	s = format (s, "%v", str);
       if (verbose > 1)
-	s = format (s, "%U", format_session_fifos, ss, verbose);
+	{
+	  s = format (s, "%U", format_session_fifos, ss, verbose);
+	  s = format (s, " session: state: %U opaque: 0x%x flags: %U\n",
+		      format_session_state, ss, ss->opaque,
+		      format_session_flags, ss);
+	}
     }
   else if (ss->session_state == SESSION_STATE_LISTENING)
     {
@@ -321,7 +369,7 @@ session_cli_filter_check (session_t * s, session_state_t * states,
 
 check_transport:
 
-  if (tp != TRANSPORT_N_PROTO && session_get_transport_proto (s) != tp)
+  if (tp != TRANSPORT_PROTO_INVALID && session_get_transport_proto (s) != tp)
     return 0;
 
   return 1;
@@ -347,7 +395,7 @@ session_cli_show_session_filter (vlib_main_t * vm, u32 thread_index,
 
   pool = wrk->sessions;
 
-  if (tp == TRANSPORT_N_PROTO && states == 0 && !verbose
+  if (tp == TRANSPORT_PROTO_INVALID && states == 0 && !verbose
       && (start == 0 && end == ~0))
     {
       vlib_cli_output (vm, "Thread %d: %u sessions", thread_index,
@@ -388,12 +436,37 @@ session_cli_show_session_filter (vlib_main_t * vm, u32 thread_index,
 		     count);
 }
 
-static void
-session_cli_print_transport_protos (vlib_main_t * vm)
+void
+session_cli_show_events_thread (vlib_main_t * vm, u32 thread_index)
 {
-#define _(sym, str, sstr) vlib_cli_output (vm, str);
-  foreach_transport_proto
-#undef _
+  session_worker_t *wrk;
+
+  wrk = session_main_get_worker_if_valid (thread_index);
+  if (!wrk)
+    {
+      vlib_cli_output (vm, "invalid thread index %u", thread_index);
+      return;
+    }
+
+  vlib_cli_output (vm, "Thread %d:\n", thread_index);
+  vlib_cli_output (vm, " evt elements alloc: %u",
+		   pool_elts (wrk->event_elts));
+  vlib_cli_output (vm, " ctrl evt elt data alloc: %d",
+		   pool_elts (wrk->ctrl_evts_data));
+}
+
+static void
+session_cli_show_events (vlib_main_t * vm, u32 thread_index)
+{
+  session_main_t *smm = &session_main;
+  if (!thread_index)
+    {
+      session_cli_show_events_thread (vm, thread_index);
+      return;
+    }
+
+  for (thread_index = 0; thread_index < vec_len (smm->wrk); thread_index++)
+    session_cli_show_events_thread (vm, thread_index);
 }
 
 static void
@@ -411,13 +484,14 @@ show_session_command_fn (vlib_main_t * vm, unformat_input_t * input,
   u8 one_session = 0, do_listeners = 0, sst, do_elog = 0, do_filter = 0;
   u32 track_index, thread_index = 0, start = 0, end = ~0, session_index;
   unformat_input_t _line_input, *line_input = &_line_input;
-  transport_proto_t transport_proto = TRANSPORT_N_PROTO;
+  transport_proto_t transport_proto = TRANSPORT_PROTO_INVALID;
   session_state_t state = SESSION_N_STATES, *states = 0;
   session_main_t *smm = &session_main;
   clib_error_t *error = 0;
   app_worker_t *app_wrk;
   u32 transport_index;
   const u8 *app_name;
+  u8 do_events = 0;
   int verbose = 0;
   session_t *s;
 
@@ -500,7 +574,7 @@ show_session_command_fn (vlib_main_t * vm, unformat_input_t * input,
 	do_elog = 1;
       else if (unformat (line_input, "protos"))
 	{
-	  session_cli_print_transport_protos (vm);
+	  vlib_cli_output (vm, "%U", format_transport_protos);
 	  goto done;
 	}
       else if (unformat (line_input, "states"))
@@ -508,6 +582,8 @@ show_session_command_fn (vlib_main_t * vm, unformat_input_t * input,
 	  session_cli_print_session_states (vm);
 	  goto done;
 	}
+      else if (unformat (line_input, "events"))
+	do_events = 1;
       else
 	{
 	  error = clib_error_return (0, "unknown input `%U'",
@@ -553,6 +629,12 @@ show_session_command_fn (vlib_main_t * vm, unformat_input_t * input,
 			 app_name);
       }));
       /* *INDENT-ON* */
+      goto done;
+    }
+
+  if (do_events)
+    {
+      session_cli_show_events (vm, thread_index);
       goto done;
     }
 

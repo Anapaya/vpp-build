@@ -13,6 +13,8 @@
 
 cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 
+set(CMAKE_C_COMPILER_NAMES clang-10 clang-9 gcc-9 cc)
+
 project(vpp C)
 
 include(CheckCCompilerFlag)
@@ -48,25 +50,71 @@ set(CMAKE_C_COMPILER_TARGET ${CMAKE_SYSTEM_PROCESSOR}-linux-gnu)
 ##############################################################################
 check_c_compiler_flag("-Wno-address-of-packed-member"
 		      compiler_flag_no_address_of_packed_member)
+set(VPP_RUNTIME_DIR "bin" CACHE STRING "Relative runtime directory path")
+set(VPP_LIBRARY_DIR "lib" CACHE STRING "Relative library directory path")
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${VPP_RUNTIME_DIR})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${VPP_LIBRARY_DIR})
 
 if (CMAKE_BUILD_TYPE)
-  set(CMAKE_C_FLAGS "-g -fPIC ${CMAKE_C_FLAGS}")
-  set(CMAKE_C_FLAGS "-fstack-protector-all ${CMAKE_C_FLAGS}")
-  set(CMAKE_C_FLAGS "-Werror ${CMAKE_C_FLAGS}")
-  set(CMAKE_C_FLAGS "-DFORTIFY_SOURCE=2 ${CMAKE_C_FLAGS}")
+  set(CMAKE_C_FLAGS "-g -fPIC -Werror -Wall ${CMAKE_C_FLAGS}")
 endif()
 
 if (compiler_flag_no_address_of_packed_member)
   set(CMAKE_C_FLAGS "-Wno-address-of-packed-member ${CMAKE_C_FLAGS}")
 endif()
 
-set(CMAKE_C_FLAGS_RELEASE "-O2 ${CMAKE_C_FLAGS_RELEASE}")
-set(CMAKE_C_FLAGS_DEBUG "-O0 -DCLIB_DEBUG ${CMAKE_C_FLAGS_DEBUG}")
-set(CMAKE_LINKER_FLAGS_RELEASE "-pie -Wl,-z,now ${CMAKE_LINKER_FLAGS_RELEASE}")
+# release
+list(APPEND BUILD_TYPES "release")
+string(CONCAT CMAKE_C_FLAGS_RELEASE
+  "-O2 "
+  "-fstack-protector "
+  "-DFORTIFY_SOURCE=2 "
+  "-fno-common "
+)
+
+string(CONCAT CMAKE_EXE_LINKER_FLAGS_RELEASE "-pie")
+
+# debug
+list(APPEND BUILD_TYPES "debug")
+string(CONCAT CMAKE_C_FLAGS_DEBUG
+  "-O0 "
+  "-DCLIB_DEBUG "
+  "-fstack-protector "
+  "-DFORTIFY_SOURCE=2 "
+  "-fno-common "
+)
+
+# coverity
+list(APPEND BUILD_TYPES "coverity")
+string(CONCAT CMAKE_C_FLAGS_COVERITY "-O2 -D__COVERITY__")
+
+# gcov
+list(APPEND BUILD_TYPES "gcov")
+string(CONCAT CMAKE_C_FLAGS_GCOV
+  "-O0 "
+  "-DCLIB_DEBUG "
+  "-DCLIB_GCOV "
+  "-fprofile-arcs "
+  "-ftest-coverage ")
+
 string(TOUPPER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_UC)
+
+
+string(REPLACE ";" " " BUILD_TYPES "${BUILD_TYPES}")
+set_property(CACHE CMAKE_BUILD_TYPE PROPERTY
+	     HELPSTRING "Build type - valid options are: ${BUILD_TYPES}")
+
+##############################################################################
+# sanitizers
+##############################################################################
+
+option(VPP_ENABLE_SANITIZE_ADDR "Enable Address Sanitizer" OFF)
+if (VPP_ENABLE_SANITIZE_ADDR)
+  set(CMAKE_C_FLAGS "-fsanitize=address --param asan-stack=0 -DCLIB_SANITIZE_ADDR ${CMAKE_C_FLAGS}")
+  set(CMAKE_EXE_LINKER_FLAGS "-fsanitize=address ${CMAKE_EXE_LINKER_FLAGS}")
+  set(CMAKE_SHARED_LINKER_FLAGS "-fsanitize=address ${CMAKE_SHARED_LINKER_FLAGS}")
+endif (VPP_ENABLE_SANITIZE_ADDR)
 
 ##############################################################################
 # install config
@@ -93,11 +141,14 @@ include(cmake/plugin.cmake)
 ##############################################################################
 # subdirs - order matters
 ##############################################################################
-if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
+option(VPP_HOST_TOOLS_ONLY "Build only host tools" OFF)
+if(VPP_HOST_TOOLS_ONLY)
+  set(SUBDIRS tools/vppapigen cmake)
+elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
   find_package(OpenSSL REQUIRED)
   set(SUBDIRS
     vppinfra svm vlib vlibmemory vlibapi vnet vpp vat vcl plugins
-    vpp-api tools/vppapigen tools/g2 tools/elftool tools/perftool cmake pkg
+    vpp-api tools/vppapigen tools/g2 tools/perftool cmake pkg
     tools/appimage
   )
 elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
@@ -137,7 +188,8 @@ pr("VPP library version" "${VPP_LIB_VERSION}")
 pr("GIT toplevel dir" "${VPP_GIT_TOPLEVEL_DIR}")
 pr("Build type" "${CMAKE_BUILD_TYPE}")
 pr("C flags" "${CMAKE_C_FLAGS}${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE_UC}}")
-pr("Linker flags" "${CMAKE_LINKER_FLAGS}${CMAKE_LINKER_FLAGS_${CMAKE_BUILD_TYPE_UC}}")
+pr("Linker flags (apps)" "${CMAKE_EXE_LINKER_FLAGS}${CMAKE_EXE_LINKER_FLAGS_${CMAKE_BUILD_TYPE_UC}}")
+pr("Linker flags (libs)" "${CMAKE_SHARED_LINKER_FLAGS}${CMAKE_SHARED_LINKER_FLAGS_${CMAKE_BUILD_TYPE_UC}}")
 pr("Host processor" "${CMAKE_HOST_SYSTEM_PROCESSOR}")
 pr("Target processor" "${CMAKE_SYSTEM_PROCESSOR}")
 pr("Prefix path" "${CMAKE_PREFIX_PATH}")

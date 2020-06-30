@@ -13,12 +13,12 @@ extern "C" {
 #endif
 #include <vapi/vpe.api.vapi.h>
 
-extern vapi_msg_id_t vapi_msg_id_ioam_cache_ip6_enable_disable_reply;
 extern vapi_msg_id_t vapi_msg_id_ioam_cache_ip6_enable_disable;
+extern vapi_msg_id_t vapi_msg_id_ioam_cache_ip6_enable_disable_reply;
 
 #define DEFINE_VAPI_MSG_IDS_IOAM_CACHE_API_JSON\
-  vapi_msg_id_t vapi_msg_id_ioam_cache_ip6_enable_disable_reply;\
-  vapi_msg_id_t vapi_msg_id_ioam_cache_ip6_enable_disable;
+  vapi_msg_id_t vapi_msg_id_ioam_cache_ip6_enable_disable;\
+  vapi_msg_id_t vapi_msg_id_ioam_cache_ip6_enable_disable_reply;
 
 
 #ifndef defined_vapi_msg_ioam_cache_ip6_enable_disable_reply
@@ -95,7 +95,7 @@ static inline void vapi_set_vapi_msg_ioam_cache_ip6_enable_disable_reply_event_c
 #ifndef defined_vapi_msg_ioam_cache_ip6_enable_disable
 #define defined_vapi_msg_ioam_cache_ip6_enable_disable
 typedef struct __attribute__ ((__packed__)) {
-  u8 is_disable; 
+  bool is_disable; 
 } vapi_payload_ioam_cache_ip6_enable_disable;
 
 typedef struct __attribute__ ((__packed__)) {
@@ -193,7 +193,7 @@ static inline vapi_error_e vapi_ioam_cache_ip6_enable_disable(struct vapi_ctx_s 
 static void __attribute__((constructor)) __vapi_constructor_ioam_cache_ip6_enable_disable()
 {
   static const char name[] = "ioam_cache_ip6_enable_disable";
-  static const char name_with_crc[] = "ioam_cache_ip6_enable_disable_22324d89";
+  static const char name_with_crc[] = "ioam_cache_ip6_enable_disable_47705c03";
   static vapi_message_desc_t __vapi_metadata_ioam_cache_ip6_enable_disable = {
     name,
     sizeof(name) - 1,

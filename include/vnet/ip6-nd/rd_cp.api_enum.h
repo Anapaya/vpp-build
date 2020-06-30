@@ -1,0 +1,5 @@
+typedef enum {
+   VL_API_IP6_ND_ADDRESS_AUTOCONFIG,
+   VL_API_IP6_ND_ADDRESS_AUTOCONFIG_REPLY,
+   VL_MSG_FIRST_AVAILABLE
+} vl_api_rd_cp_enum_t;

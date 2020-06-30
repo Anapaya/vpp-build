@@ -24,42 +24,22 @@
 #include <vpp/app/version.h>
 
 /* define message IDs */
-#include <mactime/mactime_msg_enum.h>
+#include <vnet/format_fns.h>
+#include <mactime/mactime.api_enum.h>
+#include <mactime/mactime.api_types.h>
 
-/* define message structures */
-#define vl_typedefs
-#include <mactime/mactime_all_api_h.h>
-#undef vl_typedefs
-
-/* define generated endian-swappers */
-#define vl_endianfun
-#include <mactime/mactime_all_api_h.h>
-#undef vl_endianfun
-
-/* instantiate all the print functions we know about */
 #define vl_print(handle, ...) vlib_cli_output (handle, __VA_ARGS__)
-#define vl_printfun
-#include <mactime/mactime_all_api_h.h>
-#undef vl_printfun
-
-/* Get the API version number */
-#define vl_api_version(n,v) static u32 api_version=(v);
-#include <mactime/mactime_all_api_h.h>
-#undef vl_api_version
 
 #define REPLY_MSG_ID_BASE mm->msg_id_base
 #include <vlibapi/api_helper_macros.h>
 
+#include <vnet/ip-neighbor/ip_neighbor.h>
+
 mactime_main_t mactime_main;
 
-/** \file time-base src-mac filter device-input feature arc implementation
+/** \file mactime.c
+ * time-base src-mac filter device-input feature arc implementation
  */
-
-/* List of message types that this plugin understands */
-
-#define foreach_mactime_plugin_api_msg                  \
-_(MACTIME_ENABLE_DISABLE, mactime_enable_disable)       \
-_(MACTIME_ADD_DEL_RANGE, mactime_add_del_range)
 
 static void
 feature_init (mactime_main_t * mm)
@@ -71,7 +51,8 @@ feature_init (mactime_main_t * mm)
 			    mm->lookup_table_num_buckets,
 			    mm->lookup_table_memory_size);
       clib_timebase_init (&mm->timebase, mm->timezone_offset,
-			  CLIB_TIMEBASE_DAYLIGHT_USA);
+			  CLIB_TIMEBASE_DAYLIGHT_USA,
+			  &(mm->vlib_main->clib_time));
       mm->allow_counters.name = "allow";
       mm->allow_counters.stat_segment_name = "/mactime/allow";
       mm->drop_counters.name = "drop";
@@ -88,6 +69,7 @@ mactime_enable_disable (mactime_main_t * mm, u32 sw_if_index,
 {
   vnet_sw_interface_t *sw;
   int rv = 0;
+  static u8 url_init_done;
 
   feature_init (mm);
 
@@ -105,6 +87,12 @@ mactime_enable_disable (mactime_main_t * mm, u32 sw_if_index,
 			       sw_if_index, enable_disable, 0, 0);
   vnet_feature_enable_disable ("interface-output", "mactime-tx",
 			       sw_if_index, enable_disable, 0, 0);
+  if (url_init_done == 0)
+    {
+      mactime_url_init (mm->vlib_main);
+      url_init_done = 1;
+    }
+
   return rv;
 }
 
@@ -182,6 +170,78 @@ static void vl_api_mactime_enable_disable_t_handler
   REPLY_MACRO (VL_API_MACTIME_ENABLE_DISABLE_REPLY);
 }
 
+static void
+vl_api_mactime_dump_t_handler (vl_api_mactime_dump_t * mp)
+{
+  vl_api_mactime_details_t *ep;
+  vl_api_mactime_dump_reply_t *rmp;
+  mactime_device_t *dev;
+  mactime_main_t *mm = &mactime_main;
+  vl_api_registration_t *rp;
+  int rv = 0, i;
+  u32 his_table_epoch = clib_net_to_host_u32 (mp->my_table_epoch);
+  u32 message_size;
+  u32 name_len;
+  u32 nranges;
+
+  rp = vl_api_client_index_to_registration (mp->client_index);
+  if (rp == 0)
+    return;
+
+  if (his_table_epoch == mm->device_table_epoch)
+    {
+      rv = VNET_API_ERROR_NO_CHANGE;
+      goto send_reply;
+    }
+
+  /* *INDENT-OFF* */
+  pool_foreach (dev, mm->devices,
+  ({
+    message_size = sizeof(*ep) + vec_len(dev->device_name) +
+      vec_len(dev->ranges) * sizeof(ep->ranges[0]);
+
+    ep = vl_msg_api_alloc (message_size);
+    memset (ep, 0, message_size);
+    ep->_vl_msg_id = clib_host_to_net_u16 (VL_API_MACTIME_DETAILS
+                                           + mm->msg_id_base);
+    ep->context = mp->context;
+    /* Index is the key for the stats segment combined counters */
+    ep->pool_index = clib_host_to_net_u32 (dev - mm->devices);
+
+    clib_memcpy_fast (ep->mac_address, dev->mac_address,
+                      sizeof (ep->mac_address));
+    ep->data_quota = clib_host_to_net_u64 (dev->data_quota);
+    ep->data_used_in_range = clib_host_to_net_u64 (dev->data_used_in_range);
+    ep->flags = clib_host_to_net_u32 (dev->flags);
+    nranges = vec_len (dev->ranges);
+    ep->nranges = clib_host_to_net_u32 (nranges);
+
+    for (i = 0; i < vec_len (dev->ranges); i++)
+      {
+        ep->ranges[i].start = dev->ranges[i].start;
+        ep->ranges[i].end = dev->ranges[i].end;
+      }
+
+    name_len = vec_len (dev->device_name);
+    name_len = (name_len < ARRAY_LEN(ep->device_name)) ?
+      name_len : ARRAY_LEN(ep->device_name) - 1;
+
+    clib_memcpy_fast (ep->device_name, dev->device_name,
+                      name_len);
+    ep->device_name [ARRAY_LEN(ep->device_name) -1] = 0;
+    vl_api_send_msg (rp, (u8 *)ep);
+  }));
+  /* *INDENT-OFF* */
+
+ send_reply:
+  /* *INDENT-OFF* */
+  REPLY_MACRO2 (VL_API_MACTIME_DUMP_REPLY,
+  ({
+    rmp->table_epoch = clib_host_to_net_u32 (mm->device_table_epoch);
+  }));
+  /* *INDENT-ON* */
+}
+
 /** Create a lookup table entry for the indicated mac address
  */
 void
@@ -193,7 +253,7 @@ mactime_send_create_entry_message (u8 * mac_address)
   u8 *name;
   vl_api_mactime_add_del_range_t *mp;
 
-  am = &api_main;
+  am = vlibapi_get_main ();
   shmem_hdr = am->shmem_hdr;
   mp = vl_msg_api_alloc_as_if_client (sizeof (*mp));
   clib_memset (mp, 0, sizeof (*mp));
@@ -224,6 +284,14 @@ static void vl_api_mactime_add_del_range_t_handler
   int i, rv = 0;
 
   feature_init (mm);
+
+  /*
+   * Change the table epoch. Skip 0 so clients can code my_table_epoch = 0
+   * to receive a full dump.
+   */
+  mm->device_table_epoch++;
+  if (PREDICT_FALSE (mm->device_table_epoch == 0))
+    mm->device_table_epoch++;
 
   data_quota = clib_net_to_host_u64 (mp->data_quota);
 
@@ -343,67 +411,30 @@ reply:
   REPLY_MACRO (VL_API_MACTIME_ADD_DEL_RANGE_REPLY);
 }
 
-/* Set up the API message handling tables */
-static clib_error_t *
-mactime_plugin_api_hookup (vlib_main_t * vm)
-{
-  mactime_main_t *mm = &mactime_main;
-#define _(N,n)                                                  \
-    vl_msg_api_set_handlers((VL_API_##N + mm->msg_id_base),     \
-                           #n,					\
-                           vl_api_##n##_t_handler,              \
-                           vl_noop_handler,                     \
-                           vl_api_##n##_t_endian,               \
-                           vl_api_##n##_t_print,                \
-                           sizeof(vl_api_##n##_t), 1);
-  foreach_mactime_plugin_api_msg;
-#undef _
-
-  return 0;
-}
-
-#define vl_msg_name_crc_list
-#include <mactime/mactime_all_api_h.h>
-#undef vl_msg_name_crc_list
-
-static void
-setup_message_id_table (mactime_main_t * mm, api_main_t * am)
-{
-#define _(id,n,crc)   vl_msg_api_add_msg_name_crc (am, #n "_" #crc, id + mm->msg_id_base);
-  foreach_vl_msg_name_crc_mactime;
-#undef _
-}
-
+#include <mactime/mactime.api.c>
 static clib_error_t *
 mactime_init (vlib_main_t * vm)
 {
   mactime_main_t *mm = &mactime_main;
-  clib_error_t *error = 0;
-  u8 *name;
 
   mm->vlib_main = vm;
   mm->vnet_main = vnet_get_main ();
 
-  name = format (0, "mactime_%08x%c", api_version, 0);
-
   /* Ask for a correctly-sized block of API message decode slots */
-  mm->msg_id_base = vl_msg_api_get_msg_ids
-    ((char *) name, VL_MSG_FIRST_AVAILABLE);
-
-  error = mactime_plugin_api_hookup (vm);
-
-  /* Add our API messages to the global name_crc hash table */
-  setup_message_id_table (mm, &api_main);
-
-  vec_free (name);
+  mm->msg_id_base = setup_message_id_table ();
 
   mm->lookup_table_num_buckets = MACTIME_NUM_BUCKETS;
   mm->lookup_table_memory_size = MACTIME_MEMORY_SIZE;
   mm->timezone_offset = -5;	/* US EST / EDT */
-  return error;
+  return 0;
 }
 
-VLIB_INIT_FUNCTION (mactime_init);
+/* *INDENT-OFF* */
+VLIB_INIT_FUNCTION (mactime_init) =
+{
+  .runs_after = VLIB_INITS("ip_neighbor_init"),
+};
+/* *INDENT-ON* */
 
 static clib_error_t *
 mactime_config (vlib_main_t * vm, unformat_input_t * input)
@@ -497,6 +528,16 @@ format_bytes_with_width (u8 * s, va_list * va)
   return s;
 }
 
+static walk_rc_t
+mactime_ip_neighbor_copy (index_t ipni, void *ctx)
+{
+  mactime_main_t *mm = ctx;
+
+  vec_add1 (mm->arp_cache_copy, ipni);
+
+  return (WALK_CONTINUE);
+}
+
 static clib_error_t *
 show_mactime_command_fn (vlib_main_t * vm,
 			 unformat_input_t * input, vlib_cli_command_t * cmd)
@@ -511,17 +552,11 @@ show_mactime_command_fn (vlib_main_t * vm,
   int i, j;
   f64 now;
   vlib_counter_t allow, drop;
-  ethernet_arp_ip4_entry_t *n, *pool;
+  ip_neighbor_t *ipn;
 
   vec_reset_length (mm->arp_cache_copy);
-  pool = ip4_neighbors_pool ();
-
-  /* *INDENT-OFF* */
-  pool_foreach (n, pool,
-  ({
-    vec_add1 (mm->arp_cache_copy, n[0]);
-  }));
-  /* *INDENT-ON* */
+  /* Walk all ip4 neighbours on all interfaces */
+  ip_neighbor_walk (IP46_TYPE_IP4, ~0, mactime_ip_neighbor_copy, mm);
 
   now = clib_timebase_now (&mm->timebase);
 
@@ -638,11 +673,12 @@ show_mactime_command_fn (vlib_main_t * vm,
       /* This is really only good for small N... */
       for (j = 0; j < vec_len (mm->arp_cache_copy); j++)
 	{
-	  n = mm->arp_cache_copy + j;
-	  if (!memcmp (dp->mac_address, n->mac.bytes, sizeof (n->mac)))
+	  ipn = ip_neighbor_get (mm->arp_cache_copy[j]);
+	  if (!memcmp
+	      (dp->mac_address, ipn->ipn_mac.bytes, sizeof (ipn->ipn_mac)))
 	    {
-	      vlib_cli_output (vm, "%17s%U", " ", format_ip4_address,
-			       &n->ip4_address);
+	      vlib_cli_output (vm, "%17s%U", " ", format_ip46_address,
+			       ip_neighbor_get_ip (ipn), IP46_TYPE_IP4);
 	    }
 	}
     }

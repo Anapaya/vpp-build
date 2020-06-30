@@ -16,6 +16,7 @@
 #define __IPSEC_SPD_SA_H__
 
 #include <vlib/vlib.h>
+#include <vnet/crypto/crypto.h>
 #include <vnet/ip/ip.h>
 #include <vnet/fib/fib_node.h>
 
@@ -114,6 +115,8 @@ typedef struct
   u8 crypto_iv_size;
   u8 crypto_block_size;
   u8 integ_icv_size;
+  u32 encrypt_thread_index;
+  u32 decrypt_thread_index;
   u32 spi;
   u32 seq;
   u32 seq_hi;
@@ -124,9 +127,27 @@ typedef struct
 
   vnet_crypto_key_index_t crypto_key_index;
   vnet_crypto_key_index_t integ_key_index;
-  vnet_crypto_op_id_t crypto_enc_op_id:16;
-  vnet_crypto_op_id_t crypto_dec_op_id:16;
-  vnet_crypto_op_id_t integ_op_id:16;
+
+  /* Union data shared by sync and async ops, updated when mode is
+   * changed. */
+  union
+  {
+    struct
+    {
+      vnet_crypto_op_id_t crypto_enc_op_id:16;
+      vnet_crypto_op_id_t crypto_dec_op_id:16;
+      vnet_crypto_op_id_t integ_op_id:16;
+    };
+
+    struct
+    {
+      vnet_crypto_async_op_id_t crypto_async_enc_op_id:16;
+      vnet_crypto_async_op_id_t crypto_async_dec_op_id:16;
+      vnet_crypto_key_index_t linked_key_index;
+    };
+
+    u64 crypto_op_data;
+  };
 
   /* data accessed by dataplane code should be above this comment */
     CLIB_CACHE_LINE_ALIGN_MARK (cacheline1);
@@ -162,6 +183,28 @@ typedef struct
   /* Salt used in GCM modes - stored in network byte order */
   u32 salt;
   u64 gcm_iv_counter;
+
+  union
+  {
+    struct
+    {
+      vnet_crypto_op_id_t crypto_enc_op_id:16;
+      vnet_crypto_op_id_t crypto_dec_op_id:16;
+      vnet_crypto_op_id_t integ_op_id:16;
+    };
+    u64 data;
+  } sync_op_data;
+
+  union
+  {
+    struct
+    {
+      vnet_crypto_async_op_id_t crypto_async_enc_op_id:16;
+      vnet_crypto_async_op_id_t crypto_async_dec_op_id:16;
+      vnet_crypto_key_index_t linked_key_index;
+    };
+    u64 data;
+  } async_op_data;
 } ipsec_sa_t;
 
 STATIC_ASSERT_OFFSET_OF (ipsec_sa_t, cacheline1, CLIB_CACHE_LINE_BYTES);
@@ -207,10 +250,11 @@ extern int ipsec_sa_add_and_lock (u32 id,
 				  u32 salt,
 				  const ip46_address_t * tunnel_src_addr,
 				  const ip46_address_t * tunnel_dst_addr,
-				  u32 * sa_index);
+				  u32 * sa_index, u16 src_port, u16 dst_port);
 extern index_t ipsec_sa_find_and_lock (u32 id);
 extern int ipsec_sa_unlock_id (u32 id);
 extern void ipsec_sa_unlock (index_t sai);
+extern void ipsec_sa_lock (index_t sai);
 extern void ipsec_sa_clear (index_t sai);
 extern void ipsec_sa_set_crypto_alg (ipsec_sa_t * sa,
 				     ipsec_crypto_alg_t crypto_alg);
@@ -229,6 +273,8 @@ extern uword unformat_ipsec_crypto_alg (unformat_input_t * input,
 extern uword unformat_ipsec_integ_alg (unformat_input_t * input,
 				       va_list * args);
 extern uword unformat_ipsec_key (unformat_input_t * input, va_list * args);
+
+#define IPSEC_UDP_PORT_NONE ((u16)~0)
 
 /*
  * Anti Replay definitions
@@ -433,6 +479,18 @@ ipsec_sa_anti_replay_advance (ipsec_sa_t * sa, u32 seq)
 	  sa->replay_window |= (1ULL << pos);
 	}
     }
+}
+
+
+/*
+ * Makes choice for thread_id should be assigned.
+ *  if input ~0, gets random worker_id based on unix_time_now_nsec
+*/
+always_inline u32
+ipsec_sa_assign_thread (u32 thread_id)
+{
+  return ((thread_id) ? thread_id
+	  : (unix_time_now_nsec () % vlib_num_workers ()) + 1);
 }
 
 #endif /* __IPSEC_SPD_SA_H__ */

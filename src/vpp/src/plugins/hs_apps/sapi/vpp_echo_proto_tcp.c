@@ -53,7 +53,7 @@ tcp_echo_connected_cb (session_connected_bundled_msg_t * mp,
       return;			/* Dont handle bapi connect errors for now */
     }
 
-  ECHO_LOG (1, "Connected session 0x%lx -> URI",
+  ECHO_LOG (2, "Connected session 0x%lx -> URI",
 	    ((session_connected_msg_t *) mp)->handle);
   session->session_type = ECHO_SESSION_TYPE_STREAM;
   session->accepted_session_count = 0;
@@ -97,7 +97,7 @@ tcp_echo_accepted_cb (session_accepted_msg_t * mp, echo_session_t * session)
 }
 
 static void
-tcp_echo_disconnected_reply_cb (echo_session_t * s)
+tcp_echo_sent_disconnect_cb (echo_session_t * s)
 {
   s->session_state = ECHO_SESSION_STATE_CLOSING;
 }
@@ -127,13 +127,21 @@ echo_proto_cb_vft_t echo_tcp_proto_cb_vft = {
   .connected_cb = tcp_echo_connected_cb,
   .accepted_cb = tcp_echo_accepted_cb,
   .reset_cb = tcp_echo_reset_cb,
-  .disconnected_reply_cb = tcp_echo_disconnected_reply_cb,
+  .sent_disconnect_cb = tcp_echo_sent_disconnect_cb,
+  .cleanup_cb = tcp_echo_cleanup_cb,
+};
+
+echo_proto_cb_vft_t echo_tls_proto_cb_vft = {
+  .disconnected_cb = tcp_echo_disconnected_cb,
+  .connected_cb = tcp_echo_connected_cb,
+  .accepted_cb = tcp_echo_accepted_cb,
+  .reset_cb = tcp_echo_reset_cb,
+  .sent_disconnect_cb = tcp_echo_sent_disconnect_cb,
   .cleanup_cb = tcp_echo_cleanup_cb,
 };
 
 ECHO_REGISTER_PROTO (TRANSPORT_PROTO_TCP, echo_tcp_proto_cb_vft);
-ECHO_REGISTER_PROTO (TRANSPORT_PROTO_TLS, echo_tcp_proto_cb_vft);
-ECHO_REGISTER_PROTO (TRANSPORT_PROTO_SCTP, echo_tcp_proto_cb_vft);
+ECHO_REGISTER_PROTO (TRANSPORT_PROTO_TLS, echo_tls_proto_cb_vft);
 
 /*
  * fd.io coding-style-patch-verification: ON

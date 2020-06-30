@@ -21,7 +21,7 @@
 
 #include <vnet/api_errno.h>
 #include <vnet/vnet.h>
-#include <vnet/ip/ip6_packet.h>
+#include <vnet/ip/ip46_address.h>
 
 #define foreach_bfd_transport(F) \
   F (UDP4, "ip4-rewrite")        \
@@ -63,7 +63,7 @@ vnet_api_error_t bfd_udp_del_session (u32 sw_if_index,
 /**
  * @brief set session admin down/up
  */
-vnet_api_error_t bfd_udp_session_set_flags (u32 sw_if_index,
+vnet_api_error_t bfd_udp_session_set_flags (vlib_main_t * vm, u32 sw_if_index,
 					    const ip46_address_t * local_addr,
 					    const ip46_address_t * peer_addr,
 					    u8 admin_up_down);

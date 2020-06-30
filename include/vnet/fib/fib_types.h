@@ -18,7 +18,7 @@
 
 #include <stdbool.h>
 #include <vlib/vlib.h>
-#include <vnet/ip/ip6_packet.h>
+#include <vnet/ip/ip46_address.h>
 #include <vnet/mpls/packet.h>
 #include <vnet/dpo/dpo.h>
 #include <vnet/bier/bier_types.h>
@@ -265,7 +265,7 @@ extern int fib_prefix_is_cover(const fib_prefix_t *p1,
  * \brief Return true is the prefix is a host prefix
  */
 extern int fib_prefix_is_host(const fib_prefix_t *p);
-
+extern u8 fib_prefix_get_host_length (fib_protocol_t proto);
 
 /**
  * \brief Host prefix from ip
@@ -395,6 +395,11 @@ typedef enum fib_route_path_flags_t_
      */
     FIB_ROUTE_PATH_POP_PW_CW = (1 << 18),
 } fib_route_path_flags_t;
+
+/**
+ * Format route path flags
+ */
+extern u8 * format_fib_route_path_flags(u8 *s, va_list *ap);
 
 /**
  * An RPF-ID is numerical value that is used RPF validate. An entry
@@ -599,6 +604,11 @@ typedef struct fib_route_path_t_ {
  * Unformat a fib_route_path_t from CLI input
  */
 extern uword unformat_fib_route_path(unformat_input_t * input, va_list * args);
+
+/**
+ * Format route path flags
+ */
+extern u8 * format_fib_route_path(u8 *s, va_list *ap);
 
 /**
  * A help string to list the FIB path options

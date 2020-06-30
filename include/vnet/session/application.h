@@ -63,6 +63,9 @@ typedef struct app_worker_
   u32 api_client_index;
 
   u8 app_is_builtin;
+
+  /** Per transport proto hash tables of half-open connection handles */
+  uword **half_open_table;
 } app_worker_t;
 
 typedef struct app_worker_map_
@@ -111,20 +114,12 @@ typedef struct application_
   /** Pool of listeners for the app */
   app_listener_t *listeners;
 
-  /*
-   * TLS & QUIC Specific
-   */
-
-  /** Certificate to be used for listen sessions */
-  u8 *tls_cert;
-
-  /** PEM encoded key */
-  u8 *tls_key;
-
   /** Preferred tls engine */
   u8 tls_engine;
 
-  u64 *quicly_ctx;
+  /** quic initialization vector */
+  char quic_iv[17];
+  u8 quic_iv_set;
 
 } application_t;
 
@@ -144,6 +139,16 @@ typedef struct app_main_
    * Hash table of builtin apps by name
    */
   uword *app_by_name;
+
+  /**
+   * Pool from which we allocate certificates (key, cert)
+   */
+  app_cert_key_pair_t *cert_key_pair_store;
+
+  /*
+   * Last registered crypto engine type
+   */
+  crypto_engine_type_t last_crypto_engine;
 } app_main_t;
 
 typedef struct app_init_args_
@@ -248,7 +253,14 @@ int app_worker_init_accepted (session_t * s);
 int app_worker_accept_notify (app_worker_t * app_wrk, session_t * s);
 int app_worker_init_connected (app_worker_t * app_wrk, session_t * s);
 int app_worker_connect_notify (app_worker_t * app_wrk, session_t * s,
-			       u32 opaque);
+			       session_error_t err, u32 opaque);
+int app_worker_add_half_open (app_worker_t * app_wrk, transport_proto_t tp,
+			      session_handle_t ho_handle,
+			      session_handle_t wrk_handle);
+int app_worker_del_half_open (app_worker_t * app_wrk, transport_proto_t tp,
+			      session_handle_t ho_handle);
+u64 app_worker_lookup_half_open (app_worker_t * app_wrk, transport_proto_t tp,
+				 session_handle_t ho_handle);
 int app_worker_close_notify (app_worker_t * app_wrk, session_t * s);
 int app_worker_transport_closed_notify (app_worker_t * app_wrk,
 					session_t * s);
@@ -259,6 +271,9 @@ int app_worker_migrate_notify (app_worker_t * app_wrk, session_t * s,
 			       session_handle_t new_sh);
 int app_worker_builtin_rx (app_worker_t * app_wrk, session_t * s);
 int app_worker_builtin_tx (app_worker_t * app_wrk, session_t * s);
+int app_worker_session_fifo_tuning (app_worker_t * app_wrk, session_t * s,
+				    svm_fifo_t * f,
+				    session_ft_action_t act, u32 len);
 segment_manager_t *app_worker_get_listen_segment_manager (app_worker_t *,
 							  session_t *);
 segment_manager_t *app_worker_get_connect_segment_manager (app_worker_t *);
@@ -279,19 +294,27 @@ session_t *app_worker_proxy_listener (app_worker_t * app, u8 fib_proto,
 				      u8 transport_proto);
 u8 *format_app_worker (u8 * s, va_list * args);
 u8 *format_app_worker_listener (u8 * s, va_list * args);
+u8 *format_crypto_engine (u8 * s, va_list * args);
+u8 *format_crypto_context (u8 * s, va_list * args);
 void app_worker_format_connects (app_worker_t * app_wrk, int verbose);
 int vnet_app_worker_add_del (vnet_app_worker_add_del_args_t * a);
 
 uword unformat_application_proto (unformat_input_t * input, va_list * args);
 
+app_cert_key_pair_t *app_cert_key_pair_get (u32 index);
+app_cert_key_pair_t *app_cert_key_pair_get_if_valid (u32 index);
+app_cert_key_pair_t *app_cert_key_pair_get_default ();
 
 /* Needed while we support both bapi and mq ctrl messages */
 int mq_send_session_bound_cb (u32 app_wrk_index, u32 api_context,
 			      session_handle_t handle, int rv);
 int mq_send_session_connected_cb (u32 app_wrk_index, u32 api_context,
-				  session_t * s, u8 is_fail);
+				  session_t * s, session_error_t err);
 void mq_send_unlisten_reply (app_worker_t * app_wrk, session_handle_t sh,
 			     u32 context, int rv);
+
+crypto_engine_type_t app_crypto_engine_type_add (void);
+u8 app_crypto_engine_n_types (void);
 
 #endif /* SRC_VNET_SESSION_APPLICATION_H_ */
 

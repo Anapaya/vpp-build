@@ -14,15 +14,30 @@
 add_vpp_plugin(mactime
   SOURCES
   mactime.c
+  builtins.c
   node.c
 
   API_FILES
   mactime.api
 
-  INSTALL_HEADERS
-  mactime_all_api_h.h
-  mactime_msg_enum.h
-
   API_TEST_SOURCES
   mactime_test.c
 )
+
+option(VPP_BUILD_MACTIME_TOP "Build mactime plugin 'top' tool" OFF)
+if(VPP_BUILD_MACTIME_TOP)
+  add_vpp_executable(mactime_top ENABLE_EXPORTS
+    SOURCES
+    mactime_top.c
+
+    DEPENDS api_headers
+
+    LINK_LIBRARIES
+    vlibmemoryclient
+    vppapiclient
+    svm
+    vppinfra
+    Threads::Threads
+    rt m dl crypto
+    )
+endif()

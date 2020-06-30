@@ -111,7 +111,7 @@ typedef struct l2fib_dump_walk_ctx_t_
   l2fib_entry_result_t *l2fe_res;
 } l2fib_dump_walk_ctx_t;
 
-static void
+static int
 l2fib_dump_walk_cb (BVT (clib_bihash_kv) * kvp, void *arg)
 {
   l2fib_dump_walk_ctx_t *ctx = arg;
@@ -126,6 +126,8 @@ l2fib_dump_walk_cb (BVT (clib_bihash_kv) * kvp, void *arg)
       vec_add1 (ctx->l2fe_key, key);
       vec_add1 (ctx->l2fe_res, result);
     }
+
+  return (BIHASH_WALK_CONTINUE);
 }
 
 void
@@ -158,7 +160,7 @@ typedef struct l2fib_show_walk_ctx_t_
   u8 now;
 } l2fib_show_walk_ctx_t;
 
-static void
+static int
 l2fib_show_walk_cb (BVT (clib_bihash_kv) * kvp, void *arg)
 {
   l2fib_show_walk_ctx_t *ctx = arg;
@@ -186,10 +188,10 @@ l2fib_show_walk_cb (BVT (clib_bihash_kv) * kvp, void *arg)
       u8 *s = NULL;
 
       if (ctx->learn && l2fib_entry_result_is_set_AGE_NOT (&result))
-	return;			/* skip provisioned macs */
+	return (BIHASH_WALK_CONTINUE);	/* skip provisioned macs */
 
       if (ctx->add && !l2fib_entry_result_is_set_AGE_NOT (&result))
-	return;			/* skip learned macs */
+	return (BIHASH_WALK_CONTINUE);	/* skip learned macs */
 
       bd_config = vec_elt_at_index (l2input_main.bd_configs,
 				    key.fields.bd_index);
@@ -219,6 +221,8 @@ l2fib_show_walk_cb (BVT (clib_bihash_kv) * kvp, void *arg)
 		       ctx->vnm, result.fields.sw_if_index);
       vec_free (s);
     }
+
+  return (BIHASH_WALK_CONTINUE);
 }
 
 /** Display the contents of the l2fib. */
@@ -1024,10 +1028,11 @@ l2fib_scan (vlib_main_t * vm, f64 start_time, u8 event_only)
 
       if (i < (h->nbuckets - 3))
 	{
-	  BVT (clib_bihash_bucket) * b = &h->buckets[i + 3];
+	  BVT (clib_bihash_bucket) * b =
+	    BV (clib_bihash_get_bucket) (h, i + 3);
 	  CLIB_PREFETCH (b, CLIB_CACHE_LINE_BYTES, LOAD);
-	  b = &h->buckets[i + 1];
-	  if (b->offset)
+	  b = BV (clib_bihash_get_bucket) (h, i + 1);
+	  if (!BV (clib_bihash_bucket_is_empty) (b))
 	    {
 	      BVT (clib_bihash_value) * v =
 		BV (clib_bihash_get_value) (h, b->offset);
@@ -1035,8 +1040,8 @@ l2fib_scan (vlib_main_t * vm, f64 start_time, u8 event_only)
 	    }
 	}
 
-      BVT (clib_bihash_bucket) * b = &h->buckets[i];
-      if (b->offset == 0)
+      BVT (clib_bihash_bucket) * b = BV (clib_bihash_get_bucket) (h, i);
+      if (BV (clib_bihash_bucket_is_empty) (b))
 	continue;
       BVT (clib_bihash_value) * v = BV (clib_bihash_get_value) (h, b->offset);
       for (j = 0; j < (1 << b->log2_pages); j++)
@@ -1080,7 +1085,10 @@ l2fib_scan (vlib_main_t * vm, f64 start_time, u8 event_only)
 					key.fields.mac, 6);
 		      mp->mac[evt_idx].action =
 			l2fib_entry_result_is_set_LRN_MOV (&result) ?
-			MAC_EVENT_ACTION_MOVE : MAC_EVENT_ACTION_ADD;
+			(vl_api_mac_event_action_t) MAC_EVENT_ACTION_MOVE
+			: (vl_api_mac_event_action_t) MAC_EVENT_ACTION_ADD;
+		      mp->mac[evt_idx].action =
+			htonl (mp->mac[evt_idx].action);
 		      mp->mac[evt_idx].sw_if_index =
 			htonl (result.fields.sw_if_index);
 		      /* clear event bits and update mac entry */
@@ -1123,7 +1131,9 @@ l2fib_scan (vlib_main_t * vm, f64 start_time, u8 event_only)
 		  /* copy mac entry to event msg */
 		  clib_memcpy_fast (mp->mac[evt_idx].mac_addr, key.fields.mac,
 				    6);
-		  mp->mac[evt_idx].action = MAC_EVENT_ACTION_DELETE;
+		  mp->mac[evt_idx].action =
+		    (vl_api_mac_event_action_t) MAC_EVENT_ACTION_DELETE;
+		  mp->mac[evt_idx].action = htonl (mp->mac[evt_idx].action);
 		  mp->mac[evt_idx].sw_if_index =
 		    htonl (result.fields.sw_if_index);
 		  evt_idx++;
@@ -1137,7 +1147,7 @@ l2fib_scan (vlib_main_t * vm, f64 start_time, u8 event_only)
 	       * Note: we may have just freed the bucket's backing
 	       * storage, so check right here...
 	       */
-	      if (b->offset == 0)
+	      if (BV (clib_bihash_bucket_is_empty) (b))
 		goto doublebreak;
 	    }
 	  v++;

@@ -1,5 +1,5 @@
 /*
- * VLIB API definitions 2020-06-13 06:01:52
+ * VLIB API definitions 2020-06-30 12:50:23
  * Input file: trace.api
  * Automatically generated: please edit the input file NOT this file!
  */
@@ -16,6 +16,9 @@
 #endif
 
 #define VL_API_PACKED(x) x __attribute__ ((packed))
+/* Imported API files */
+#ifndef vl_api_version
+#endif
 
 /****** Message ID / handler enum ******/
 
@@ -48,82 +51,23 @@ _(VL_API_TRACE_PROFILE_DEL_REPLY, trace_profile_del_reply, e8d4e804) \
 _(VL_API_TRACE_PROFILE_SHOW_CONFIG, trace_profile_show_config, 51077d14) \
 _(VL_API_TRACE_PROFILE_SHOW_CONFIG_REPLY, trace_profile_show_config_reply, 0f1d374c) 
 #endif
-
 /****** Typedefs ******/
 
 #ifdef vl_typedefs
-#ifndef included_trace_api
-#define included_trace_api
-#ifndef _vl_api_defined_trace_profile_add
-#define _vl_api_defined_trace_profile_add
-typedef VL_API_PACKED(struct _vl_api_trace_profile_add {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u8 trace_type;
-    u8 num_elts;
-    u8 trace_tsp;
-    u32 node_id;
-    u32 app_data;
-}) vl_api_trace_profile_add_t;
+#include "trace.api_types.h"
 #endif
-
-#ifndef _vl_api_defined_trace_profile_add_reply
-#define _vl_api_defined_trace_profile_add_reply
-typedef VL_API_PACKED(struct _vl_api_trace_profile_add_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_trace_profile_add_reply_t;
-#endif
-
-#ifndef _vl_api_defined_trace_profile_del
-#define _vl_api_defined_trace_profile_del
-typedef VL_API_PACKED(struct _vl_api_trace_profile_del {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-}) vl_api_trace_profile_del_t;
-#endif
-
-#ifndef _vl_api_defined_trace_profile_del_reply
-#define _vl_api_defined_trace_profile_del_reply
-typedef VL_API_PACKED(struct _vl_api_trace_profile_del_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_trace_profile_del_reply_t;
-#endif
-
-#ifndef _vl_api_defined_trace_profile_show_config
-#define _vl_api_defined_trace_profile_show_config
-typedef VL_API_PACKED(struct _vl_api_trace_profile_show_config {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-}) vl_api_trace_profile_show_config_t;
-#endif
-
-#ifndef _vl_api_defined_trace_profile_show_config_reply
-#define _vl_api_defined_trace_profile_show_config_reply
-typedef VL_API_PACKED(struct _vl_api_trace_profile_show_config_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-    u8 trace_type;
-    u8 num_elts;
-    u8 trace_tsp;
-    u32 node_id;
-    u32 app_data;
-}) vl_api_trace_profile_show_config_reply_t;
-#endif
-
-
-#endif
-#endif
-
 /****** Print functions *****/
 #ifdef vl_printfun
+#ifndef included_trace_printfun_types
+#define included_trace_printfun_types
+
+
+#endif
+#endif /* vl_printfun_types */
+/****** Print functions *****/
+#ifdef vl_printfun
+#ifndef included_trace_printfun
+#define included_trace_printfun
 
 #ifdef LP64
 #define _uword_fmt "%lld"
@@ -133,99 +77,105 @@ typedef VL_API_PACKED(struct _vl_api_trace_profile_show_config_reply {
 #define _uword_cast long
 #endif
 
-#ifndef _vl_api_defined_trace_profile_add_t_print
-#define _vl_api_defined_trace_profile_add_t_print
-static inline void *vl_api_trace_profile_add_t_print (vl_api_trace_profile_add_t *a,void *handle)
+static inline void *vl_api_trace_profile_add_t_print (vl_api_trace_profile_add_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_trace_profile_add_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "trace_type: %u\n", a->trace_type);
-    vl_print(handle, "num_elts: %u\n", a->num_elts);
-    vl_print(handle, "trace_tsp: %u\n", a->trace_tsp);
-    vl_print(handle, "node_id: %u\n", a->node_id);
-    vl_print(handle, "app_data: %u\n", a->app_data);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_trace_profile_add_t: */
+    s = format(s, "vl_api_trace_profile_add_t:");
+    s = format(s, "\n%Utrace_type: %u", format_white_space, indent, a->trace_type);
+    s = format(s, "\n%Unum_elts: %u", format_white_space, indent, a->num_elts);
+    s = format(s, "\n%Utrace_tsp: %u", format_white_space, indent, a->trace_tsp);
+    s = format(s, "\n%Unode_id: %u", format_white_space, indent, a->node_id);
+    s = format(s, "\n%Uapp_data: %u", format_white_space, indent, a->app_data);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_trace_profile_add_reply_t_print
-#define _vl_api_defined_trace_profile_add_reply_t_print
-static inline void *vl_api_trace_profile_add_reply_t_print (vl_api_trace_profile_add_reply_t *a,void *handle)
+static inline void *vl_api_trace_profile_add_reply_t_print (vl_api_trace_profile_add_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_trace_profile_add_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_trace_profile_add_reply_t: */
+    s = format(s, "vl_api_trace_profile_add_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_trace_profile_del_t_print
-#define _vl_api_defined_trace_profile_del_t_print
-static inline void *vl_api_trace_profile_del_t_print (vl_api_trace_profile_del_t *a,void *handle)
+static inline void *vl_api_trace_profile_del_t_print (vl_api_trace_profile_del_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_trace_profile_del_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_trace_profile_del_t: */
+    s = format(s, "vl_api_trace_profile_del_t:");
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_trace_profile_del_reply_t_print
-#define _vl_api_defined_trace_profile_del_reply_t_print
-static inline void *vl_api_trace_profile_del_reply_t_print (vl_api_trace_profile_del_reply_t *a,void *handle)
+static inline void *vl_api_trace_profile_del_reply_t_print (vl_api_trace_profile_del_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_trace_profile_del_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_trace_profile_del_reply_t: */
+    s = format(s, "vl_api_trace_profile_del_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_trace_profile_show_config_t_print
-#define _vl_api_defined_trace_profile_show_config_t_print
-static inline void *vl_api_trace_profile_show_config_t_print (vl_api_trace_profile_show_config_t *a,void *handle)
+static inline void *vl_api_trace_profile_show_config_t_print (vl_api_trace_profile_show_config_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_trace_profile_show_config_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_trace_profile_show_config_t: */
+    s = format(s, "vl_api_trace_profile_show_config_t:");
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_trace_profile_show_config_reply_t_print
-#define _vl_api_defined_trace_profile_show_config_reply_t_print
-static inline void *vl_api_trace_profile_show_config_reply_t_print (vl_api_trace_profile_show_config_reply_t *a,void *handle)
+static inline void *vl_api_trace_profile_show_config_reply_t_print (vl_api_trace_profile_show_config_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_trace_profile_show_config_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
-    vl_print(handle, "trace_type: %u\n", a->trace_type);
-    vl_print(handle, "num_elts: %u\n", a->num_elts);
-    vl_print(handle, "trace_tsp: %u\n", a->trace_tsp);
-    vl_print(handle, "node_id: %u\n", a->node_id);
-    vl_print(handle, "app_data: %u\n", a->app_data);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_trace_profile_show_config_reply_t: */
+    s = format(s, "vl_api_trace_profile_show_config_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    s = format(s, "\n%Utrace_type: %u", format_white_space, indent, a->trace_type);
+    s = format(s, "\n%Unum_elts: %u", format_white_space, indent, a->num_elts);
+    s = format(s, "\n%Utrace_tsp: %u", format_white_space, indent, a->trace_tsp);
+    s = format(s, "\n%Unode_id: %u", format_white_space, indent, a->node_id);
+    s = format(s, "\n%Uapp_data: %u", format_white_space, indent, a->app_data);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
+
 #endif
-
-
 #endif /* vl_printfun */
 
 /****** Endian swap functions *****/
 #ifdef vl_endianfun
+#ifndef included_trace_endianfun
+#define included_trace_endianfun
 
 #undef clib_net_to_host_uword
 #ifdef LP64
@@ -234,10 +184,9 @@ static inline void *vl_api_trace_profile_show_config_reply_t_print (vl_api_trace
 #define clib_net_to_host_uword clib_net_to_host_u32
 #endif
 
-#ifndef _vl_api_defined_trace_profile_add_t_endian
-#define _vl_api_defined_trace_profile_add_t_endian
 static inline void vl_api_trace_profile_add_t_endian (vl_api_trace_profile_add_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
@@ -248,59 +197,44 @@ static inline void vl_api_trace_profile_add_t_endian (vl_api_trace_profile_add_t
     a->app_data = clib_net_to_host_u32(a->app_data);
 }
 
-#endif
-
-#ifndef _vl_api_defined_trace_profile_add_reply_t_endian
-#define _vl_api_defined_trace_profile_add_reply_t_endian
 static inline void vl_api_trace_profile_add_reply_t_endian (vl_api_trace_profile_add_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
-#endif
-
-#ifndef _vl_api_defined_trace_profile_del_t_endian
-#define _vl_api_defined_trace_profile_del_t_endian
 static inline void vl_api_trace_profile_del_t_endian (vl_api_trace_profile_del_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
 }
 
-#endif
-
-#ifndef _vl_api_defined_trace_profile_del_reply_t_endian
-#define _vl_api_defined_trace_profile_del_reply_t_endian
 static inline void vl_api_trace_profile_del_reply_t_endian (vl_api_trace_profile_del_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
-#endif
-
-#ifndef _vl_api_defined_trace_profile_show_config_t_endian
-#define _vl_api_defined_trace_profile_show_config_t_endian
 static inline void vl_api_trace_profile_show_config_t_endian (vl_api_trace_profile_show_config_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
 }
 
-#endif
-
-#ifndef _vl_api_defined_trace_profile_show_config_reply_t_endian
-#define _vl_api_defined_trace_profile_show_config_reply_t_endian
 static inline void vl_api_trace_profile_show_config_reply_t_endian (vl_api_trace_profile_show_config_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
     /* a->trace_type = a->trace_type (no-op) */
     /* a->num_elts = a->num_elts (no-op) */
     /* a->trace_tsp = a->trace_tsp (no-op) */
@@ -308,9 +242,8 @@ static inline void vl_api_trace_profile_show_config_reply_t_endian (vl_api_trace
     a->app_data = clib_net_to_host_u32(a->app_data);
 }
 
+
 #endif
-
-
 #endif /* vl_endianfun */
 
 /****** Version tuple *****/
@@ -324,7 +257,7 @@ vl_api_version_tuple(trace.api, 1, 0, 0)
 /****** API CRC (whole file) *****/
 
 #ifdef vl_api_version
-vl_api_version(trace.api, 0x3467fbcd)
+vl_api_version(trace.api, 0x397cbf90)
 
 #endif
 

@@ -1106,6 +1106,8 @@ init_buffers_inline (vlib_main_t * vm,
 
       b0 = vlib_get_buffer (vm, bi0);
       b1 = vlib_get_buffer (vm, bi1);
+      b0->flags |= s->buffer_flags;
+      b1->flags |= s->buffer_flags;
 
       vnet_buffer (b0)->sw_if_index[VLIB_RX] =
 	vnet_buffer (b1)->sw_if_index[VLIB_RX] = s->sw_if_index[VLIB_RX];
@@ -1135,6 +1137,7 @@ init_buffers_inline (vlib_main_t * vm,
       n_left -= 1;
 
       b0 = vlib_get_buffer (vm, bi0);
+      b0->flags |= s->buffer_flags;
       vnet_buffer (b0)->sw_if_index[VLIB_RX] = s->sw_if_index[VLIB_RX];
       vnet_buffer (b0)->sw_if_index[VLIB_TX] = s->sw_if_index[VLIB_TX];
 
@@ -1269,7 +1272,7 @@ pg_stream_fill_replay (pg_main_t * pg, pg_stream_t * s, u32 n_alloc)
 	  clib_memcpy_fast (b->data, d0 + data_offset, bytes_this_chunk);
 	  vnet_buffer (b)->sw_if_index[VLIB_RX] = s->sw_if_index[VLIB_RX];
 	  vnet_buffer (b)->sw_if_index[VLIB_TX] = s->sw_if_index[VLIB_TX];
-	  b->flags = 0;
+	  b->flags = s->buffer_flags;
 	  b->next_buffer = 0;
 	  b->current_data = 0;
 	  b->current_length = bytes_this_chunk;
@@ -1537,7 +1540,8 @@ fill_gso_buffer_flags (vlib_main_t * vm, u32 * buffers, u32 n_buffers,
       u8 l4_proto = 0;
       u8 l4_hdr_sz = 0;
 
-      ethernet_header_t *eh = (ethernet_header_t *) b0->data;
+      ethernet_header_t *eh =
+	(ethernet_header_t *) vlib_buffer_get_current (b0);
       u16 ethertype = clib_net_to_host_u16 (eh->type);
       u16 l2hdr_sz = sizeof (ethernet_header_t);
 
@@ -1557,44 +1561,46 @@ fill_gso_buffer_flags (vlib_main_t * vm, u32 * buffers, u32 n_buffers,
 
       vnet_buffer (b0)->l2_hdr_offset = 0;
       vnet_buffer (b0)->l3_hdr_offset = l2hdr_sz;
+
       if (PREDICT_TRUE (ethertype == ETHERNET_TYPE_IP4))
 	{
-	  ip4_header_t *ip4 = (ip4_header_t *) (b0->data + l2hdr_sz);
+	  ip4_header_t *ip4 =
+	    (ip4_header_t *) (vlib_buffer_get_current (b0) + l2hdr_sz);
 	  vnet_buffer (b0)->l4_hdr_offset = l2hdr_sz + ip4_header_bytes (ip4);
 	  l4_proto = ip4->protocol;
 	  b0->flags |=
-	    (VNET_BUFFER_F_IS_IP4 | VNET_BUFFER_F_L2_HDR_OFFSET_VALID
-	     | VNET_BUFFER_F_L3_HDR_OFFSET_VALID |
-	     VNET_BUFFER_F_L4_HDR_OFFSET_VALID);
-	  b0->flags |= VNET_BUFFER_F_OFFLOAD_IP_CKSUM;
+	    (VNET_BUFFER_F_IS_IP4 | VNET_BUFFER_F_OFFLOAD_IP_CKSUM);
+	  b0->flags |= (VNET_BUFFER_F_L2_HDR_OFFSET_VALID
+			| VNET_BUFFER_F_L3_HDR_OFFSET_VALID |
+			VNET_BUFFER_F_L4_HDR_OFFSET_VALID);
 	}
       else if (PREDICT_TRUE (ethertype == ETHERNET_TYPE_IP6))
 	{
-	  ip6_header_t *ip6 = (ip6_header_t *) (b0->data + l2hdr_sz);
-	  /* FIXME IPv6 EH traversal */
+	  ip6_header_t *ip6 =
+	    (ip6_header_t *) (vlib_buffer_get_current (b0) + l2hdr_sz);
 	  vnet_buffer (b0)->l4_hdr_offset = l2hdr_sz + sizeof (ip6_header_t);
+	  /* FIXME IPv6 EH traversal */
 	  l4_proto = ip6->protocol;
 	  b0->flags |=
-	    (VNET_BUFFER_F_IS_IP6 | VNET_BUFFER_F_L2_HDR_OFFSET_VALID
-	     | VNET_BUFFER_F_L3_HDR_OFFSET_VALID |
+	    (VNET_BUFFER_F_IS_IP6 | VNET_BUFFER_F_L2_HDR_OFFSET_VALID |
+	     VNET_BUFFER_F_L3_HDR_OFFSET_VALID |
 	     VNET_BUFFER_F_L4_HDR_OFFSET_VALID);
 	}
       if (l4_proto == IP_PROTOCOL_TCP)
 	{
-	  b0->flags |= VNET_BUFFER_F_OFFLOAD_TCP_CKSUM;
-	  tcp_header_t *tcp = (tcp_header_t *) (b0->data +
+	  b0->flags |= (VNET_BUFFER_F_OFFLOAD_TCP_CKSUM | VNET_BUFFER_F_GSO);
+	  tcp_header_t *tcp = (tcp_header_t *) (vlib_buffer_get_current (b0) +
 						vnet_buffer
 						(b0)->l4_hdr_offset);
 	  l4_hdr_sz = tcp_header_bytes (tcp);
 	  tcp->checksum = 0;
 	  vnet_buffer2 (b0)->gso_l4_hdr_sz = l4_hdr_sz;
 	  vnet_buffer2 (b0)->gso_size = packet_data_size;
-	  b0->flags |= VNET_BUFFER_F_GSO;
 	}
       else if (l4_proto == IP_PROTOCOL_UDP)
 	{
 	  b0->flags |= VNET_BUFFER_F_OFFLOAD_UDP_CKSUM;
-	  udp_header_t *udp = (udp_header_t *) (b0->data +
+	  udp_header_t *udp = (udp_header_t *) (vlib_buffer_get_current (b0) +
 						vnet_buffer
 						(b0)->l4_hdr_offset);
 	  vnet_buffer2 (b0)->gso_l4_hdr_sz = sizeof (*udp);

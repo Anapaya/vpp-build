@@ -29,6 +29,7 @@
 #include <vnet/ip/ip4.h>
 #include <vnet/ip/ip6.h>
 #include <vnet/ip/ip6_packet.h>
+#include <vnet/ip/ip6_link.h>
 #include <vnet/adj/adj.h>
 #include <vnet/adj/adj_nbr.h>
 #include <vnet/dpo/receive_dpo.h>
@@ -608,21 +609,35 @@ bfd_udp_validate_api_input (u32 sw_if_index,
 			"IP family mismatch (local is ipv6, peer is ipv4)");
 	  return VNET_API_ERROR_INVALID_ARGUMENT;
 	}
-      ip6_main_t *im = &ip6_main;
-      /* *INDENT-OFF* */
-      foreach_ip_interface_address (
-          &im->lookup_main, ia, sw_if_index, 0 /* honor unnumbered */, ({
-            ip6_address_t *x =
-                ip_interface_address_get_address (&im->lookup_main, ia);
-            if (local_addr->ip6.as_u64[0] == x->as_u64[0] &&
-                local_addr->ip6.as_u64[1] == x->as_u64[1])
-              {
-                /* valid address for this interface */
-                local_ip_valid = 1;
-                break;
-              }
-          }));
-      /* *INDENT-ON* */
+
+      if (ip6_address_is_link_local_unicast (&local_addr->ip6))
+	{
+	  const ip6_address_t *ll_addr;
+	  ll_addr = ip6_get_link_local_address (sw_if_index);
+	  if (ip6_address_is_equal (ll_addr, &local_addr->ip6))
+	    {
+	      /* valid address for this interface */
+	      local_ip_valid = 1;
+	    }
+	}
+      else
+	{
+	  ip6_main_t *im = &ip6_main;
+	  /* *INDENT-OFF* */
+	  foreach_ip_interface_address (
+	      &im->lookup_main, ia, sw_if_index, 0 /* honor unnumbered */, ({
+	        ip6_address_t *x =
+	            ip_interface_address_get_address (&im->lookup_main, ia);
+	        if (local_addr->ip6.as_u64[0] == x->as_u64[0] &&
+	            local_addr->ip6.as_u64[1] == x->as_u64[1])
+	          {
+	            /* valid address for this interface */
+	            local_ip_valid = 1;
+	            break;
+	          }
+	      }));
+	  /* *INDENT-ON* */
+	}
     }
 
   if (!local_ip_valid)
@@ -819,7 +834,7 @@ bfd_udp_del_session (u32 sw_if_index,
 }
 
 vnet_api_error_t
-bfd_udp_session_set_flags (u32 sw_if_index,
+bfd_udp_session_set_flags (vlib_main_t * vm, u32 sw_if_index,
 			   const ip46_address_t * local_addr,
 			   const ip46_address_t * peer_addr, u8 admin_up_down)
 {
@@ -834,7 +849,7 @@ bfd_udp_session_set_flags (u32 sw_if_index,
       bfd_unlock (bm);
       return rv;
     }
-  bfd_session_set_flags (bs, admin_up_down);
+  bfd_session_set_flags (vm, bs, admin_up_down);
   bfd_unlock (bm);
   return 0;
 }
@@ -1021,11 +1036,11 @@ typedef struct
 } bfd_rpc_update_t;
 
 static void
-bfd_rpc_update_session (u32 bs_idx, const bfd_pkt_t * pkt)
+bfd_rpc_update_session (vlib_main_t * vm, u32 bs_idx, const bfd_pkt_t * pkt)
 {
   bfd_main_t *bm = &bfd_main;
   bfd_lock (bm);
-  bfd_consume_pkt (bm, pkt, bs_idx);
+  bfd_consume_pkt (vm, bm, pkt, bs_idx);
   bfd_unlock (bm);
 }
 
@@ -1087,7 +1102,7 @@ bfd_udp4_scan (vlib_main_t * vm, vlib_node_runtime_t * rt,
       return BFD_UDP_ERROR_BAD;
     }
   BFD_DBG ("BFD session found, bs_idx=%u", bs->bs_idx);
-  if (!bfd_verify_pkt_auth (pkt, b->current_length, bs))
+  if (!bfd_verify_pkt_auth (vm, pkt, b->current_length, bs))
     {
       BFD_ERR ("Packet verification failed, dropping packet");
       return BFD_UDP_ERROR_BAD;
@@ -1097,7 +1112,7 @@ bfd_udp4_scan (vlib_main_t * vm, vlib_node_runtime_t * rt,
     {
       return err;
     }
-  bfd_rpc_update_session (bs->bs_idx, pkt);
+  bfd_rpc_update_session (vm, bs->bs_idx, pkt);
   *bs_out = bs;
   return BFD_UDP_ERROR_NONE;
 }
@@ -1231,7 +1246,7 @@ bfd_udp6_scan (vlib_main_t * vm, vlib_node_runtime_t * rt,
       return BFD_UDP_ERROR_BAD;
     }
   BFD_DBG ("BFD session found, bs_idx=%u", bs->bs_idx);
-  if (!bfd_verify_pkt_auth (pkt, b->current_length, bs))
+  if (!bfd_verify_pkt_auth (vm, pkt, b->current_length, bs))
     {
       BFD_ERR ("Packet verification failed, dropping packet");
       return BFD_UDP_ERROR_BAD;
@@ -1241,7 +1256,7 @@ bfd_udp6_scan (vlib_main_t * vm, vlib_node_runtime_t * rt,
     {
       return err;
     }
-  bfd_rpc_update_session (bs->bs_idx, pkt);
+  bfd_rpc_update_session (vm, bs->bs_idx, pkt);
   *bs_out = bs;
   return BFD_UDP_ERROR_NONE;
 }
@@ -1446,7 +1461,7 @@ bfd_udp_echo_input (vlib_main_t * vm, vlib_node_runtime_t * rt,
 	}
 
       bfd_lock (bm);
-      if (bfd_consume_echo_pkt (bfd_udp_main.bfd_main, b0))
+      if (bfd_consume_echo_pkt (vm, bfd_udp_main.bfd_main, b0))
 	{
 	  b0->error = rt->errors[BFD_UDP_ERROR_NONE];
 	  next0 = BFD_UDP_ECHO_INPUT_NEXT_NORMAL;
@@ -1584,7 +1599,7 @@ bfd_udp_sw_if_add_del (vnet_main_t * vnm, u32 sw_if_index, u32 is_create)
     vlib_log_notice (bum->log_class,
 		     "removal of sw_if_index=%u forces removal of bfd session "
 		     "with bs_idx=%u", sw_if_index, (*bs)->bs_idx);
-    bfd_session_set_flags (*bs, 0);
+    bfd_session_set_flags (vlib_get_main (), *bs, 0);
     bfd_udp_del_session_internal (vlib_get_main (), *bs);
   }
   return 0;

@@ -13,7 +13,8 @@
  * limitations under the License.
  */
 /**
- * @file NAT plugin global declarations
+ * @file nat.c
+ * NAT plugin global declarations
  */
 #ifndef __included_nat_h__
 #define __included_nat_h__
@@ -23,6 +24,7 @@
 #include <vnet/ethernet/ethernet.h>
 #include <vnet/ip/icmp46_packet.h>
 #include <vnet/api_errno.h>
+#include <vnet/fib/fib_source.h>
 #include <vppinfra/elog.h>
 #include <vppinfra/bihash_8_8.h>
 #include <vppinfra/bihash_16_8.h>
@@ -30,6 +32,9 @@
 #include <vppinfra/error.h>
 #include <vlibapi/api.h>
 #include <vlib/log.h>
+#include <vppinfra/bihash_16_8.h>
+#include <nat/lib/lib.h>
+#include <nat/lib/inlines.h>
 
 /* default session timeouts */
 #define SNAT_UDP_TIMEOUT 300
@@ -42,6 +47,26 @@
 
 /* NAT buffer flags */
 #define SNAT_FLAG_HAIRPINNING (1 << 0)
+
+typedef enum
+{
+  NAT_NEXT_DROP,
+  NAT_NEXT_ICMP_ERROR,
+  NAT_NEXT_IN2OUT_ED_FAST_PATH,
+  NAT_NEXT_IN2OUT_ED_SLOW_PATH,
+  NAT_NEXT_IN2OUT_ED_OUTPUT_SLOW_PATH,
+  NAT_NEXT_OUT2IN_ED_FAST_PATH,
+  NAT_NEXT_OUT2IN_ED_SLOW_PATH,
+  NAT_NEXT_IN2OUT_CLASSIFY,
+  NAT_NEXT_OUT2IN_CLASSIFY,
+  NAT_N_NEXT,
+} nat_next_t;
+
+typedef struct
+{
+  u32 next_index;
+  u32 arc_next_index;
+} nat_pre_trace_t;
 
 /* session key (4-tuple) */
 typedef struct
@@ -57,23 +82,6 @@ typedef struct
     u64 as_u64;
   };
 } snat_session_key_t;
-
-/* endpoint-dependent session key (6-tuple) */
-typedef struct
-{
-  union
-  {
-    struct
-    {
-      ip4_address_t l_addr;
-      ip4_address_t r_addr;
-      u32 proto:8, fib_index:24;
-      u16 l_port;
-      u16 r_port;
-    };
-    u64 as_u64[2];
-  };
-} nat_ed_ses_key_t;
 
 /* deterministic session outside key */
 typedef struct
@@ -103,13 +111,6 @@ typedef struct
     u64 as_u64;
   };
 } snat_user_key_t;
-
-typedef struct
-{
-  u32 sw_if_index;
-  u32 next_index;
-  u8 cached;
-} nat44_reass_trace_t;
 
 /* NAT API Configuration flags */
 #define foreach_nat_config_flag \
@@ -142,21 +143,6 @@ typedef enum
 #undef _
 } nat_addr_and_port_alloc_alg_t;
 
-
-/* Supported L4 protocols */
-#define foreach_snat_protocol \
-  _(UDP, 0, udp, "udp")       \
-  _(TCP, 1, tcp, "tcp")       \
-  _(ICMP, 2, icmp, "icmp")
-
-typedef enum
-{
-#define _(N, i, n, s) SNAT_PROTOCOL_##N = i,
-  foreach_snat_protocol
-#undef _
-} snat_protocol_t;
-
-
 /* Session state */
 #define foreach_snat_session_state          \
   _(0, UNKNOWN, "unknown")                 \
@@ -183,11 +169,12 @@ _(IN2OUT_PACKETS, "good in2out packets processed")      \
 _(OUT_OF_PORTS, "out of ports")                         \
 _(BAD_ICMP_TYPE, "unsupported ICMP type")               \
 _(MAX_SESSIONS_EXCEEDED, "maximum sessions exceeded")   \
+_(MAX_USER_SESS_EXCEEDED, "max user sessions exceeded") \
 _(DROP_FRAGMENT, "drop fragment")                       \
-_(MAX_REASS, "maximum reassemblies exceeded")           \
-_(MAX_FRAG, "maximum fragments per reassembly exceeded")\
+_(CANNOT_CREATE_USER, "cannot create NAT user")         \
 _(NON_SYN, "non-SYN packet try to create session")      \
 _(TCP_PACKETS, "TCP packets")                           \
+_(TCP_CLOSED, "drops due to TCP in transitory timeout") \
 _(UDP_PACKETS, "UDP packets")                           \
 _(ICMP_PACKETS, "ICMP packets")                         \
 _(OTHER_PACKETS, "other protocol packets")              \
@@ -210,11 +197,12 @@ _(OUT_OF_PORTS, "out of ports")                         \
 _(BAD_ICMP_TYPE, "unsupported ICMP type")               \
 _(NO_TRANSLATION, "no translation")                     \
 _(MAX_SESSIONS_EXCEEDED, "maximum sessions exceeded")   \
+_(MAX_USER_SESS_EXCEEDED, "max user sessions exceeded") \
 _(DROP_FRAGMENT, "drop fragment")                       \
-_(MAX_REASS, "maximum reassemblies exceeded")           \
-_(MAX_FRAG, "maximum fragments per reassembly exceeded")\
+_(CANNOT_CREATE_USER, "cannot create NAT user")         \
 _(NON_SYN, "non-SYN packet try to create session")      \
 _(TCP_PACKETS, "TCP packets")                           \
+_(TCP_CLOSED, "drops due to TCP in transitory timeout") \
 _(UDP_PACKETS, "UDP packets")                           \
 _(ICMP_PACKETS, "ICMP packets")                         \
 _(OTHER_PACKETS, "other protocol packets")              \
@@ -276,6 +264,12 @@ typedef CLIB_PACKED(struct
   u32 per_user_index;
   u32 per_user_list_head_index;
 
+  /* head of LRU list in which this session is tracked */
+  u32 lru_head_index;
+  /* index in global LRU list */
+  u32 lru_index;
+  f64 last_lru_update;
+
   /* Last heard timer */
   f64 last_heard;
 
@@ -298,6 +292,7 @@ typedef CLIB_PACKED(struct
   u8 state;
   u32 i2o_fin_seq;
   u32 o2i_fin_seq;
+  u64 tcp_closed_timestamp;
 
   /* user index */
   u32 user_index;
@@ -322,8 +317,8 @@ typedef struct
 #define _(N, i, n, s) \
   u16 busy_##n##_ports; \
   u16 * busy_##n##_ports_per_thread; \
-  uword * busy_##n##_port_bitmap;
-  foreach_snat_protocol
+  u32 busy_##n##_port_refcounts[65535];
+  foreach_nat_protocol
 #undef _
 /* *INDENT-ON* */
 } snat_address_t;
@@ -414,7 +409,7 @@ typedef struct
   u32 vrf_id;
   u32 fib_index;
   /* protocol */
-  snat_protocol_t proto;
+  nat_protocol_t proto;
   /* 0 = disabled, otherwise client IP affinity sticky time in seconds */
   u32 affinity;
   /* worker threads used by backends/local host */
@@ -442,7 +437,7 @@ typedef struct
   u16 e_port;
   u32 sw_if_index;
   u32 vrf_id;
-  snat_protocol_t proto;
+  nat_protocol_t proto;
   u32 flags;
   int addr_only;
   int twice_nat;
@@ -474,11 +469,20 @@ typedef struct
   /* Pool of doubly-linked list elements */
   dlist_elt_t *list_pool;
 
+  /* LRU session list - head is stale, tail is fresh */
+  dlist_elt_t *lru_pool;
+  u32 tcp_trans_lru_head_index;
+  u32 tcp_estab_lru_head_index;
+  u32 udp_lru_head_index;
+  u32 icmp_lru_head_index;
+  u32 unk_proto_lru_head_index;
+
   /* NAT thread index */
   u32 snat_thread_index;
 
   /* real thread index */
   u32 thread_index;
+
 } snat_main_per_thread_data_t;
 
 struct snat_main_s;
@@ -494,10 +498,16 @@ typedef u32 (snat_icmp_match_function_t) (struct snat_main_s * sm,
 					  void *e);
 
 /* Return worker thread index for given packet */
-typedef u32 (snat_get_worker_function_t) (ip4_header_t * ip,
-					  u32 rx_fib_index, u8 is_output);
+typedef u32 (snat_get_worker_in2out_function_t) (ip4_header_t * ip,
+						 u32 rx_fib_index,
+						 u8 is_output);
 
-/* NAT address and port allacotaion function */
+typedef u32 (snat_get_worker_out2in_function_t) (vlib_buffer_t * b,
+						 ip4_header_t * ip,
+						 u32 rx_fib_index,
+						 u8 is_output);
+
+/* NAT address and port allocation function */
 typedef int (nat_alloc_out_addr_and_port_function_t) (snat_address_t *
 						      addresses,
 						      u32 fib_index,
@@ -505,6 +515,7 @@ typedef int (nat_alloc_out_addr_and_port_function_t) (snat_address_t *
 						      snat_session_key_t * k,
 						      u16 port_per_thread,
 						      u32 snat_thread_index);
+
 
 typedef struct snat_main_s
 {
@@ -516,8 +527,8 @@ typedef struct snat_main_s
   u32 num_workers;
   u32 first_worker_index;
   u32 *workers;
-  snat_get_worker_function_t *worker_in2out_cb;
-  snat_get_worker_function_t *worker_out2in_cb;
+  snat_get_worker_in2out_function_t *worker_in2out_cb;
+  snat_get_worker_out2in_function_t *worker_out2in_cb;
   u16 port_per_thread;
   u32 num_snat_thread;
 
@@ -554,7 +565,7 @@ typedef struct snat_main_s
   /* vector of outside fibs */
   nat_outside_fib_t *outside_fibs;
 
-  /* Vector of twice NAT addresses for extenal hosts */
+  /* Vector of twice NAT addresses for external hosts */
   snat_address_t *twice_nat_addresses;
 
   /* sw_if_indices whose intfc addresses should be auto-added */
@@ -575,21 +586,26 @@ typedef struct snat_main_s
   /* node indexes */
   u32 error_node_index;
 
+  /* handoff fq nodes  */
+  u32 handoff_out2in_index;
+  u32 handoff_in2out_index;
+  u32 handoff_in2out_output_index;
+
+  /* respect feature arc nodes */
+  u32 pre_out2in_node_index;
+  u32 pre_in2out_node_index;
+
   u32 in2out_node_index;
   u32 in2out_output_node_index;
   u32 in2out_fast_node_index;
   u32 in2out_slowpath_node_index;
   u32 in2out_slowpath_output_node_index;
-  u32 in2out_reass_node_index;
   u32 ed_in2out_node_index;
   u32 ed_in2out_slowpath_node_index;
-  u32 ed_in2out_reass_node_index;
   u32 out2in_node_index;
   u32 out2in_fast_node_index;
-  u32 out2in_reass_node_index;
   u32 ed_out2in_node_index;
   u32 ed_out2in_slowpath_node_index;
-  u32 ed_out2in_reass_node_index;
   u32 det_in2out_node_index;
   u32 det_out2in_node_index;
 
@@ -613,21 +629,26 @@ typedef struct snat_main_s
   u8 deterministic;
   u8 out2in_dpo;
   u8 endpoint_dependent;
+
   u32 translation_buckets;
-  u32 translation_memory_size;
+  uword translation_memory_size;
   u32 max_translations;
+  u32 *max_translations_per_fib;
+
   u32 user_buckets;
-  u32 user_memory_size;
+  uword user_memory_size;
   u32 max_translations_per_user;
+
   u32 outside_vrf_id;
   u32 outside_fib_index;
   u32 inside_vrf_id;
   u32 inside_fib_index;
 
   /* values of various timeouts */
+  // proto timeouts
   u32 udp_timeout;
-  u32 tcp_established_timeout;
   u32 tcp_transitory_timeout;
+  u32 tcp_established_timeout;
   u32 icmp_timeout;
 
   /* TCP MSS clamping */
@@ -647,7 +668,6 @@ typedef struct snat_main_s
   u8 log_level;
 
   /* convenience */
-  vlib_main_t *vlib_main;
   vnet_main_t *vnet_main;
   ip4_main_t *ip4_main;
   ip_lookup_main_t *ip4_lookup_main;
@@ -667,26 +687,26 @@ typedef struct
 } snat_runtime_t;
 
 extern snat_main_t snat_main;
+
+// nat pre ed next_node feature classification
+extern vlib_node_registration_t nat_default_node;
+extern vlib_node_registration_t nat_pre_in2out_node;
+extern vlib_node_registration_t nat_pre_out2in_node;
+
 extern vlib_node_registration_t snat_in2out_node;
 extern vlib_node_registration_t snat_in2out_output_node;
 extern vlib_node_registration_t snat_out2in_node;
-extern vlib_node_registration_t snat_in2out_fast_node;
-extern vlib_node_registration_t snat_out2in_fast_node;
 extern vlib_node_registration_t snat_in2out_worker_handoff_node;
 extern vlib_node_registration_t snat_in2out_output_worker_handoff_node;
 extern vlib_node_registration_t snat_out2in_worker_handoff_node;
 extern vlib_node_registration_t snat_det_in2out_node;
 extern vlib_node_registration_t snat_det_out2in_node;
-extern vlib_node_registration_t snat_hairpin_dst_node;
-extern vlib_node_registration_t snat_hairpin_src_node;
 extern vlib_node_registration_t nat44_ed_in2out_node;
 extern vlib_node_registration_t nat44_ed_in2out_output_node;
 extern vlib_node_registration_t nat44_ed_out2in_node;
-extern vlib_node_registration_t nat44_ed_hairpin_dst_node;
-extern vlib_node_registration_t nat44_ed_hairpin_src_node;
-extern vlib_node_registration_t nat44_ed_in2out_worker_handoff_node;
-extern vlib_node_registration_t nat44_ed_in2out_output_worker_handoff_node;
-extern vlib_node_registration_t nat44_ed_out2in_worker_handoff_node;
+
+extern fib_source_t nat_fib_src_hi;
+extern fib_source_t nat_fib_src_low;
 
 /* format functions */
 format_function_t format_snat_user;
@@ -696,11 +716,10 @@ format_function_t format_snat_session;
 format_function_t format_det_map_ses;
 format_function_t format_snat_key;
 format_function_t format_static_mapping_key;
-format_function_t format_snat_protocol;
+format_function_t format_nat_protocol;
 format_function_t format_nat_addr_and_port_alloc_alg;
-format_function_t format_nat44_reass_trace;
 /* unformat functions */
-unformat_function_t unformat_snat_protocol;
+unformat_function_t unformat_nat_protocol;
 
 /** \brief Check if SNAT session is created from static mapping.
     @param s SNAT session
@@ -745,13 +764,13 @@ unformat_function_t unformat_snat_protocol;
 #define is_affinity_sessions(s) (s->flags & SNAT_SESSION_FLAG_AFFINITY)
 
 /** \brief Check if NAT interface is inside.
-    @param i NAT interfce
+    @param i NAT interface
     @return 1 if inside interface
 */
 #define nat_interface_is_inside(i) i->flags & NAT_INTERFACE_FLAG_IS_INSIDE
 
 /** \brief Check if NAT interface is outside.
-    @param i NAT interfce
+    @param i NAT interface
     @return 1 if outside interface
 */
 #define nat_interface_is_outside(i) i->flags & NAT_INTERFACE_FLAG_IS_OUTSIDE
@@ -790,7 +809,11 @@ unformat_function_t unformat_snat_protocol;
     @param t TCP header
     @return 1 if client initiating TCP connection
 */
-#define tcp_is_init(t) ((t->flags & TCP_FLAG_SYN) && !(t->flags & TCP_FLAG_ACK))
+always_inline bool
+tcp_flags_is_init (u8 f)
+{
+  return (f & TCP_FLAG_SYN) && !(f & TCP_FLAG_ACK);
+}
 
 /* logging */
 #define nat_log_err(...) \
@@ -820,19 +843,19 @@ typedef enum nat_log_level_t_
 #undef _
 } nat_log_level_t;
 
-#define nat_elog(_level, _str)                    \
-do                                                \
-  {                                               \
-    snat_main_t *sm = &snat_main;                 \
-    if (PREDICT_FALSE (sm->log_level >= _level))  \
-      {                                           \
-        ELOG_TYPE_DECLARE (e) =                   \
-          {                                       \
-            .format = "nat-msg " _str,            \
-            .format_args = "",                    \
-          };                                      \
-        ELOG_DATA (&sm->vlib_main->elog_main, e); \
-      }                                           \
+#define nat_elog(_level, _str)                           \
+do                                                       \
+  {                                                      \
+    snat_main_t *sm = &snat_main;                        \
+    if (PREDICT_FALSE (sm->log_level >= _level))         \
+      {                                                  \
+        ELOG_TYPE_DECLARE (e) =                          \
+          {                                              \
+            .format = "nat-msg " _str,                   \
+            .format_args = "",                           \
+          };                                             \
+        ELOG_DATA (&vlib_global_main.elog_main, e);      \
+      }                                                  \
   } while (0);
 
 #define nat_elog_addr(_level, _str, _addr)               \
@@ -940,24 +963,24 @@ do                                                                           \
     }                                                                        \
   } while (0);
 
-#define nat_elog_X1(_level, _fmt, _arg, _val1)         \
-do                                                     \
-  {                                                    \
-    snat_main_t *sm = &snat_main;                      \
-    if (PREDICT_FALSE (sm->log_level >= _level))       \
-      {                                                \
-        ELOG_TYPE_DECLARE (e) =                        \
-          {                                            \
-            .format = "nat-msg " _fmt,                 \
-            .format_args = _arg,                       \
-          };                                           \
-        CLIB_PACKED(struct                             \
-          {                                            \
-            typeof (_val1) val1;                       \
-          }) *ed;                                      \
-        ed = ELOG_DATA (&sm->vlib_main->elog_main, e); \
-        ed->val1 = _val1;                              \
-      }                                                \
+#define nat_elog_X1(_level, _fmt, _arg, _val1)            \
+do                                                        \
+  {                                                       \
+    snat_main_t *sm = &snat_main;                         \
+    if (PREDICT_FALSE (sm->log_level >= _level))          \
+      {                                                   \
+        ELOG_TYPE_DECLARE (e) =                           \
+          {                                               \
+            .format = "nat-msg " _fmt,                    \
+            .format_args = _arg,                          \
+          };                                              \
+        CLIB_PACKED(struct                                \
+          {                                               \
+            typeof (_val1) val1;                          \
+          }) *ed;                                         \
+        ed = ELOG_DATA (&vlib_global_main.elog_main, e);  \
+        ed->val1 = _val1;                                 \
+      }                                                   \
   } while (0);
 
 #define nat_elog_notice(nat_elog_str) \
@@ -1049,9 +1072,6 @@ void nat44_ed_hairpinning_unknown_proto (snat_main_t * sm, vlib_buffer_t * b,
 int snat_hairpinning (snat_main_t * sm, vlib_buffer_t * b0,
 		      ip4_header_t * ip0, udp_header_t * udp0,
 		      tcp_header_t * tcp0, u32 proto0, int is_ed);
-void nat44_reass_hairpinning (snat_main_t * sm, vlib_buffer_t * b0,
-			      ip4_header_t * ip0, u16 sport, u16 dport,
-			      u32 proto0, int is_ed);
 
 /* Call back functions for clib_bihash_add_or_overwrite_stale */
 int nat44_i2o_ed_is_idle_session_cb (clib_bihash_kv_16_8_t * kv, void *arg);
@@ -1060,13 +1080,9 @@ int nat44_i2o_is_idle_session_cb (clib_bihash_kv_8_8_t * kv, void *arg);
 int nat44_o2i_is_idle_session_cb (clib_bihash_kv_8_8_t * kv, void *arg);
 
 /**
- * @brief Increment IPv4 address
- */
-void increment_v4_address (ip4_address_t * a);
-
-/**
  * @brief Add external address to NAT44 pool
  *
+ * @param sm        snat global configuration data
  * @param addr      IPv4 address
  * @param vrf_id    VRF id of tenant, ~0 means independent of VRF
  * @param twice_nat 1 if twice NAT address
@@ -1079,6 +1095,7 @@ int snat_add_address (snat_main_t * sm, ip4_address_t * addr, u32 vrf_id,
 /**
  * @brief Delete external address from NAT44 pool
  *
+ * @param sm        snat global configuration data
  * @param addr      IPv4 address
  * @param delete_sm 1 if delete static mapping using address
  * @param twice_nat 1 if twice NAT address
@@ -1120,7 +1137,7 @@ void nat44_add_del_address_dpo (ip4_address_t addr, u8 is_add);
 int snat_add_static_mapping (ip4_address_t l_addr, ip4_address_t e_addr,
 			     u16 l_port, u16 e_port, u32 vrf_id,
 			     int addr_only, u32 sw_if_index,
-			     snat_protocol_t proto, int is_add,
+			     nat_protocol_t proto, int is_add,
 			     twice_nat_type_t twice_nat, u8 out2in_only,
 			     u8 * tag, u8 identity_nat);
 
@@ -1140,14 +1157,14 @@ int snat_add_static_mapping (ip4_address_t l_addr, ip4_address_t e_addr,
  * @return 0 on success, non-zero value otherwise
  */
 int nat44_add_del_lb_static_mapping (ip4_address_t e_addr, u16 e_port,
-				     snat_protocol_t proto,
+				     nat_protocol_t proto,
 				     nat44_lb_addr_port_t * locals, u8 is_add,
 				     twice_nat_type_t twice_nat,
 				     u8 out2in_only, u8 * tag, u32 affinity);
 
 int nat44_lb_static_mapping_add_del_local (ip4_address_t e_addr, u16 e_port,
 					   ip4_address_t l_addr, u16 l_port,
-					   snat_protocol_t proto, u32 vrf_id,
+					   nat_protocol_t proto, u32 vrf_id,
 					   u8 probability, u8 is_add);
 
 clib_error_t *snat_api_init (vlib_main_t * vm, snat_main_t * sm);
@@ -1185,11 +1202,11 @@ int snat_interface_add_del_output_feature (u32 sw_if_index, u8 is_inside,
 					   int is_del);
 
 /**
- * @brief Add/delete NAT44 pool address from specific interfce
+ * @brief Add/delete NAT44 pool address from specific interface
  *
  * @param sw_if_index software index of the interface
  * @param is_del      1 = delete, 0 = add
- * @param twice_nat   1 = twice NAT address for extenal hosts
+ * @param twice_nat   1 = twice NAT address for external hosts
  *
  * @return 0 on success, non-zero value otherwise
  */
@@ -1208,11 +1225,12 @@ int snat_add_interface_address (snat_main_t * sm, u32 sw_if_index, int is_del,
  * @return 0 on success, non-zero value otherwise
  */
 int nat44_del_session (snat_main_t * sm, ip4_address_t * addr, u16 port,
-		       snat_protocol_t proto, u32 vrf_id, int is_in);
+		       nat_protocol_t proto, u32 vrf_id, int is_in);
 
 /**
  * @brief Delete NAT44 endpoint-dependent session
  *
+ * @param sm     snat global configuration data
  * @param addr   IPv4 address
  * @param port   L4 port number
  * @param proto  L4 protocol
@@ -1226,8 +1244,9 @@ int nat44_del_ed_session (snat_main_t * sm, ip4_address_t * addr, u16 port,
 			  u32 vrf_id, int is_in);
 
 /**
- * @brief Free NAT44 session data (lookup keys, external addrres port)
+ * @brief Free NAT44 session data (lookup keys, external address port)
  *
+ * @param sm           snat global configuration data
  * @param s            NAT session
  * @param thread_index thread index
  * @param is_ha        is HA event
@@ -1236,39 +1255,66 @@ void nat_free_session_data (snat_main_t * sm, snat_session_t * s,
 			    u32 thread_index, u8 is_ha);
 
 /**
+ * @brief Set NAT44 session limit (session limit, vrf id)
+ *
+ * @param session_limit Session limit
+ * @param vrf_id        VRF id
+ * @return 0 on success, non-zero value otherwise
+ */
+int nat44_set_session_limit (u32 session_limit, u32 vrf_id);
+
+/**
+ * @brief Free NAT44 ED session data (lookup keys, external address port)
+ *
+ * @param s            NAT session
+ * @param thread_index thread index
+ * @param is_ha        is HA event
+ */
+void
+nat44_free_session_data (snat_main_t * sm, snat_session_t * s,
+			 u32 thread_index, u8 is_ha);
+
+/**
+ * @brief Initialize NAT44 data
+ *
+ * @param tsm          per thread data
+ */
+void nat44_db_init (snat_main_per_thread_data_t * tsm);
+
+/**
+ * @brief Free NAT44 data
+ *
+ * @param tsm          per thread data
+ */
+void nat44_db_free (snat_main_per_thread_data_t * tsm);
+
+/**
  * @brief Find or create NAT user
  *
+ * @param sm           snat global configuration data
  * @param addr         IPv4 address
  * @param fib_index    FIB table index
  * @param thread_index thread index
  *
  * @return NAT user data structure on success otherwise zero value
  */
-snat_user_t *nat_user_get_or_create (snat_main_t * sm, ip4_address_t * addr,
-				     u32 fib_index, u32 thread_index);
+snat_user_t *nat_user_get_or_create (snat_main_t * sm,
+				     ip4_address_t * addr, u32 fib_index,
+				     u32 thread_index);
 
 /**
  * @brief Allocate new NAT session or recycle last used
  *
+ * @param sm           snat global configuration data
  * @param u            NAT user
  * @param thread_index thread index
+ * @param now          time now
  *
  * @return session data structure on success otherwise zero value
  */
 snat_session_t *nat_session_alloc_or_recycle (snat_main_t * sm,
 					      snat_user_t * u,
 					      u32 thread_index, f64 now);
-
-/**
- * @brief Allocate NAT endpoint-dependent session
- *
- * @param u            NAT user
- * @param thread_index thread index
- *
- * @return session data structure on success otherwise zero value
- */
-snat_session_t *nat_ed_session_alloc (snat_main_t * sm, snat_user_t * u,
-				      u32 thread_index, f64 now);
 
 /**
  * @brief Set address and port assignment algorithm for MAP-E CE
@@ -1311,7 +1357,7 @@ void snat_free_outside_address_and_port (snat_address_t * addresses,
  * @param fib_index         FIB table index
  * @param thread_index      thread index
  * @param k                 allocated address and port pair
- * @param port_per_thread   number of ports per threead
+ * @param port_per_thread   number of ports per thread
  * @param snat_thread_index NAT thread index
  *
  * @return 0 on success, non-zero value otherwise
@@ -1380,7 +1426,6 @@ typedef struct
 } tcp_udp_header_t;
 
 #endif /* __included_nat_h__ */
-
 /*
  * fd.io coding-style-patch-verification: ON
  *

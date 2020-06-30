@@ -81,6 +81,7 @@ typedef struct
   uword alloc_arena;		      /**< memory allocation arena  */
   uword alloc_arena_next;	      /**< first available mem chunk */
   uword alloc_arena_size;	      /**< size of the arena */
+  uword alloc_arena_mapped;	      /**< size of mapped memory in the arena */
 } clib_bihash_t;
 
 /** Get pointer to value page given its clib mheap offset */
@@ -165,17 +166,25 @@ void clib_bihash_prefetch_data (clib_bihash * h, u64 hash);
 int clib_bihash_search_inline_2
   (clib_bihash * h, clib_bihash_kv * search_key, clib_bihash_kv * valuep);
 
+/* Calback function for walking a bihash table
+ *
+ * @param kv - KV pair visited
+ * @param ctx - Context passed to the walk
+ * @return BIHASH_WALK_CONTINUE to continue BIHASH_WALK_STOP to stop
+ */
+typedef int (*clib_bihash_foreach_key_value_pair_cb) (clib_bihash_kv * kv,
+						      void *ctx);
+
 /** Visit active (key,value) pairs in a bi-hash table
 
     @param h - the bi-hash table to search
     @param callback - function to call with each active (key,value) pair
     @param arg - arbitrary second argument passed to the callback function
     First argument is the (key,value) pair to visit
-    @note Trying to supply a proper function prototype for the
-    callback function appears to be a fool's errand.
 */
 void clib_bihash_foreach_key_value_pair (clib_bihash * h,
-					 void *callback, void *arg);
+					 clib_bihash_foreach_key_value_pair_cb
+					 * callback, void *arg);
 
 /*
  * fd.io coding-style-patch-verification: ON

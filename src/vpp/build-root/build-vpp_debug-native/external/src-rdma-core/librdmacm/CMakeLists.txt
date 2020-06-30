@@ -5,6 +5,7 @@ publish_headers(rdma
   rsocket.h
   )
 publish_headers(infiniband
+  acm.h
   ib.h
   )
 
@@ -21,6 +22,7 @@ target_link_libraries(rdmacm LINK_PUBLIC ibverbs)
 target_link_libraries(rdmacm LINK_PRIVATE
   ${NL_LIBRARIES}
   ${CMAKE_THREAD_LIBS_INIT}
+  ${RT_LIBRARIES}
   )
 
 # The preload library is a bit special, it needs to be open coded

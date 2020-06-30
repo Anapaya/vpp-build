@@ -35,8 +35,6 @@ typedef enum {
   MAX_SESSION_ENTRIES = 1,
   MAX_BIB_ENTRIES = 2,
   MAX_ENTRIES_PER_USER = 3,
-  MAX_FRAGMENTS_PENDING_REASSEMBLY = 5,
-  MAX_FRAGMENTS_PENDING_REASSEMBLY_IP6,
 } quota_exceed_event_t;
 
 typedef struct {
@@ -115,12 +113,12 @@ void snat_ipfix_logging_init (vlib_main_t * vm);
 int snat_ipfix_logging_enable_disable (int enable, u32 domain_id, u16 src_port);
 void snat_ipfix_logging_nat44_ses_create (u32 thread_index, u32 src_ip,
                                           u32 nat_src_ip,
-                                          snat_protocol_t snat_proto,
+                                          nat_protocol_t nat_proto,
                                           u16 src_port, u16 nat_src_port,
                                           u32 vrf_id);
 void snat_ipfix_logging_nat44_ses_delete (u32 thread_index, u32 src_ip,
                                           u32 nat_src_ip,
-                                          snat_protocol_t snat_proto,
+                                          nat_protocol_t nat_proto,
                                           u16 src_port, u16 nat_src_port,
                                           u32 vrf_id);
 void snat_ipfix_logging_addresses_exhausted(u32 thread_index, u32 pool_id);
@@ -128,10 +126,6 @@ void snat_ipfix_logging_max_entries_per_user(u32 thread_index,
                                              u32 limit, u32 src_ip);
 void nat_ipfix_logging_max_sessions(u32 thread_index, u32 limit);
 void nat_ipfix_logging_max_bibs(u32 thread_index, u32 limit);
-void nat_ipfix_logging_max_fragments_ip4(u32 thread_index,
-                                         u32 limit, ip4_address_t * src);
-void nat_ipfix_logging_max_fragments_ip6(u32 thread_index,
-                                         u32 limit, ip6_address_t * src);
 void nat_ipfix_logging_nat64_session(u32 thread_index,
                                      ip6_address_t * src_ip,
                                      ip4_address_t * nat_src_ip, u8 proto,

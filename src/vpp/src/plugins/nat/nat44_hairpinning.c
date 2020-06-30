@@ -22,7 +22,6 @@
 #include <vnet/fib/ip4_fib.h>
 #include <nat/nat.h>
 #include <nat/nat_inlines.h>
-#include <nat/nat_reass.h>
 
 typedef enum
 {
@@ -127,9 +126,9 @@ snat_hairpinning (snat_main_t * sm,
       if (is_ed)
 	{
 	  clib_bihash_kv_16_8_t ed_kv, ed_value;
-	  make_ed_kv (&ed_kv, &ip0->dst_address, &ip0->src_address,
+	  make_ed_kv (&ip0->dst_address, &ip0->src_address,
 		      ip0->protocol, sm->outside_fib_index, udp0->dst_port,
-		      udp0->src_port);
+		      udp0->src_port, ~0ULL, &ed_kv);
 	  rv = clib_bihash_search_16_8 (&sm->per_thread_data[ti].out2in_ed,
 					&ed_kv, &ed_value);
 	  si = ed_value.value;
@@ -162,7 +161,7 @@ snat_hairpinning (snat_main_t * sm,
       old_dst_port0 = tcp0->dst;
       if (PREDICT_TRUE (new_dst_port0 != old_dst_port0))
 	{
-	  if (PREDICT_TRUE (proto0 == SNAT_PROTOCOL_TCP))
+	  if (PREDICT_TRUE (proto0 == NAT_PROTOCOL_TCP))
 	    {
 	      tcp0->dst = new_dst_port0;
 	      sum0 = tcp0->checksum;
@@ -180,7 +179,7 @@ snat_hairpinning (snat_main_t * sm,
 	}
       else
 	{
-	  if (PREDICT_TRUE (proto0 == SNAT_PROTOCOL_TCP))
+	  if (PREDICT_TRUE (proto0 == NAT_PROTOCOL_TCP))
 	    {
 	      sum0 = tcp0->checksum;
 	      sum0 = ip_csum_update (sum0, old_dst_addr0, new_dst_addr0,
@@ -211,26 +210,28 @@ snat_icmp_hairpinning (snat_main_t * sm,
   snat_session_t *s0;
   snat_static_mapping_t *m0;
 
-  if (icmp_is_error_message (icmp0))
+  if (icmp_type_is_error_message
+      (vnet_buffer (b0)->ip.reass.icmp_type_or_tcp_flags))
     {
       ip4_header_t *inner_ip0 = 0;
       tcp_udp_header_t *l4_header = 0;
 
       inner_ip0 = (ip4_header_t *) ((icmp_echo_header_t *) (icmp0 + 1) + 1);
       l4_header = ip4_next_header (inner_ip0);
-      u32 protocol = ip_proto_to_snat_proto (inner_ip0->protocol);
+      u32 protocol = ip_proto_to_nat_proto (inner_ip0->protocol);
 
-      if (protocol != SNAT_PROTOCOL_TCP && protocol != SNAT_PROTOCOL_UDP)
+      if (protocol != NAT_PROTOCOL_TCP && protocol != NAT_PROTOCOL_UDP)
 	return 1;
 
       if (is_ed)
 	{
 	  clib_bihash_kv_16_8_t ed_kv, ed_value;
-	  make_ed_kv (&ed_kv, &ip0->dst_address, &ip0->src_address,
+	  make_ed_kv (&ip0->dst_address, &ip0->src_address,
 		      inner_ip0->protocol, sm->outside_fib_index,
-		      l4_header->src_port, l4_header->dst_port);
-	  if (clib_bihash_search_16_8 (&sm->per_thread_data[ti].out2in_ed,
-				       &ed_kv, &ed_value))
+		      l4_header->src_port, l4_header->dst_port, ~0ULL,
+		      &ed_kv);
+	  if (clib_bihash_search_16_8
+	      (&sm->per_thread_data[ti].out2in_ed, &ed_kv, &ed_value))
 	    return 1;
 	  si = ed_value.value;
 	}
@@ -297,7 +298,7 @@ snat_icmp_hairpinning (snat_main_t * sm,
 	      u16 icmp_id0 = echo0->identifier;
 	      key0.addr = ip0->dst_address;
 	      key0.port = icmp_id0;
-	      key0.protocol = SNAT_PROTOCOL_ICMP;
+	      key0.protocol = NAT_PROTOCOL_ICMP;
 	      key0.fib_index = sm->outside_fib_index;
 	      kv0.key = key0.as_u64;
 	      if (sm->num_workers > 1)
@@ -391,14 +392,14 @@ nat44_ed_hairpinning_unknown_proto (snat_main_t * sm,
   snat_main_per_thread_data_t *tsm;
 
   if (sm->num_workers > 1)
-    ti = sm->worker_out2in_cb (ip, sm->outside_fib_index, 0);
+    ti = sm->worker_out2in_cb (b, ip, sm->outside_fib_index, 0);
   else
     ti = sm->num_workers;
   tsm = &sm->per_thread_data[ti];
 
   old_addr = ip->dst_address.as_u32;
-  make_ed_kv (&s_kv, &ip->dst_address, &ip->src_address, ip->protocol,
-	      sm->outside_fib_index, 0, 0);
+  make_ed_kv (&ip->dst_address, &ip->src_address, ip->protocol,
+	      sm->outside_fib_index, 0, 0, ~0ULL, &s_kv);
   if (clib_bihash_search_16_8 (&tsm->out2in_ed, &s_kv, &s_value))
     {
       make_sm_kv (&kv, &ip->dst_address, 0, 0, 0);
@@ -421,119 +422,6 @@ nat44_ed_hairpinning_unknown_proto (snat_main_t * sm,
   sum = ip->checksum;
   sum = ip_csum_update (sum, old_addr, new_addr, ip4_header_t, dst_address);
   ip->checksum = ip_csum_fold (sum);
-}
-#endif
-
-#ifndef CLIB_MARCH_VARIANT
-void
-nat44_reass_hairpinning (snat_main_t * sm,
-			 vlib_buffer_t * b0,
-			 ip4_header_t * ip0,
-			 u16 sport, u16 dport, u32 proto0, int is_ed)
-{
-  snat_session_key_t key0, sm0;
-  snat_session_t *s0;
-  clib_bihash_kv_8_8_t kv0, value0;
-  ip_csum_t sum0;
-  u32 new_dst_addr0 = 0, old_dst_addr0, ti = 0, si;
-  u16 new_dst_port0, old_dst_port0;
-  udp_header_t *udp0;
-  tcp_header_t *tcp0;
-  int rv;
-
-  key0.addr = ip0->dst_address;
-  key0.port = dport;
-  key0.protocol = proto0;
-  key0.fib_index = sm->outside_fib_index;
-  kv0.key = key0.as_u64;
-
-  udp0 = ip4_next_header (ip0);
-
-  /* Check if destination is static mappings */
-  if (!snat_static_mapping_match (sm, key0, &sm0, 1, 0, 0, 0, 0, 0))
-    {
-      new_dst_addr0 = sm0.addr.as_u32;
-      new_dst_port0 = sm0.port;
-      vnet_buffer (b0)->sw_if_index[VLIB_TX] = sm0.fib_index;
-    }
-  /* or active sessions */
-  else
-    {
-      if (sm->num_workers > 1)
-	ti =
-	  (clib_net_to_host_u16 (udp0->dst_port) -
-	   1024) / sm->port_per_thread;
-      else
-	ti = sm->num_workers;
-
-      if (is_ed)
-	{
-	  clib_bihash_kv_16_8_t ed_kv, ed_value;
-	  make_ed_kv (&ed_kv, &ip0->dst_address, &ip0->src_address,
-		      ip0->protocol, sm->outside_fib_index, udp0->dst_port,
-		      udp0->src_port);
-	  rv = clib_bihash_search_16_8 (&sm->per_thread_data[ti].out2in_ed,
-					&ed_kv, &ed_value);
-	  si = ed_value.value;
-	}
-      else
-	{
-	  rv = clib_bihash_search_8_8 (&sm->per_thread_data[ti].out2in, &kv0,
-				       &value0);
-	  si = value0.value;
-	}
-      if (!rv)
-	{
-	  s0 = pool_elt_at_index (sm->per_thread_data[ti].sessions, si);
-	  new_dst_addr0 = s0->in2out.addr.as_u32;
-	  new_dst_port0 = s0->in2out.port;
-	  vnet_buffer (b0)->sw_if_index[VLIB_TX] = s0->in2out.fib_index;
-	}
-    }
-
-  /* Destination is behind the same NAT, use internal address and port */
-  if (new_dst_addr0)
-    {
-      old_dst_addr0 = ip0->dst_address.as_u32;
-      ip0->dst_address.as_u32 = new_dst_addr0;
-      sum0 = ip0->checksum;
-      sum0 = ip_csum_update (sum0, old_dst_addr0, new_dst_addr0,
-			     ip4_header_t, dst_address);
-      ip0->checksum = ip_csum_fold (sum0);
-
-      old_dst_port0 = dport;
-      if (PREDICT_TRUE (new_dst_port0 != old_dst_port0 &&
-			ip4_is_first_fragment (ip0)))
-	{
-	  if (PREDICT_TRUE (proto0 == SNAT_PROTOCOL_TCP))
-	    {
-	      tcp0 = ip4_next_header (ip0);
-	      tcp0->dst = new_dst_port0;
-	      sum0 = tcp0->checksum;
-	      sum0 = ip_csum_update (sum0, old_dst_addr0, new_dst_addr0,
-				     ip4_header_t, dst_address);
-	      sum0 = ip_csum_update (sum0, old_dst_port0, new_dst_port0,
-				     ip4_header_t /* cheat */ , length);
-	      tcp0->checksum = ip_csum_fold (sum0);
-	    }
-	  else
-	    {
-	      udp0->dst_port = new_dst_port0;
-	      udp0->checksum = 0;
-	    }
-	}
-      else
-	{
-	  if (PREDICT_TRUE (proto0 == SNAT_PROTOCOL_TCP))
-	    {
-	      tcp0 = ip4_next_header (ip0);
-	      sum0 = tcp0->checksum;
-	      sum0 = ip_csum_update (sum0, old_dst_addr0, new_dst_addr0,
-				     ip4_header_t, dst_address);
-	      tcp0->checksum = ip_csum_fold (sum0);
-	    }
-	}
-    }
 }
 #endif
 
@@ -585,7 +473,7 @@ nat44_hairpinning_fn_inline (vlib_main_t * vm,
 	  udp0 = ip4_next_header (ip0);
 	  tcp0 = (tcp_header_t *) udp0;
 
-	  proto0 = ip_proto_to_snat_proto (ip0->protocol);
+	  proto0 = ip_proto_to_nat_proto (ip0->protocol);
 
 	  vnet_get_config_data (&cm->config_main, &b0->current_config_index,
 				&next0, 0);
@@ -696,19 +584,19 @@ snat_hairpin_dst_fn_inline (vlib_main_t * vm,
 	  next0 = NAT_HAIRPIN_NEXT_LOOKUP;
 	  ip0 = vlib_buffer_get_current (b0);
 
-	  proto0 = ip_proto_to_snat_proto (ip0->protocol);
+	  proto0 = ip_proto_to_nat_proto (ip0->protocol);
 
 	  vnet_buffer (b0)->snat.flags = 0;
 	  if (PREDICT_FALSE (is_hairpinning (sm, &ip0->dst_address)))
 	    {
-	      if (proto0 == SNAT_PROTOCOL_TCP || proto0 == SNAT_PROTOCOL_UDP)
+	      if (proto0 == NAT_PROTOCOL_TCP || proto0 == NAT_PROTOCOL_UDP)
 		{
 		  udp_header_t *udp0 = ip4_next_header (ip0);
 		  tcp_header_t *tcp0 = (tcp_header_t *) udp0;
 
 		  snat_hairpinning (sm, b0, ip0, udp0, tcp0, proto0, is_ed);
 		}
-	      else if (proto0 == SNAT_PROTOCOL_ICMP)
+	      else if (proto0 == NAT_PROTOCOL_ICMP)
 		{
 		  icmp46_header_t *icmp0 = ip4_next_header (ip0);
 

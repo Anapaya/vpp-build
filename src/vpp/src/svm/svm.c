@@ -61,6 +61,10 @@ svm_get_root_rp (void)
 u64
 svm_get_global_region_base_va ()
 {
+#ifdef CLIB_SANITIZE_ADDR
+  return 0x200000000000;
+#endif
+
 #if __aarch64__
   /* On AArch64 VA space can have different size, from 36 to 48 bits.
      Here we are trying to detect VA bits by parsing /proc/self/maps
@@ -103,7 +107,7 @@ region_lock (svm_region_t * rp, int tag)
   rp->mutex_owner_pid = getpid ();
   rp->mutex_owner_tag = tag;
 #endif
-  ASSERT (nheld < MAXLOCK);
+  ASSERT (nheld < MAXLOCK);	//NOSONAR
   /*
    * Keep score of held mutexes so we can try to exit
    * cleanly if the world comes to an end at the worst possible
@@ -236,16 +240,6 @@ format_svm_region (u8 * s, va_list * args)
 		}
 	    }
 	}
-#if USE_DLMALLOC == 0
-      s = format (s, "  rgn heap stats: %U", format_mheap,
-		  rp->region_heap, 0);
-      if ((rp->flags & SVM_FLAGS_MHEAP) && rp->data_heap)
-	{
-	  s = format (s, "\n  data heap stats: %U", format_mheap,
-		      rp->data_heap, 1);
-	}
-      s = format (s, "\n");
-#endif
     }
 
   return (s);
@@ -335,24 +329,16 @@ svm_data_region_create (svm_map_region_args_t * a, svm_region_t * rp)
 	  return -3;
 	}
       close (fd);
+      CLIB_MEM_UNPOISON (rp->data_base, map_size);
       rp->backing_file = (char *) format (0, "%s\0", a->backing_file);
       rp->flags |= SVM_FLAGS_FILE;
     }
 
   if (a->flags & SVM_FLAGS_MHEAP)
     {
-#if USE_DLMALLOC == 0
-      mheap_t *heap_header;
-      rp->data_heap =
-	mheap_alloc_with_flags ((void *) (rp->data_base), map_size,
-				MHEAP_FLAG_DISABLE_VM);
-      heap_header = mheap_header (rp->data_heap);
-      heap_header->flags |= MHEAP_FLAG_THREAD_SAFE;
-#else
       rp->data_heap = create_mspace_with_base (rp->data_base,
 					       map_size, 1 /* locked */ );
       mspace_disable_expand (rp->data_heap);
-#endif
 
       rp->flags |= SVM_FLAGS_MHEAP;
     }
@@ -429,6 +415,7 @@ svm_data_region_map (svm_map_region_args_t * a, svm_region_t * rp)
 	  return -3;
 	}
       close (fd);
+      CLIB_MEM_UNPOISON (rp->data_base, map_size);
     }
   return 0;
 }
@@ -500,21 +487,12 @@ svm_region_init_mapped_region (svm_map_region_args_t * a, svm_region_t * rp)
   rp->virtual_base = a->baseva;
   rp->virtual_size = a->size;
 
-#if USE_DLMALLOC == 0
-  rp->region_heap =
-    mheap_alloc_with_flags (uword_to_pointer
-			    (a->baseva + MMAP_PAGESIZE, void *),
-			    (a->pvt_heap_size !=
-			     0) ? a->pvt_heap_size : SVM_PVT_MHEAP_SIZE,
-			    MHEAP_FLAG_DISABLE_VM);
-#else
   rp->region_heap = create_mspace_with_base
     (uword_to_pointer (a->baseva + MMAP_PAGESIZE, void *),
      (a->pvt_heap_size !=
       0) ? a->pvt_heap_size : SVM_PVT_MHEAP_SIZE, 1 /* locked */ );
 
   mspace_disable_expand (rp->region_heap);
-#endif
 
   oldheap = svm_push_pvt_heap (rp);
 
@@ -631,6 +609,7 @@ svm_map_region (svm_map_region_args_t * a)
 	  return (0);
 	}
       close (svm_fd);
+      CLIB_MEM_UNPOISON (rp, a->size);
 
       svm_region_init_mapped_region (a, rp);
 
@@ -687,6 +666,9 @@ svm_map_region (svm_map_region_args_t * a)
 	  clib_warning ("mmap");
 	  return (0);
 	}
+
+      CLIB_MEM_UNPOISON (rp, MMAP_PAGESIZE);
+
       /*
        * We lost the footrace to create this region; make sure
        * the winner has crossed the finish line.
@@ -722,6 +704,8 @@ svm_map_region (svm_map_region_args_t * a)
 	}
 
       close (svm_fd);
+
+      CLIB_MEM_UNPOISON (rp, a->size);
 
       if ((uword) rp != rp->virtual_base)
 	{
@@ -770,7 +754,7 @@ svm_map_region (svm_map_region_args_t * a)
       return ((void *) rp);
 
     }
-  return 0;			/* NOTREACHED */
+  return 0;			/* NOTREACHED *///NOSONAR
 }
 
 static void
@@ -779,7 +763,7 @@ svm_mutex_cleanup (void)
   int i;
   for (i = 0; i < nheld; i++)
     {
-      pthread_mutex_unlock (mutexes_held[i]);
+      pthread_mutex_unlock (mutexes_held[i]);	//NOSONAR
     }
 }
 
@@ -1066,6 +1050,7 @@ svm_region_unmap_internal (void *rp_arg, u8 is_client)
   oldheap = svm_push_pvt_heap (rp);	/* nb vec_delete() in the loop */
 
   /* Remove the caller from the list of mappers */
+  CLIB_MEM_UNPOISON (rp->client_pids, vec_bytes (rp->client_pids));
   for (i = 0; i < vec_len (rp->client_pids); i++)
     {
       if (rp->client_pids[i] == mypid)
@@ -1198,6 +1183,7 @@ svm_region_exit_internal (u8 is_client)
   virtual_base = root_rp->virtual_base;
   virtual_size = root_rp->virtual_size;
 
+  CLIB_MEM_UNPOISON (root_rp->client_pids, vec_bytes (root_rp->client_pids));
   for (i = 0; i < vec_len (root_rp->client_pids); i++)
     {
       if (root_rp->client_pids[i] == mypid)

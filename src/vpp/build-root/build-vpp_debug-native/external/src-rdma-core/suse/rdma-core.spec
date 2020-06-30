@@ -23,7 +23,7 @@
 
 %define         git_ver %{nil}
 Name:           rdma-core
-Version:        25.0
+Version:        28.0
 Release:        0
 Summary:        RDMA core userspace libraries and daemons
 License:        GPL-2.0-only OR BSD-2-Clause
@@ -38,7 +38,7 @@ Group:          Productivity/Networking/Other
 %define ibnetdisc_major 5
 %define mad_major       5
 
-%define  efa_lname    libefa-%{efa_so_major}
+%define  efa_lname    libefa%{efa_so_major}
 %define  verbs_lname  libibverbs%{verbs_so_major}
 %define  rdmacm_lname librdmacm%{rdmacm_so_major}
 %define  umad_lname   libibumad%{umad_so_major}
@@ -62,17 +62,21 @@ BuildRequires:  gcc
 BuildRequires:  pandoc
 BuildRequires:  pkgconfig
 BuildRequires:  python3-base
+BuildRequires:  python3-docutils
 BuildRequires:  pkgconfig(libsystemd)
 BuildRequires:  pkgconfig(libudev)
 BuildRequires:  pkgconfig(systemd)
 BuildRequires:  pkgconfig(udev)
-BuildRequires:  /usr/bin/rst2man
 %if %{with_pyverbs}
 BuildRequires:  python3-Cython
 BuildRequires:  python3-devel
 %endif
 %ifnarch s390 s390x
+%if 0%{?suse_version} >= 1550
+BuildRequires:  valgrind-client-headers
+%else
 BuildRequires:  valgrind-devel
+%endif
 %endif
 BuildRequires:  systemd-rpm-macros
 BuildRequires:  pkgconfig(libnl-3.0)
@@ -122,7 +126,7 @@ BuildRequires:  ninja
 %else
 # Fallback to make otherwise
 BuildRequires:  make
-%define make_jobs make -v %{?_smp_mflags}
+%define make_jobs make VERBOSE=1 %{?_smp_mflags}
 %define cmake_install DESTDIR=%{buildroot} make install
 %endif
 
@@ -165,9 +169,11 @@ BuildRequires:  pkgconfig(libnl-3.0)
 BuildRequires:  pkgconfig(libnl-route-3.0)
 %endif
 
-Requires: infiniband-diags = %{version}-%{release}
-Provides: infiniband-diags-devel = %{version}-%{release}
-Obsoletes: infiniband-diags-devel < %{version}-%{release}
+Requires:       infiniband-diags = %{version}-%{release}
+Provides:       infiniband-diags-devel = %{version}-%{release}
+Obsoletes:      infiniband-diags-devel < %{version}-%{release}
+Provides:       libibmad-devel = %{version}-%{release}
+Obsoletes:      libibmad-devel < %{version}
 
 %description devel
 RDMA core development libraries and headers.
@@ -176,7 +182,6 @@ RDMA core development libraries and headers.
 Summary:        Library & drivers for direct userspace use of InfiniBand/iWARP/RoCE hardware
 Group:          System/Libraries
 Requires:       %{name}%{?_isa} = %{version}-%{release}
-Obsoletes:      libcxgb3-rdmav2 < %{version}-%{release}
 Obsoletes:      libcxgb4-rdmav2 < %{version}-%{release}
 Obsoletes:      libefa-rdmav2 < %{version}-%{release}
 Obsoletes:      libhfi1verbs-rdmav2 < %{version}-%{release}
@@ -185,7 +190,6 @@ Obsoletes:      libipathverbs-rdmav2 < %{version}-%{release}
 Obsoletes:      libmlx4-rdmav2 < %{version}-%{release}
 Obsoletes:      libmlx5-rdmav2 < %{version}-%{release}
 Obsoletes:      libmthca-rdmav2 < %{version}-%{release}
-Obsoletes:      libnes-rdmav2 < %{version}-%{release}
 Obsoletes:      libocrdma-rdmav2 < %{version}-%{release}
 Obsoletes:      librxe-rdmav2 < %{version}-%{release}
 %if 0%{?dma_coherent}
@@ -193,8 +197,7 @@ Requires:       %{efa_lname} = %{version}-%{release}
 Requires:       %{mlx4_lname} = %{version}-%{release}
 Requires:       %{mlx5_lname} = %{version}-%{release}
 %endif
-# Recommended packages for rxe_cfg
-Recommends:     ethtool
+# Recommended packages for rxe
 Recommends:     iproute2
 
 %description -n libibverbs
@@ -206,7 +209,6 @@ fast path operations.
 
 Device-specific plug-in ibverbs userspace drivers are included:
 
-- libcxgb3: Chelsio T3 iWARP HCA
 - libcxgb4: Chelsio T4 iWARP HCA
 - libefa: Amazon Elastic Fabric Adapter
 - libhfi1: Intel Omni-Path HFI
@@ -216,7 +218,6 @@ Device-specific plug-in ibverbs userspace drivers are included:
 - libmlx4: Mellanox ConnectX-3 InfiniBand HCA
 - libmlx5: Mellanox Connect-IB/X-4+ InfiniBand HCA
 - libmthca: Mellanox InfiniBand HCA
-- libnes: NetEffect RNIC
 - libocrdma: Emulex OneConnect RDMA/RoCE Device
 - libqedr: QLogic QL4xxx RoCE HCA
 - librxe: A software implementation of the RoCE protocol
@@ -290,6 +291,7 @@ library knows how to talk directly to the ibacm daemon to retrieve data.
 %package -n infiniband-diags
 Summary:        InfiniBand Diagnostic Tools
 Group:          Productivity/Networking/Diagnostic
+Requires:       perl = %{perl_version}
 
 %description -n infiniband-diags
 diags provides IB diagnostic programs and scripts needed to diagnose an
@@ -335,7 +337,9 @@ librdmacm provides a userspace RDMA Communication Management API.
 
 %package -n rsocket
 Summary:        Preloadable library to turn the socket API RDMA-aware
+# Older librdmacm-tools used to provide rsocket
 Group:          System/Libraries
+Conflicts:      librdmacm-tools < 2
 
 %description -n rsocket
 Existing applications can make use of rsockets through the use this
@@ -345,6 +349,8 @@ manpage for details.
 %package -n librdmacm-utils
 Summary:        Examples for the librdmacm library
 Group:          Productivity/Networking/Other
+Obsoletes:      librdmacm-tools < %{version}
+Provides:       librdmacm-tools = %{version}
 
 %description -n librdmacm-utils
 Example test programs for the librdmacm library.
@@ -499,8 +505,8 @@ rm -rf %{buildroot}/%{_sbindir}/srp_daemon.sh
 
 %post
 # we ship udev rules, so trigger an update.
-/sbin/udevadm trigger --subsystem-match=infiniband --action=change || true
-/sbin/udevadm trigger --subsystem-match=infiniband_mad --action=change || true
+%{_bindir}/udevadm trigger --subsystem-match=infiniband --action=change || true
+%{_bindir}/udevadm trigger --subsystem-match=infiniband_mad --action=change || true
 
 #
 # ibacm
@@ -526,7 +532,7 @@ rm -rf %{buildroot}/%{_sbindir}/srp_daemon.sh
 %post -n srp_daemon
 %service_add_post srp_daemon.service
 # we ship udev rules, so trigger an update.
-/sbin/udevadm trigger --subsystem-match=infiniband_mad --action=change
+%{_bindir}/udevadm trigger --subsystem-match=infiniband_mad --action=change
 
 %preun -n srp_daemon
 %service_del_preun srp_daemon.service
@@ -644,9 +650,7 @@ rm -rf %{buildroot}/%{_sbindir}/srp_daemon.sh
 %doc %{_docdir}/%{name}-%{version}/libibverbs.md
 %doc %{_docdir}/%{name}-%{version}/rxe.md
 %doc %{_docdir}/%{name}-%{version}/tag_matching.md
-%{_bindir}/rxe_cfg
 %{_mandir}/man7/rxe*
-%{_mandir}/man8/rxe*
 
 %files -n libibnetdisc%{ibnetdisc_major}
 %defattr(-, root, root)
@@ -697,7 +701,6 @@ rm -rf %{buildroot}/%{_sbindir}/srp_daemon.sh
 
 %files -n infiniband-diags
 %defattr(-, root, root)
-%config %{_sysconfdir}/infiniband-diags/error_thresholds
 %dir %{_sysconfdir}/infiniband-diags
 %config(noreplace) %{_sysconfdir}/infiniband-diags/*
 %{_sbindir}/ibaddr
@@ -836,9 +839,9 @@ rm -rf %{buildroot}/%{_sbindir}/srp_daemon.sh
 %{_sbindir}/run_srp_daemon
 %{_sbindir}/rcsrp_daemon
 %{_mandir}/man1/ibsrpdm.1*
-%{_mandir}/man1/srp_daemon.1*
 %{_mandir}/man5/srp_daemon.service.5*
 %{_mandir}/man5/srp_daemon_port@.service.5*
+%{_mandir}/man8/srp_daemon.8*
 %doc %{_docdir}/%{name}-%{version}/ibsrpdm.md
 
 %files -n rdma-ndd
@@ -852,6 +855,8 @@ rm -rf %{buildroot}/%{_sbindir}/srp_daemon.sh
 %if %{with_pyverbs}
 %files -n python3-pyverbs
 %{python3_sitearch}/pyverbs
+%dir %{_docdir}/%{name}-%{version}/tests/
+%{_docdir}/%{name}-%{version}/tests/*.py
 %endif
 
 %changelog

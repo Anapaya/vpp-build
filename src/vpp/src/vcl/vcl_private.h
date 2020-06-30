@@ -64,13 +64,13 @@ typedef enum
 
 typedef enum
 {
-  STATE_START = 0,
+  STATE_CLOSED = 0,
   STATE_CONNECT = 0x01,
   STATE_LISTEN = 0x02,
   STATE_ACCEPT = 0x04,
   STATE_VPP_CLOSING = 0x08,
   STATE_DISCONNECT = 0x10,
-  STATE_FAILED = 0x20,
+  STATE_DETACHED = 0x20,
   STATE_UPDATED = 0x40,
   STATE_LISTEN_NO_MQ = 0x80,
 } vcl_session_state_t;
@@ -108,7 +108,6 @@ typedef struct
 
 typedef struct vcl_session_msg
 {
-  u32 next;
   union
   {
     session_accepted_msg_t accepted_msg;
@@ -150,6 +149,11 @@ do {                                            \
 #define VCL_SESS_ATTR_TEST(ATTR, VAL)           \
   ((ATTR) & (1 << (VAL)) ? 1 : 0)
 
+typedef enum vcl_session_flags_
+{
+  VCL_SESSION_F_CONNECTED = 1 << 0,
+} __clib_packed vcl_session_flags_t;
+
 typedef struct
 {
   CLIB_CACHE_LINE_ALIGN_MARK (cacheline0);
@@ -168,6 +172,7 @@ typedef struct
   /* Socket configuration state */
   u8 is_vep;
   u8 is_vep_session;
+  vcl_session_flags_t flags;
   /* VCL session index of the listening session (if any) */
   u32 listener_index;
   /* Accepted sessions on this listener */
@@ -190,8 +195,8 @@ typedef struct vppcom_cfg_t_
   u32 max_workers;
   u32 vpp_api_q_length;
   uword segment_baseva;
-  u32 segment_size;
-  u32 add_segment_size;
+  uword segment_size;
+  uword add_segment_size;
   u32 preallocated_fifo_pairs;
   u32 rx_fifo_size;
   u32 tx_fifo_size;
@@ -211,6 +216,8 @@ typedef struct vppcom_cfg_t_
   char *event_log_path;
   u8 *vpp_api_filename;
   u8 *vpp_api_socket_name;
+  u8 *vpp_api_chroot;
+  u32 tls_engine;
 } vppcom_cfg_t;
 
 void vppcom_cfg (vppcom_cfg_t * vcl_cfg);
@@ -297,6 +304,9 @@ typedef struct vcl_worker_
 
   u32 forked_child;
 
+  socket_client_main_t bapi_sock_ctx;
+  memory_client_main_t bapi_shm_ctx;
+  api_main_t bapi_api_ctx;
 } vcl_worker_t;
 
 typedef struct vppcom_main_t_
@@ -350,6 +360,7 @@ typedef struct vppcom_main_t_
 } vppcom_main_t;
 
 extern vppcom_main_t *vcm;
+extern vppcom_main_t _vppcom_main;
 
 #define VCL_INVALID_SESSION_INDEX ((u32)~0)
 #define VCL_INVALID_SESSION_HANDLE ((u64)~0)
@@ -370,6 +381,8 @@ vcl_session_alloc (vcl_worker_t * wrk)
 static inline void
 vcl_session_free (vcl_worker_t * wrk, vcl_session_t * s)
 {
+  /* Debug level set to 1 to avoid debug messages while ldp is cleaning up */
+  VDBG (1, "session %u [0x%llx] removed", s->session_index, s->vpp_handle);
   pool_put (wrk->sessions, s);
 }
 
@@ -513,6 +526,14 @@ vcl_session_is_ct (vcl_session_t * s)
 }
 
 static inline u8
+vcl_session_is_cl (vcl_session_t * s)
+{
+  if (s->session_type == VPPCOM_PROTO_UDP)
+    return 1;
+  return 0;
+}
+
+static inline u8
 vcl_session_is_open (vcl_session_t * s)
 {
   return ((s->session_state & STATE_OPEN)
@@ -527,9 +548,16 @@ vcl_session_is_closing (vcl_session_t * s)
 	  || s->session_state == STATE_DISCONNECT);
 }
 
+static inline u8
+vcl_session_is_closed (vcl_session_t * s)
+{
+  return (!s || (s->session_state == STATE_CLOSED));
+}
+
 static inline int
 vcl_session_closing_error (vcl_session_t * s)
 {
+  /* Return 0 on closing sockets */
   return s->session_state == STATE_DISCONNECT ? VPPCOM_ECONNRESET : 0;
 }
 
@@ -538,6 +566,25 @@ vcl_session_closed_error (vcl_session_t * s)
 {
   return s->session_state == STATE_DISCONNECT
     ? VPPCOM_ECONNRESET : VPPCOM_ENOTCONN;
+}
+
+static inline void
+vcl_ip_copy_from_ep (ip46_address_t * ip, vppcom_endpt_t * ep)
+{
+  if (ep->is_ip4)
+    clib_memcpy_fast (&ip->ip4, ep->ip, sizeof (ip4_address_t));
+  else
+    clib_memcpy_fast (&ip->ip6, ep->ip, sizeof (ip6_address_t));
+}
+
+static inline void
+vcl_ip_copy_to_ep (ip46_address_t * ip, vppcom_endpt_t * ep, u8 is_ip4)
+{
+  ep->is_ip4 = is_ip4;
+  if (is_ip4)
+    clib_memcpy_fast (ep->ip, &ip->ip4, sizeof (ip4_address_t));
+  else
+    clib_memcpy_fast (ep->ip, &ip->ip6, sizeof (ip6_address_t));
 }
 
 /*
@@ -621,9 +668,11 @@ void vppcom_send_application_tls_key_add (vcl_session_t * session, char *key,
 void vcl_send_app_worker_add_del (u8 is_add);
 void vcl_send_child_worker_del (vcl_worker_t * wrk);
 
-u32 vcl_max_nsid_len (void);
+int vcl_segment_attach (u64 segment_handle, char *name,
+			ssvm_segment_type_t type, int fd);
+void vcl_segment_detach (u64 segment_handle);
 
-u8 *format_api_error (u8 * s, va_list * args);
+u32 vcl_max_nsid_len (void);
 
 void vls_init ();
 #endif /* SRC_VCL_VCL_PRIVATE_H_ */

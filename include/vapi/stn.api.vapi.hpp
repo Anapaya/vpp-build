@@ -46,6 +46,34 @@ template class Request<vapi_msg_stn_add_del_rule, vapi_msg_stn_add_del_rule_repl
 
 using Stn_add_del_rule = Request<vapi_msg_stn_add_del_rule, vapi_msg_stn_add_del_rule_reply>;
 
+template <> inline void vapi_swap_to_be<vapi_msg_stn_add_del_rule_reply>(vapi_msg_stn_add_del_rule_reply *msg)
+{
+  vapi_msg_stn_add_del_rule_reply_hton(msg);
+}
+
+template <> inline void vapi_swap_to_host<vapi_msg_stn_add_del_rule_reply>(vapi_msg_stn_add_del_rule_reply *msg)
+{
+  vapi_msg_stn_add_del_rule_reply_ntoh(msg);
+}
+
+template <> inline vapi_msg_id_t vapi_get_msg_id_t<vapi_msg_stn_add_del_rule_reply>()
+{
+  return ::vapi_msg_id_stn_add_del_rule_reply; 
+}
+
+template <> inline vapi_msg_id_t vapi_get_msg_id_t<Msg<vapi_msg_stn_add_del_rule_reply>>()
+{
+  return ::vapi_msg_id_stn_add_del_rule_reply; 
+}
+
+static void __attribute__((constructor)) __vapi_cpp_constructor_stn_add_del_rule_reply()
+{
+  vapi::vapi_msg_set_msg_id<vapi_msg_stn_add_del_rule_reply>(vapi_msg_id_stn_add_del_rule_reply);
+}
+
+template class Msg<vapi_msg_stn_add_del_rule_reply>;
+
+using Stn_add_del_rule_reply = Msg<vapi_msg_stn_add_del_rule_reply>;
 template <> inline void vapi_swap_to_be<vapi_msg_stn_rules_dump>(vapi_msg_stn_rules_dump *msg)
 {
   vapi_msg_stn_rules_dump_hton(msg);
@@ -86,34 +114,6 @@ template class Dump<vapi_msg_stn_rules_dump, vapi_msg_stn_rules_details>;
 
 using Stn_rules_dump = Dump<vapi_msg_stn_rules_dump, vapi_msg_stn_rules_details>;
 
-template <> inline void vapi_swap_to_be<vapi_msg_stn_add_del_rule_reply>(vapi_msg_stn_add_del_rule_reply *msg)
-{
-  vapi_msg_stn_add_del_rule_reply_hton(msg);
-}
-
-template <> inline void vapi_swap_to_host<vapi_msg_stn_add_del_rule_reply>(vapi_msg_stn_add_del_rule_reply *msg)
-{
-  vapi_msg_stn_add_del_rule_reply_ntoh(msg);
-}
-
-template <> inline vapi_msg_id_t vapi_get_msg_id_t<vapi_msg_stn_add_del_rule_reply>()
-{
-  return ::vapi_msg_id_stn_add_del_rule_reply; 
-}
-
-template <> inline vapi_msg_id_t vapi_get_msg_id_t<Msg<vapi_msg_stn_add_del_rule_reply>>()
-{
-  return ::vapi_msg_id_stn_add_del_rule_reply; 
-}
-
-static void __attribute__((constructor)) __vapi_cpp_constructor_stn_add_del_rule_reply()
-{
-  vapi::vapi_msg_set_msg_id<vapi_msg_stn_add_del_rule_reply>(vapi_msg_id_stn_add_del_rule_reply);
-}
-
-template class Msg<vapi_msg_stn_add_del_rule_reply>;
-
-using Stn_add_del_rule_reply = Msg<vapi_msg_stn_add_del_rule_reply>;
 template <> inline void vapi_swap_to_be<vapi_msg_stn_rules_details>(vapi_msg_stn_rules_details *msg)
 {
   vapi_msg_stn_rules_details_hton(msg);

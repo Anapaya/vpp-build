@@ -22,12 +22,20 @@
 #include <nat/nat_det.h>
 #include <nat/nat64.h>
 #include <nat/nat_inlines.h>
+#include <nat/nat44/inlines.h>
 #include <nat/nat_affinity.h>
 #include <vnet/fib/fib_table.h>
 #include <nat/nat_ha.h>
 
+
+#define UNSUPPORTED_IN_DET_OR_ED_MODE_STR \
+  "This command is unsupported in deterministic or endpoint dependent mode"
+#define UNSUPPORTED_IN_DET_OR_NON_ED_MODE_STR \
+  "This command is unsupported in deterministic or non endpoint dependent mode"
 #define UNSUPPORTED_IN_DET_MODE_STR \
   "This command is unsupported in deterministic mode"
+#define SUPPORTED_ONLY_IN_ED_MODE_STR \
+  "This command is supported only in endpoint dependent mode"
 #define SUPPORTED_ONLY_IN_DET_MODE_STR \
   "This command is supported only in deterministic mode"
 
@@ -241,8 +249,10 @@ nat44_show_hash_commnad_fn (vlib_main_t * vm, unformat_input_t * input,
   }
 
   if (sm->endpoint_dependent)
-    vlib_cli_output (vm, "%U", format_bihash_16_8, &nam->affinity_hash,
-		     verbose);
+    {
+      vlib_cli_output (vm, "%U", format_bihash_16_8, &nam->affinity_hash,
+		       verbose);
+    }
   return 0;
 }
 
@@ -627,6 +637,169 @@ done:
 }
 
 static clib_error_t *
+nat44_show_summary_command_fn (vlib_main_t * vm, unformat_input_t * input,
+			       vlib_cli_command_t * cmd)
+{
+  snat_main_per_thread_data_t *tsm;
+  snat_main_t *sm = &snat_main;
+  snat_session_t *s;
+
+  if (sm->deterministic || !sm->endpoint_dependent)
+    return clib_error_return (0, UNSUPPORTED_IN_DET_OR_NON_ED_MODE_STR);
+
+  // print session configuration values
+  vlib_cli_output (vm, "max translations: %u", sm->max_translations);
+  vlib_cli_output (vm, "max translations per user: %u",
+		   sm->max_translations_per_user);
+
+  u32 count = 0;
+
+  u64 now = vlib_time_now (vm);
+  u64 sess_timeout_time;
+
+  u32 udp_sessions = 0;
+  u32 tcp_sessions = 0;
+  u32 icmp_sessions = 0;
+
+  u32 timed_out = 0;
+  u32 transitory = 0;
+  u32 transitory_wait_closed = 0;
+  u32 transitory_closed = 0;
+  u32 established = 0;
+
+  if (sm->num_workers > 1)
+    {
+      /* *INDENT-OFF* */
+      vec_foreach (tsm, sm->per_thread_data)
+        {
+          pool_foreach (s, tsm->sessions,
+          ({
+            sess_timeout_time = s->last_heard +
+	      (f64) nat44_session_get_timeout (sm, s);
+            if (now >= sess_timeout_time)
+              timed_out++;
+
+            switch (s->in2out.protocol)
+              {
+              case NAT_PROTOCOL_ICMP:
+                icmp_sessions++;
+                break;
+              case NAT_PROTOCOL_TCP:
+                tcp_sessions++;
+                if (s->state)
+                  {
+                    if (s->tcp_closed_timestamp)
+                      {
+                        if (now >= s->tcp_closed_timestamp)
+                          {
+                            ++transitory_closed;
+                          }
+                        else
+                          {
+                            ++transitory_wait_closed;
+                          }
+                      }
+                    transitory++;
+                  }
+                else
+                  established++;
+                break;
+              case NAT_PROTOCOL_UDP:
+              default:
+                udp_sessions++;
+                break;
+              }
+          }));
+          count += pool_elts (tsm->sessions);
+        }
+      /* *INDENT-ON* */
+    }
+  else
+    {
+      tsm = vec_elt_at_index (sm->per_thread_data, sm->num_workers);
+      /* *INDENT-OFF* */
+      pool_foreach (s, tsm->sessions,
+      ({
+        sess_timeout_time = s->last_heard +
+	    (f64) nat44_session_get_timeout (sm, s);
+        if (now >= sess_timeout_time)
+          timed_out++;
+
+        switch (s->in2out.protocol)
+          {
+          case NAT_PROTOCOL_ICMP:
+            icmp_sessions++;
+            break;
+          case NAT_PROTOCOL_TCP:
+            tcp_sessions++;
+            if (s->state)
+              {
+                if (s->tcp_closed_timestamp)
+                  {
+                    if (now >= s->tcp_closed_timestamp)
+                      {
+                        ++transitory_closed;
+                      }
+                    else
+                      {
+                        ++transitory_wait_closed;
+                      }
+                  }
+                transitory++;
+              }
+            else
+              established++;
+            break;
+          case NAT_PROTOCOL_UDP:
+          default:
+            udp_sessions++;
+            break;
+          }
+      }));
+      /* *INDENT-ON* */
+      count = pool_elts (tsm->sessions);
+      if (sm->endpoint_dependent)
+	{
+	  dlist_elt_t *oldest_elt;
+	  u32 oldest_index;
+#define _(n, d)                                                          \
+  oldest_index =                                                         \
+      clib_dlist_remove_head (tsm->lru_pool, tsm->n##_lru_head_index);   \
+  if (~0 != oldest_index)                                                \
+    {                                                                    \
+      oldest_elt = pool_elt_at_index (tsm->lru_pool, oldest_index);      \
+      s = pool_elt_at_index (tsm->sessions, oldest_elt->value);          \
+      sess_timeout_time =                                                \
+          s->last_heard + (f64)nat44_session_get_timeout (sm, s);        \
+      vlib_cli_output (vm, d " LRU min session timeout %llu (now %llu)", \
+                       sess_timeout_time, now);                          \
+      clib_dlist_addhead (tsm->lru_pool, tsm->n##_lru_head_index,        \
+                          oldest_index);                                 \
+    }
+	  _(tcp_estab, "established tcp");
+	  _(tcp_trans, "transitory tcp");
+	  _(udp, "udp");
+	  _(unk_proto, "unknown protocol");
+	  _(icmp, "icmp");
+#undef _
+	}
+    }
+
+  vlib_cli_output (vm, "total timed out sessions: %u", timed_out);
+  vlib_cli_output (vm, "total sessions: %u", count);
+  vlib_cli_output (vm, "total tcp sessions: %u", tcp_sessions);
+  vlib_cli_output (vm, "total tcp established sessions: %u", established);
+  vlib_cli_output (vm, "total tcp transitory sessions: %u", transitory);
+  vlib_cli_output (vm, "total tcp transitory (WAIT-CLOSED) sessions: %u",
+		   transitory_wait_closed);
+  vlib_cli_output (vm, "total tcp transitory (CLOSED) sessions: %u",
+		   transitory_closed);
+  vlib_cli_output (vm, "total udp sessions: %u", udp_sessions);
+  vlib_cli_output (vm, "total icmp sessions: %u", icmp_sessions);
+  return 0;
+}
+
+static clib_error_t *
 nat44_show_addresses_command_fn (vlib_main_t * vm, unformat_input_t * input,
 				 vlib_cli_command_t * cmd)
 {
@@ -648,7 +821,7 @@ nat44_show_addresses_command_fn (vlib_main_t * vm, unformat_input_t * input,
         vlib_cli_output (vm, "  tenant VRF independent");
     #define _(N, i, n, s) \
       vlib_cli_output (vm, "  %d busy %s ports", ap->busy_##n##_ports, s);
-      foreach_snat_protocol
+      foreach_nat_protocol
     #undef _
     }
   vlib_cli_output (vm, "NAT44 twice-nat pool addresses:");
@@ -662,7 +835,7 @@ nat44_show_addresses_command_fn (vlib_main_t * vm, unformat_input_t * input,
         vlib_cli_output (vm, "  tenant VRF independent");
     #define _(N, i, n, s) \
       vlib_cli_output (vm, "  %d busy %s ports", ap->busy_##n##_ports, s);
-      foreach_snat_protocol
+      foreach_nat_protocol
     #undef _
     }
   /* *INDENT-ON* */
@@ -827,7 +1000,7 @@ add_static_mapping_command_fn (vlib_main_t * vm,
   u32 sw_if_index = ~0;
   vnet_main_t *vnm = vnet_get_main ();
   int rv;
-  snat_protocol_t proto = ~0;
+  nat_protocol_t proto = NAT_PROTOCOL_OTHER;
   u8 proto_set = 0;
   twice_nat_type_t twice_nat = TWICE_NAT_DISABLED;
   u8 out2in_only = 0;
@@ -863,7 +1036,7 @@ add_static_mapping_command_fn (vlib_main_t * vm,
 	;
       else if (unformat (line_input, "vrf %u", &vrf_id))
 	;
-      else if (unformat (line_input, "%U", unformat_snat_protocol, &proto))
+      else if (unformat (line_input, "%U", unformat_nat_protocol, &proto))
 	proto_set = 1;
       else if (unformat (line_input, "twice-nat"))
 	twice_nat = TWICE_NAT;
@@ -944,7 +1117,7 @@ add_identity_mapping_command_fn (vlib_main_t * vm,
   u32 sw_if_index = ~0;
   vnet_main_t *vnm = vnet_get_main ();
   int rv;
-  snat_protocol_t proto;
+  nat_protocol_t proto;
 
   if (sm->deterministic)
     return clib_error_return (0, UNSUPPORTED_IN_DET_MODE_STR);
@@ -964,7 +1137,7 @@ add_identity_mapping_command_fn (vlib_main_t * vm,
 	;
       else if (unformat (line_input, "vrf %u", &vrf_id))
 	;
-      else if (unformat (line_input, "%U %u", unformat_snat_protocol, &proto,
+      else if (unformat (line_input, "%U %u", unformat_nat_protocol, &proto,
 			 &port))
 	addr_only = 0;
       else if (unformat (line_input, "del"))
@@ -1020,7 +1193,7 @@ add_lb_static_mapping_command_fn (vlib_main_t * vm,
   u32 l_port = 0, e_port = 0, vrf_id = 0, probability = 0, affinity = 0;
   int is_add = 1;
   int rv;
-  snat_protocol_t proto;
+  nat_protocol_t proto;
   u8 proto_set = 0;
   nat44_lb_addr_port_t *locals = 0, local;
   twice_nat_type_t twice_nat = TWICE_NAT_DISABLED;
@@ -1058,7 +1231,7 @@ add_lb_static_mapping_command_fn (vlib_main_t * vm,
       else if (unformat (line_input, "external %U:%u", unformat_ip4_address,
 			 &e_addr, &e_port))
 	;
-      else if (unformat (line_input, "protocol %U", unformat_snat_protocol,
+      else if (unformat (line_input, "protocol %U", unformat_nat_protocol,
 			 &proto))
 	proto_set = 1;
       else if (unformat (line_input, "twice-nat"))
@@ -1135,7 +1308,7 @@ add_lb_backend_command_fn (vlib_main_t * vm,
   u32 l_port = 0, e_port = 0, vrf_id = 0, probability = 0;
   int is_add = 1;
   int rv;
-  snat_protocol_t proto;
+  nat_protocol_t proto;
   u8 proto_set = 0;
 
   if (sm->deterministic)
@@ -1157,7 +1330,7 @@ add_lb_backend_command_fn (vlib_main_t * vm,
       else if (unformat (line_input, "external %U:%u", unformat_ip4_address,
 			 &e_addr, &e_port))
 	;
-      else if (unformat (line_input, "protocol %U", unformat_snat_protocol,
+      else if (unformat (line_input, "protocol %U", unformat_nat_protocol,
 			 &proto))
 	proto_set = 1;
       else if (unformat (line_input, "del"))
@@ -1331,19 +1504,39 @@ static clib_error_t *
 nat44_show_sessions_command_fn (vlib_main_t * vm, unformat_input_t * input,
 				vlib_cli_command_t * cmd)
 {
-  int verbose = 0;
-  snat_main_t *sm = &snat_main;
+  unformat_input_t _line_input, *line_input = &_line_input;
+  clib_error_t *error = 0;
+
   snat_main_per_thread_data_t *tsm;
-  snat_user_t *u;
+  snat_main_t *sm = &snat_main;
+
+  int detail = 0;
   int i = 0;
 
   if (sm->deterministic)
     return clib_error_return (0, UNSUPPORTED_IN_DET_MODE_STR);
 
-  if (unformat (input, "detail"))
-    verbose = 1;
+  if (!unformat_user (input, unformat_line_input, line_input))
+    goto print;
 
-  vlib_cli_output (vm, "NAT44 sessions:");
+  while (unformat_check_input (line_input) != UNFORMAT_END_OF_INPUT)
+    {
+      if (unformat (line_input, "detail"))
+	detail = 1;
+      else
+	{
+	  error = clib_error_return (0, "unknown input '%U'",
+				     format_unformat_error, line_input);
+	  break;
+	}
+    }
+  unformat_free (line_input);
+
+print:
+  if (!sm->endpoint_dependent)
+    vlib_cli_output (vm, "NAT44 sessions:");
+  else
+    vlib_cli_output (vm, "NAT44 ED sessions:");
 
   /* *INDENT-OFF* */
   vec_foreach_index (i, sm->per_thread_data)
@@ -1353,14 +1546,129 @@ nat44_show_sessions_command_fn (vlib_main_t * vm, unformat_input_t * input,
       vlib_cli_output (vm, "-------- thread %d %s: %d sessions --------\n",
                        i, vlib_worker_threads[i].name,
                        pool_elts (tsm->sessions));
-      pool_foreach (u, tsm->users,
-      ({
-        vlib_cli_output (vm, "  %U", format_snat_user, tsm, u, verbose);
-      }));
+
+      if (!sm->endpoint_dependent)
+        {
+          snat_user_t *u;
+          pool_foreach (u, tsm->users,
+          ({
+            vlib_cli_output (vm, "  %U", format_snat_user, tsm, u, detail);
+          }));
+        }
+      else
+        {
+          snat_session_t *s;
+          pool_foreach (s, tsm->sessions,
+          ({
+            vlib_cli_output (vm, "  %U\n", format_snat_session, tsm, s);
+          }));
+        }
     }
   /* *INDENT-ON* */
+  return error;
+}
 
-  return 0;
+static clib_error_t *
+nat44_set_session_limit_command_fn (vlib_main_t * vm,
+				    unformat_input_t * input,
+				    vlib_cli_command_t * cmd)
+{
+  snat_main_t *sm = &snat_main;
+  unformat_input_t _line_input, *line_input = &_line_input;
+  clib_error_t *error = 0;
+
+  u32 session_limit = 0, vrf_id = 0;
+
+  if (sm->deterministic)
+    return clib_error_return (0, UNSUPPORTED_IN_DET_MODE_STR);
+
+  /* Get a line of input. */
+  if (!unformat_user (input, unformat_line_input, line_input))
+    return 0;
+
+  while (unformat_check_input (line_input) != UNFORMAT_END_OF_INPUT)
+    {
+      if (unformat (line_input, "%u", &session_limit))
+	;
+      else if (unformat (line_input, "vrf %u", &vrf_id))
+	;
+      else
+	{
+	  error = clib_error_return (0, "unknown input '%U'",
+				     format_unformat_error, line_input);
+	  goto done;
+	}
+    }
+
+  if (!session_limit)
+    error = clib_error_return (0, "missing value of session limit");
+  else if (nat44_set_session_limit (session_limit, vrf_id))
+    error = clib_error_return (0, "nat44_set_session_limit failed");
+
+done:
+  unformat_free (line_input);
+
+  return error;
+}
+
+static clib_error_t *
+nat44_del_user_command_fn (vlib_main_t * vm,
+			   unformat_input_t * input, vlib_cli_command_t * cmd)
+{
+  snat_main_t *sm = &snat_main;
+  unformat_input_t _line_input, *line_input = &_line_input;
+  clib_error_t *error = 0;
+  ip4_address_t addr;
+  u32 fib_index = 0;
+  int rv;
+
+  if (sm->deterministic || sm->endpoint_dependent)
+    return clib_error_return (0, UNSUPPORTED_IN_DET_OR_ED_MODE_STR);
+
+  /* Get a line of input. */
+  if (!unformat_user (input, unformat_line_input, line_input))
+    return 0;
+
+  while (unformat_check_input (line_input) != UNFORMAT_END_OF_INPUT)
+    {
+      if (unformat (line_input, "%U", unformat_ip4_address, &addr))
+	;
+      else if (unformat (line_input, "fib %u", &fib_index))
+	;
+      else
+	{
+	  error = clib_error_return (0, "unknown input '%U'",
+				     format_unformat_error, line_input);
+	  goto done;
+	}
+    }
+
+  rv = nat44_user_del (&addr, fib_index);
+
+  if (!rv)
+    {
+      error = clib_error_return (0, "nat44_user_del returned %d", rv);
+    }
+
+done:
+  unformat_free (line_input);
+
+  return error;
+}
+
+static clib_error_t *
+nat44_clear_sessions_command_fn (vlib_main_t * vm,
+				 unformat_input_t * input,
+				 vlib_cli_command_t * cmd)
+{
+  snat_main_t *sm = &snat_main;
+  clib_error_t *error = 0;
+
+  if (sm->deterministic)
+    return clib_error_return (0, UNSUPPORTED_IN_DET_MODE_STR);
+
+  nat44_sessions_clear ();
+  return error;
 }
 
 static clib_error_t *
@@ -1374,7 +1682,7 @@ nat44_del_session_command_fn (vlib_main_t * vm,
   clib_error_t *error = 0;
   ip4_address_t addr, eh_addr;
   u32 port = 0, eh_port = 0, vrf_id = sm->outside_vrf_id;
-  snat_protocol_t proto;
+  nat_protocol_t proto;
   int rv;
 
   if (sm->deterministic)
@@ -1388,7 +1696,7 @@ nat44_del_session_command_fn (vlib_main_t * vm,
     {
       if (unformat
 	  (line_input, "%U:%u %U", unformat_ip4_address, &addr, &port,
-	   unformat_snat_protocol, &proto))
+	   unformat_nat_protocol, &proto))
 	;
       else if (unformat (line_input, "in"))
 	{
@@ -1418,7 +1726,7 @@ nat44_del_session_command_fn (vlib_main_t * vm,
   if (is_ed)
     rv =
       nat44_del_ed_session (sm, &addr, port, &eh_addr, eh_port,
-			    snat_proto_to_ip_proto (proto), vrf_id, is_in);
+			    nat_proto_to_ip_proto (proto), vrf_id, is_in);
   else
     rv = nat44_del_session (sm, &addr, port, proto, vrf_id, is_in);
 
@@ -1743,10 +2051,8 @@ set_timeout_command_fn (vlib_main_t * vm,
 	  goto done;
 	}
     }
-
 done:
   unformat_free (line_input);
-
   return error;
 }
 
@@ -2154,6 +2460,19 @@ VLIB_CLI_COMMAND (add_address_command, static) = {
 
 /*?
  * @cliexpar
+ * @cliexstart{show nat44 summary}
+ * Show NAT44 summary
+ * vpp# show nat44 summary
+ * @cliexend
+?*/
+VLIB_CLI_COMMAND (nat44_show_summary_command, static) = {
+  .path = "show nat44 summary",
+  .short_help = "show nat44 summary",
+  .function = nat44_show_summary_command_fn,
+};
+
+/*?
+ * @cliexpar
  * @cliexstart{show nat44 addresses}
  * Show NAT44 pool addresses.
  * vpp# show nat44 addresses
@@ -2356,8 +2675,46 @@ VLIB_CLI_COMMAND (nat44_show_interface_address_command, static) = {
 ?*/
 VLIB_CLI_COMMAND (nat44_show_sessions_command, static) = {
   .path = "show nat44 sessions",
-  .short_help = "show nat44 sessions [detail]",
+  .short_help = "show nat44 sessions [detail|metrics]",
   .function = nat44_show_sessions_command_fn,
+};
+
+/*?
+ * @cliexpar
+ * @cliexstart{set nat44 session limit}
+ * Set NAT44 session limit.
+ * @cliexend
+?*/
+VLIB_CLI_COMMAND (nat44_set_session_limit_command, static) = {
+  .path = "set nat44 session limit",
+  .short_help = "set nat44 session limit <limit> [vrf <table-id>]",
+  .function = nat44_set_session_limit_command_fn,
+};
+
+/*?
+ * @cliexpar
+ * @cliexstart{nat44 del user}
+ * To delete all NAT44 user sessions:
+ *  vpp# nat44 del user 10.0.0.3
+ * @cliexend
+?*/
+VLIB_CLI_COMMAND (nat44_del_user_command, static) = {
+    .path = "nat44 del user",
+    .short_help = "nat44 del user <addr> [fib <index>]",
+    .function = nat44_del_user_command_fn,
+};
+
+/*?
+ * @cliexpar
+ * @cliexstart{clear nat44 sessions}
+ * To clear all NAT44 sessions
+ *  vpp# clear nat44 sessions
+ * @cliexend
+?*/
+VLIB_CLI_COMMAND (nat44_clear_sessions_command, static) = {
+    .path = "clear nat44 sessions",
+    .short_help = "clear nat44 sessions",
+    .function = nat44_clear_sessions_command_fn,
 };
 
 /*?

@@ -85,7 +85,8 @@ add_next (vlib_main_t * vm,
 static vnet_config_t *
 find_config_with_features (vlib_main_t * vm,
 			   vnet_config_main_t * cm,
-			   vnet_config_feature_t * feature_vector)
+			   vnet_config_feature_t * feature_vector,
+			   u32 end_node_index)
 {
   u32 last_node_index = ~0;
   vnet_config_feature_t *f;
@@ -112,9 +113,9 @@ find_config_with_features (vlib_main_t * vm,
   }
 
   /* Terminate config string with next for end node. */
-  if (last_node_index == ~0 || last_node_index != cm->end_node_index)
+  if (last_node_index == ~0 || last_node_index != end_node_index)
     {
-      u32 next_index = add_next (vm, cm, last_node_index, cm->end_node_index);
+      u32 next_index = add_next (vm, cm, last_node_index, end_node_index);
       vec_add1 (config_string, next_index);
     }
 
@@ -152,6 +153,12 @@ find_config_with_features (vlib_main_t * vm,
       hash_set_mem (cm->config_string_hash, config_string, c->index);
 
       c->reference_count = 0;	/* will be incremented by caller. */
+
+      vec_validate_init_empty (cm->end_node_indices_by_user_index,
+			       c->config_string_heap_index + 1,
+			       cm->default_end_node_index);
+      cm->end_node_indices_by_user_index[c->config_string_heap_index + 1]
+	= end_node_index;
     }
 
   return c;
@@ -197,7 +204,7 @@ vnet_config_init (vlib_main_t * vm,
 	  if (n)
 	    {
 	      if (i + 1 == n_feature_node_names)
-		cm->end_node_index = n->index;
+		cm->default_end_node_index = n->index;
 	      cm->node_index_by_feature_index[i] = n->index;
 	    }
 	  else
@@ -235,18 +242,14 @@ vnet_get_config_heap (vnet_config_main_t * cm, u32 ci)
 }
 
 u32
-vnet_config_add_feature (vlib_main_t * vm,
-			 vnet_config_main_t * cm,
-			 u32 config_string_heap_index,
-			 u32 feature_index,
-			 void *feature_config, u32 n_feature_config_bytes)
+vnet_config_modify_end_node (vlib_main_t * vm,
+			     vnet_config_main_t * cm,
+			     u32 config_string_heap_index, u32 end_node_index)
 {
+  vnet_config_feature_t *new_features;
   vnet_config_t *old, *new;
-  vnet_config_feature_t *new_features, *f;
-  u32 n_feature_config_u32s;
-  u32 node_index = vec_elt (cm->node_index_by_feature_index, feature_index);
 
-  if (node_index == ~0)		// feature node does not exist
+  if (end_node_index == ~0)	// feature node does not exist
     return ~0;
 
   if (config_string_heap_index == ~0)
@@ -259,6 +262,67 @@ vnet_config_add_feature (vlib_main_t * vm,
       u32 *p = vnet_get_config_heap (cm, config_string_heap_index);
       old = pool_elt_at_index (cm->config_pool, p[-1]);
       new_features = old->features;
+      if (new_features)
+	new_features = duplicate_feature_vector (new_features);
+    }
+
+  if (vec_len (new_features))
+    {
+      /* is the last feature the cuurent end node */
+      u32 last = vec_len (new_features) - 1;
+      if (new_features[last].node_index == cm->default_end_node_index)
+	{
+	  vec_free (new_features->feature_config);
+	  _vec_len (new_features) = last;
+	}
+    }
+
+  if (old)
+    remove_reference (cm, old);
+
+  new = find_config_with_features (vm, cm, new_features, end_node_index);
+  new->reference_count += 1;
+
+  /*
+   * User gets pointer to config string first element
+   * (which defines the pool index
+   * this config string comes from).
+   */
+  vec_validate (cm->config_pool_index_by_user_index,
+		new->config_string_heap_index + 1);
+  cm->config_pool_index_by_user_index[new->config_string_heap_index + 1]
+    = new - cm->config_pool;
+  return new->config_string_heap_index + 1;
+}
+
+u32
+vnet_config_add_feature (vlib_main_t * vm,
+			 vnet_config_main_t * cm,
+			 u32 config_string_heap_index,
+			 u32 feature_index,
+			 void *feature_config, u32 n_feature_config_bytes)
+{
+  vnet_config_t *old, *new;
+  vnet_config_feature_t *new_features, *f;
+  u32 n_feature_config_u32s, end_node_index;
+  u32 node_index = vec_elt (cm->node_index_by_feature_index, feature_index);
+
+  if (node_index == ~0)		// feature node does not exist
+    return ~0;
+
+  if (config_string_heap_index == ~0)
+    {
+      old = 0;
+      new_features = 0;
+      end_node_index = cm->default_end_node_index;
+    }
+  else
+    {
+      u32 *p = vnet_get_config_heap (cm, config_string_heap_index);
+      old = pool_elt_at_index (cm->config_pool, p[-1]);
+      new_features = old->features;
+      end_node_index =
+	cm->end_node_indices_by_user_index[config_string_heap_index];
       if (new_features)
 	new_features = duplicate_feature_vector (new_features);
     }
@@ -280,7 +344,7 @@ vnet_config_add_feature (vlib_main_t * vm,
   if (old)
     remove_reference (cm, old);
 
-  new = find_config_with_features (vm, cm, new_features);
+  new = find_config_with_features (vm, cm, new_features, end_node_index);
   new->reference_count += 1;
 
   /*
@@ -342,7 +406,9 @@ vnet_config_del_feature (vlib_main_t * vm,
      adds a new config because none of existing config's has matching features
      and so can be reused */
   remove_reference (cm, old);
-  new = find_config_with_features (vm, cm, new_features);
+  new = find_config_with_features (vm, cm, new_features,
+				   cm->end_node_indices_by_user_index
+				   [config_string_heap_index]);
   new->reference_count += 1;
 
   vec_validate (cm->config_pool_index_by_user_index,

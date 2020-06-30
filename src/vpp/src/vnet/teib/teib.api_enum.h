@@ -1,0 +1,7 @@
+typedef enum {
+   VL_API_TEIB_ENTRY_ADD_DEL,
+   VL_API_TEIB_ENTRY_ADD_DEL_REPLY,
+   VL_API_TEIB_DUMP,
+   VL_API_TEIB_DETAILS,
+   VL_MSG_FIRST_AVAILABLE
+} vl_api_teib_enum_t;

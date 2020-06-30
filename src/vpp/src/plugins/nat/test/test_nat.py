@@ -1,36 +1,35 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import socket
-import unittest
-import struct
+import ipaddress
 import random
-
-from framework import VppTestCase, VppTestRunner, running_extended_tests
+import socket
+import struct
+import unittest
+from io import BytesIO
+from time import sleep
 
 import scapy.compat
-from scapy.layers.inet import IP, TCP, UDP, ICMP
-from scapy.layers.inet import IPerror, TCPerror, UDPerror, ICMPerror
-from scapy.layers.inet6 import IPv6, ICMPv6EchoRequest, ICMPv6EchoReply, \
-    ICMPv6ND_NS, ICMPv6ND_NA, ICMPv6NDOptDstLLAddr, fragment6
-from scapy.layers.inet6 import ICMPv6DestUnreach, IPerror6, IPv6ExtHdrFragment
-from scapy.layers.l2 import Ether, ARP, GRE
-from scapy.data import IP_PROTOS
-from scapy.packet import bind_layers, Raw
-from util import ppp
+from framework import VppTestCase, VppTestRunner, running_extended_tests
 from ipfix import IPFIX, Set, Template, Data, IPFIXDecoder
-from time import sleep
-from util import ip4_range
-from vpp_papi import mac_pton
-from syslog_rfc5424_parser import SyslogMessage, ParseError
-from syslog_rfc5424_parser.constants import SyslogFacility, SyslogSeverity
-from io import BytesIO
-from vpp_papi import VppEnum
-from vpp_ip_route import VppIpRoute, VppRoutePath, FibPathType
-from vpp_neighbor import VppNeighbor
 from scapy.all import bind_layers, Packet, ByteEnumField, ShortField, \
     IPField, IntField, LongField, XByteField, FlagsField, FieldLenField, \
     PacketListField
-from ipaddress import IPv6Network
+from scapy.data import IP_PROTOS
+from scapy.layers.inet import IP, TCP, UDP, ICMP
+from scapy.layers.inet import IPerror, TCPerror, UDPerror, ICMPerror
+from scapy.layers.inet6 import ICMPv6DestUnreach, IPerror6, IPv6ExtHdrFragment
+from scapy.layers.inet6 import IPv6, ICMPv6EchoRequest, ICMPv6EchoReply, \
+    ICMPv6ND_NS, ICMPv6ND_NA, ICMPv6NDOptDstLLAddr, fragment6
+from scapy.layers.l2 import Ether, ARP, GRE
+from scapy.packet import Raw
+from syslog_rfc5424_parser import SyslogMessage, ParseError
+from syslog_rfc5424_parser.constants import SyslogSeverity
+from util import ip4_range
+from util import ppc, ppp
+from vpp_acl import AclRule, VppAcl, VppAclInterface
+from vpp_ip_route import VppIpRoute, VppRoutePath
+from vpp_neighbor import VppNeighbor
+from vpp_papi import VppEnum
 
 
 # NAT HA protocol event data
@@ -39,7 +38,7 @@ class Event(Packet):
     fields_desc = [ByteEnumField("event_type", None,
                                  {1: "add", 2: "del", 3: "refresh"}),
                    ByteEnumField("protocol", None,
-                                 {0: "udp", 1: "tcp", 2: "icmp"}),
+                                 {0: "other", 1: "udp", 2: "tcp", 3: "icmp"}),
                    ShortField("flags", 0),
                    IPField("in_addr", None),
                    IPField("out_addr", None),
@@ -168,10 +167,6 @@ class MethodHolder(VppTestCase):
                 last_ip_address=addr.ip_address,
                 vrf_id=0xFFFFFFFF, flags=addr.flags)
 
-        self.vapi.nat_set_reass(timeout=2, max_reass=1024, max_frag=5,
-                                drop_frag=0)
-        self.vapi.nat_set_reass(timeout=2, max_reass=1024, max_frag=5,
-                                drop_frag=0, is_ip6=1)
         self.verify_no_nat44_user()
         self.vapi.nat_set_timeouts(udp=300, tcp_established=7440,
                                    tcp_transitory=240, icmp=60)
@@ -762,6 +757,7 @@ class MethodHolder(VppTestCase):
                 proto=frags[0][IP].proto)
         if ip.proto == IP_PROTOS.tcp:
             p = (ip / TCP(buffer.getvalue()))
+            self.logger.debug(ppp("Reassembled:", p))
             self.assert_tcp_checksum_valid(p)
         elif ip.proto == IP_PROTOS.udp:
             p = (ip / UDP(buffer.getvalue()[:8]) /
@@ -792,6 +788,7 @@ class MethodHolder(VppTestCase):
             p = (ip / TCP(buffer.getvalue()))
         elif ip.nh == IP_PROTOS.udp:
             p = (ip / UDP(buffer.getvalue()))
+        self.logger.debug(ppp("Reassembled:", p))
         self.assert_packet_checksums_valid(p)
         return p
 
@@ -856,7 +853,8 @@ class MethodHolder(VppTestCase):
             else:
                 nat44_ses_delete_num += 1
             # sourceIPv4Address
-            self.assertEqual(self.pg0.remote_ip4n, record[8])
+            self.assertEqual(self.pg0.remote_ip4,
+                             str(ipaddress.IPv4Address(record[8])))
             # postNATSourceIPv4Address
             self.assertEqual(socket.inet_pton(socket.AF_INET, self.nat_addr),
                              record[225])
@@ -928,44 +926,6 @@ class MethodHolder(VppTestCase):
         # maxBIBEntries
         self.assertEqual(struct.pack("I", limit), record[472])
 
-    def verify_ipfix_max_fragments_ip6(self, data, limit, src_addr):
-        """
-        Verify IPFIX maximum IPv6 fragments pending reassembly exceeded event
-
-        :param data: Decoded IPFIX data records
-        :param limit: Number of maximum fragments pending reassembly
-        :param src_addr: IPv6 source address
-        """
-        self.assertEqual(1, len(data))
-        record = data[0]
-        # natEvent
-        self.assertEqual(scapy.compat.orb(record[230]), 13)
-        # natQuotaExceededEvent
-        self.assertEqual(struct.pack("I", 5), record[466])
-        # maxFragmentsPendingReassembly
-        self.assertEqual(struct.pack("I", limit), record[475])
-        # sourceIPv6Address
-        self.assertEqual(src_addr, record[27])
-
-    def verify_ipfix_max_fragments_ip4(self, data, limit, src_addr):
-        """
-        Verify IPFIX maximum IPv4 fragments pending reassembly exceeded event
-
-        :param data: Decoded IPFIX data records
-        :param limit: Number of maximum fragments pending reassembly
-        :param src_addr: IPv4 source address
-        """
-        self.assertEqual(1, len(data))
-        record = data[0]
-        # natEvent
-        self.assertEqual(scapy.compat.orb(record[230]), 13)
-        # natQuotaExceededEvent
-        self.assertEqual(struct.pack("I", 5), record[466])
-        # maxFragmentsPendingReassembly
-        self.assertEqual(struct.pack("I", limit), record[475])
-        # sourceIPv4Address
-        self.assertEqual(src_addr, record[8])
-
     def verify_ipfix_bib(self, data, is_create, src_addr):
         """
         Verify IPFIX NAT64 BIB create and delete events
@@ -982,7 +942,7 @@ class MethodHolder(VppTestCase):
         else:
             self.assertEqual(scapy.compat.orb(record[230]), 11)
         # sourceIPv6Address
-        self.assertEqual(src_addr, record[27])
+        self.assertEqual(src_addr, str(ipaddress.IPv6Address(record[27])))
         # postNATSourceIPv4Address
         self.assertEqual(self.nat_addr_n, record[225])
         # protocolIdentifier
@@ -1013,7 +973,7 @@ class MethodHolder(VppTestCase):
         else:
             self.assertEqual(scapy.compat.orb(record[230]), 7)
         # sourceIPv6Address
-        self.assertEqual(src_addr, record[27])
+        self.assertEqual(src_addr, str(ipaddress.IPv6Address(record[27])))
         # destinationIPv6Address
         self.assertEqual(socket.inet_pton(socket.AF_INET6,
                                           self.compose_ip6(dst_addr,
@@ -1064,7 +1024,7 @@ class MethodHolder(VppTestCase):
         # maxEntriesPerUser
         self.assertEqual(struct.pack("I", limit), record[473])
         # sourceIPv4Address
-        self.assertEqual(src_addr, record[8])
+        self.assertEqual(socket.inet_pton(socket.AF_INET, src_addr), record[8])
 
     def verify_syslog_apmap(self, data, is_add=True):
         message = data.decode('utf-8')
@@ -1154,16 +1114,9 @@ class MethodHolder(VppTestCase):
             data = b"A" * 16 + b"B" * 16 + b"C" * 3
         self.port_in = random.randint(1025, 65535)
 
-        reass = self.vapi.nat_reass_dump()
-        reass_n_start = len(reass)
-
         # in2out
-        pkts = self.create_stream_frag(self.pg0,
-                                       self.pg1.remote_ip4,
-                                       self.port_in,
-                                       20,
-                                       data,
-                                       proto)
+        pkts = self.create_stream_frag(self.pg0, self.pg1.remote_ip4,
+                                       self.port_in, 20, data, proto)
         self.pg0.add_stream(pkts)
         self.pg_enable_capture(self.pg_interfaces)
         self.pg_start()
@@ -1200,13 +1153,8 @@ class MethodHolder(VppTestCase):
         else:
             sport = p[layer].id
             dport = 0
-        pkts = self.create_stream_frag(self.pg1,
-                                       dst_addr,
-                                       sport,
-                                       dport,
-                                       data,
-                                       proto,
-                                       echo_reply=True)
+        pkts = self.create_stream_frag(self.pg1, dst_addr, sport, dport, data,
+                                       proto, echo_reply=True)
         self.pg1.add_stream(pkts)
         self.pg_enable_capture(self.pg_interfaces)
         self.pg_start()
@@ -1221,11 +1169,6 @@ class MethodHolder(VppTestCase):
             self.assertEqual(p[layer].id, self.port_in)
         self.assertEqual(data, p[Raw].load)
 
-        reass = self.vapi.nat_reass_dump()
-        reass_n_end = len(reass)
-
-        self.assertEqual(reass_n_end - reass_n_start, 2)
-
     def frag_in_order_in_plus_out(self, proto=IP_PROTOS.tcp):
         layer = self.proto2layer(proto)
 
@@ -1236,16 +1179,10 @@ class MethodHolder(VppTestCase):
         self.port_in = random.randint(1025, 65535)
 
         for i in range(2):
-            reass = self.vapi.nat_reass_dump()
-            reass_n_start = len(reass)
-
             # out2in
-            pkts = self.create_stream_frag(self.pg0,
-                                           self.server_out_addr,
-                                           self.port_in,
-                                           self.server_out_port,
-                                           data,
-                                           proto)
+            pkts = self.create_stream_frag(self.pg0, self.server_out_addr,
+                                           self.port_in, self.server_out_port,
+                                           data, proto)
             self.pg0.add_stream(pkts)
             self.pg_enable_capture(self.pg_interfaces)
             self.pg_start()
@@ -1262,19 +1199,12 @@ class MethodHolder(VppTestCase):
 
             # in2out
             if proto != IP_PROTOS.icmp:
-                pkts = self.create_stream_frag(self.pg1,
-                                               self.pg0.remote_ip4,
+                pkts = self.create_stream_frag(self.pg1, self.pg0.remote_ip4,
                                                self.server_in_port,
-                                               p[layer].sport,
-                                               data,
-                                               proto)
+                                               p[layer].sport, data, proto)
             else:
-                pkts = self.create_stream_frag(self.pg1,
-                                               self.pg0.remote_ip4,
-                                               p[layer].id,
-                                               0,
-                                               data,
-                                               proto,
+                pkts = self.create_stream_frag(self.pg1, self.pg0.remote_ip4,
+                                               p[layer].id, 0, data, proto,
                                                echo_reply=True)
             self.pg1.add_stream(pkts)
             self.pg_enable_capture(self.pg_interfaces)
@@ -1289,11 +1219,6 @@ class MethodHolder(VppTestCase):
             else:
                 self.assertEqual(p[layer].id, self.port_in)
             self.assertEqual(data, p[Raw].load)
-
-            reass = self.vapi.nat_reass_dump()
-            reass_n_end = len(reass)
-
-            self.assertEqual(reass_n_end - reass_n_start, 2)
 
     def reass_hairpinning(self, proto=IP_PROTOS.tcp):
         layer = self.proto2layer(proto)
@@ -1335,12 +1260,8 @@ class MethodHolder(VppTestCase):
 
         for i in range(2):
             # in2out
-            pkts = self.create_stream_frag(self.pg0,
-                                           self.pg1.remote_ip4,
-                                           self.port_in,
-                                           20,
-                                           data,
-                                           proto)
+            pkts = self.create_stream_frag(self.pg0, self.pg1.remote_ip4,
+                                           self.port_in, 20, data, proto)
             pkts.reverse()
             self.pg0.add_stream(pkts)
             self.pg_enable_capture(self.pg_interfaces)
@@ -1378,13 +1299,8 @@ class MethodHolder(VppTestCase):
             else:
                 sport = p[layer].id
                 dport = 0
-            pkts = self.create_stream_frag(self.pg1,
-                                           dst_addr,
-                                           sport,
-                                           dport,
-                                           data,
-                                           proto,
-                                           echo_reply=True)
+            pkts = self.create_stream_frag(self.pg1, dst_addr, sport, dport,
+                                           data, proto, echo_reply=True)
             pkts.reverse()
             self.pg1.add_stream(pkts)
             self.pg_enable_capture(self.pg_interfaces)
@@ -1411,12 +1327,9 @@ class MethodHolder(VppTestCase):
 
         for i in range(2):
             # out2in
-            pkts = self.create_stream_frag(self.pg0,
-                                           self.server_out_addr,
-                                           self.port_in,
-                                           self.server_out_port,
-                                           data,
-                                           proto)
+            pkts = self.create_stream_frag(self.pg0, self.server_out_addr,
+                                           self.port_in, self.server_out_port,
+                                           data, proto)
             pkts.reverse()
             self.pg0.add_stream(pkts)
             self.pg_enable_capture(self.pg_interfaces)
@@ -1435,19 +1348,12 @@ class MethodHolder(VppTestCase):
 
             # in2out
             if proto != IP_PROTOS.icmp:
-                pkts = self.create_stream_frag(self.pg1,
-                                               self.pg0.remote_ip4,
+                pkts = self.create_stream_frag(self.pg1, self.pg0.remote_ip4,
                                                self.server_in_port,
-                                               p[layer].sport,
-                                               data,
-                                               proto)
+                                               p[layer].sport, data, proto)
             else:
-                pkts = self.create_stream_frag(self.pg1,
-                                               self.pg0.remote_ip4,
-                                               p[layer].id,
-                                               0,
-                                               data,
-                                               proto,
+                pkts = self.create_stream_frag(self.pg1, self.pg0.remote_ip4,
+                                               p[layer].id, 0, data, proto,
                                                echo_reply=True)
             pkts.reverse()
             self.pg1.add_stream(pkts)
@@ -1473,76 +1379,100 @@ class TestNAT44(MethodHolder):
         super(TestNAT44, cls).setUpClass()
         cls.vapi.cli("set log class nat level debug")
 
-        try:
-            cls.tcp_port_in = 6303
-            cls.tcp_port_out = 6303
-            cls.udp_port_in = 6304
-            cls.udp_port_out = 6304
-            cls.icmp_id_in = 6305
-            cls.icmp_id_out = 6305
-            cls.nat_addr = '10.0.0.3'
-            cls.ipfix_src_port = 4739
-            cls.ipfix_domain_id = 1
-            cls.tcp_external_port = 80
-            cls.udp_external_port = 69
+        cls.tcp_port_in = 6303
+        cls.tcp_port_out = 6303
+        cls.udp_port_in = 6304
+        cls.udp_port_out = 6304
+        cls.icmp_id_in = 6305
+        cls.icmp_id_out = 6305
+        cls.nat_addr = '10.0.0.3'
+        cls.ipfix_src_port = 4739
+        cls.ipfix_domain_id = 1
+        cls.tcp_external_port = 80
+        cls.udp_external_port = 69
 
-            cls.create_pg_interfaces(range(10))
-            cls.interfaces = list(cls.pg_interfaces[0:4])
+        cls.create_pg_interfaces(range(10))
+        cls.interfaces = list(cls.pg_interfaces[0:4])
 
-            for i in cls.interfaces:
-                i.admin_up()
-                i.config_ip4()
-                i.resolve_arp()
+        for i in cls.interfaces:
+            i.admin_up()
+            i.config_ip4()
+            i.resolve_arp()
 
-            cls.pg0.generate_remote_hosts(3)
-            cls.pg0.configure_ipv4_neighbors()
+        cls.pg0.generate_remote_hosts(3)
+        cls.pg0.configure_ipv4_neighbors()
 
-            cls.pg1.generate_remote_hosts(1)
-            cls.pg1.configure_ipv4_neighbors()
+        cls.pg1.generate_remote_hosts(1)
+        cls.pg1.configure_ipv4_neighbors()
 
-            cls.overlapping_interfaces = list(list(cls.pg_interfaces[4:7]))
-            cls.vapi.ip_table_add_del(is_add=1, table_id=10)
-            cls.vapi.ip_table_add_del(is_add=1, table_id=20)
+        cls.overlapping_interfaces = list(list(cls.pg_interfaces[4:7]))
+        cls.vapi.ip_table_add_del(is_add=1, table={'table_id': 10})
+        cls.vapi.ip_table_add_del(is_add=1, table={'table_id': 20})
 
-            cls.pg4._local_ip4 = "172.16.255.1"
-            cls.pg4._local_ip4n = socket.inet_pton(socket.AF_INET, i.local_ip4)
-            cls.pg4._remote_hosts[0]._ip4 = "172.16.255.2"
-            cls.pg4.set_table_ip4(10)
-            cls.pg5._local_ip4 = "172.17.255.3"
-            cls.pg5._local_ip4n = socket.inet_pton(socket.AF_INET, i.local_ip4)
-            cls.pg5._remote_hosts[0]._ip4 = "172.17.255.4"
-            cls.pg5.set_table_ip4(10)
-            cls.pg6._local_ip4 = "172.16.255.1"
-            cls.pg6._local_ip4n = socket.inet_pton(socket.AF_INET, i.local_ip4)
-            cls.pg6._remote_hosts[0]._ip4 = "172.16.255.2"
-            cls.pg6.set_table_ip4(20)
-            for i in cls.overlapping_interfaces:
-                i.config_ip4()
-                i.admin_up()
-                i.resolve_arp()
+        cls.pg4._local_ip4 = "172.16.255.1"
+        cls.pg4._remote_hosts[0]._ip4 = "172.16.255.2"
+        cls.pg4.set_table_ip4(10)
+        cls.pg5._local_ip4 = "172.17.255.3"
+        cls.pg5._remote_hosts[0]._ip4 = "172.17.255.4"
+        cls.pg5.set_table_ip4(10)
+        cls.pg6._local_ip4 = "172.16.255.1"
+        cls.pg6._remote_hosts[0]._ip4 = "172.16.255.2"
+        cls.pg6.set_table_ip4(20)
+        for i in cls.overlapping_interfaces:
+            i.config_ip4()
+            i.admin_up()
+            i.resolve_arp()
 
-            cls.pg7.admin_up()
-            cls.pg8.admin_up()
+        cls.pg7.admin_up()
+        cls.pg8.admin_up()
 
-            cls.pg9.generate_remote_hosts(2)
-            cls.pg9.config_ip4()
-            ip_addr_n = socket.inet_pton(socket.AF_INET, "10.0.0.1")
-            cls.vapi.sw_interface_add_del_address(
-                sw_if_index=cls.pg9.sw_if_index, address=ip_addr_n,
-                address_length=24)
-            cls.pg9.admin_up()
-            cls.pg9.resolve_arp()
-            cls.pg9._remote_hosts[1]._ip4 = cls.pg9._remote_hosts[0]._ip4
-            cls.pg4._remote_ip4 = cls.pg9._remote_hosts[0]._ip4 = "10.0.0.2"
-            cls.pg9.resolve_arp()
+        cls.pg9.generate_remote_hosts(2)
+        cls.pg9.config_ip4()
+        cls.vapi.sw_interface_add_del_address(
+            sw_if_index=cls.pg9.sw_if_index,
+            prefix="10.0.0.1/24")
 
-        except Exception:
-            super(TestNAT44, cls).tearDownClass()
-            raise
+        cls.pg9.admin_up()
+        cls.pg9.resolve_arp()
+        cls.pg9._remote_hosts[1]._ip4 = cls.pg9._remote_hosts[0]._ip4
+        cls.pg4._remote_ip4 = cls.pg9._remote_hosts[0]._ip4 = "10.0.0.2"
+        cls.pg9.resolve_arp()
 
     @classmethod
     def tearDownClass(cls):
         super(TestNAT44, cls).tearDownClass()
+
+    def test_clear_sessions(self):
+        """ NAT44 session clearing test """
+
+        self.nat44_add_address(self.nat_addr)
+        flags = self.config_flags.NAT_IS_INSIDE
+        self.vapi.nat44_interface_add_del_feature(
+            sw_if_index=self.pg0.sw_if_index,
+            flags=flags, is_add=1)
+        self.vapi.nat44_interface_add_del_feature(
+            sw_if_index=self.pg1.sw_if_index,
+            is_add=1)
+
+        nat_config = self.vapi.nat_show_config()
+        self.assertEqual(0, nat_config.endpoint_dependent)
+
+        pkts = self.create_stream_in(self.pg0, self.pg1)
+        self.pg0.add_stream(pkts)
+        self.pg_enable_capture(self.pg_interfaces)
+        self.pg_start()
+        capture = self.pg1.get_capture(len(pkts))
+        self.verify_capture_out(capture)
+
+        sessions = self.statistics.get_counter('/nat44/total-sessions')
+        self.assertTrue(sessions[0][0] > 0)
+        self.logger.info("sessions before clearing: %s" % sessions[0][0])
+
+        self.vapi.cli("clear nat44 sessions")
+
+        sessions = self.statistics.get_counter('/nat44/total-sessions')
+        self.assertEqual(sessions[0][0], 0)
+        self.logger.info("sessions after clearing: %s" % sessions[0][0])
 
     def test_dynamic(self):
         """ NAT44 dynamic translation test """
@@ -1815,7 +1745,7 @@ class TestNAT44(MethodHolder):
             is_add=1)
         self.vapi.nat44_forwarding_enable_disable(enable=1)
 
-        real_ip = self.pg0.remote_ip4n
+        real_ip = self.pg0.remote_ip4
         alias_ip = self.nat_addr
         flags = self.config_flags.NAT_IS_ADDR_ONLY
         self.vapi.nat44_add_del_static_mapping(is_add=1,
@@ -1921,7 +1851,7 @@ class TestNAT44(MethodHolder):
         self.tcp_port_out = 6303
         self.udp_port_out = 6304
         self.icmp_id_out = 6305
-        tag = b"testTAG"
+        tag = "testTAG"
 
         self.nat44_add_static_mapping(self.pg0.remote_ip4, nat_ip, tag=tag)
         flags = self.config_flags.NAT_IS_INSIDE
@@ -1933,7 +1863,7 @@ class TestNAT44(MethodHolder):
             is_add=1)
         sm = self.vapi.nat44_static_mapping_dump()
         self.assertEqual(len(sm), 1)
-        self.assertEqual((sm[0].tag).split(b'\0', 1)[0], tag)
+        self.assertEqual(sm[0].tag, tag)
 
         # out2in
         pkts = self.create_stream_out(self.pg1, nat_ip)
@@ -2099,7 +2029,7 @@ class TestNAT44(MethodHolder):
 
         # 1:1NAT
         self.nat44_add_static_mapping(self.pg0.remote_ip4, nat_ip)
-        sessions = self.vapi.nat44_user_session_dump(self.pg0.remote_ip4n, 0)
+        sessions = self.vapi.nat44_user_session_dump(self.pg0.remote_ip4, 0)
         self.assertEqual(len(sessions), 0)
         pkts = self.create_stream_in(self.pg0, self.pg1)
         self.pg0.add_stream(pkts)
@@ -2112,7 +2042,7 @@ class TestNAT44(MethodHolder):
         """ Identity NAT """
         flags = self.config_flags.NAT_IS_ADDR_ONLY
         self.vapi.nat44_add_del_identity_mapping(
-            ip_address=self.pg0.remote_ip4n, sw_if_index=0xFFFFFFFF,
+            ip_address=self.pg0.remote_ip4, sw_if_index=0xFFFFFFFF,
             flags=flags, is_add=1)
         flags = self.config_flags.NAT_IS_INSIDE
         self.vapi.nat44_interface_add_del_feature(
@@ -2142,11 +2072,11 @@ class TestNAT44(MethodHolder):
             self.logger.error(ppp("Unexpected or invalid packet:", p))
             raise
 
-        sessions = self.vapi.nat44_user_session_dump(self.pg0.remote_ip4n, 0)
+        sessions = self.vapi.nat44_user_session_dump(self.pg0.remote_ip4, 0)
         self.assertEqual(len(sessions), 0)
         flags = self.config_flags.NAT_IS_ADDR_ONLY
         self.vapi.nat44_add_del_identity_mapping(
-            ip_address=self.pg0.remote_ip4n, sw_if_index=0xFFFFFFFF,
+            ip_address=self.pg0.remote_ip4, sw_if_index=0xFFFFFFFF,
             flags=flags, vrf_id=1, is_add=1)
         identity_mappings = self.vapi.nat44_identity_mapping_dump()
         self.assertEqual(len(identity_mappings), 2)
@@ -2298,7 +2228,7 @@ class TestNAT44(MethodHolder):
         # pg5 session dump
         addresses = self.vapi.nat44_address_dump()
         self.assertEqual(len(addresses), 1)
-        sessions = self.vapi.nat44_user_session_dump(self.pg5.remote_ip4n, 10)
+        sessions = self.vapi.nat44_user_session_dump(self.pg5.remote_ip4, 10)
         self.assertEqual(len(sessions), 3)
         for session in sessions:
             self.assertFalse(session.flags & self.config_flags.NAT_IS_STATIC)
@@ -2350,7 +2280,7 @@ class TestNAT44(MethodHolder):
                                  self.config_flags.NAT_IS_EXT_HOST_VALID)
 
         # pg4 session dump
-        sessions = self.vapi.nat44_user_session_dump(self.pg4.remote_ip4n, 10)
+        sessions = self.vapi.nat44_user_session_dump(self.pg4.remote_ip4, 10)
         self.assertGreaterEqual(len(sessions), 4)
         for session in sessions:
             self.assertFalse(session.flags & self.config_flags.NAT_IS_STATIC)
@@ -2360,7 +2290,7 @@ class TestNAT44(MethodHolder):
                              addresses[0].ip_address)
 
         # pg6 session dump
-        sessions = self.vapi.nat44_user_session_dump(self.pg6.remote_ip4n, 20)
+        sessions = self.vapi.nat44_user_session_dump(self.pg6.remote_ip4, 20)
         self.assertGreaterEqual(len(sessions), 3)
         for session in sessions:
             self.assertTrue(session.flags & self.config_flags.NAT_IS_STATIC)
@@ -2609,61 +2539,6 @@ class TestNAT44(MethodHolder):
                 self.logger.error(ppp("Unexpected or invalid packet:", packet))
                 raise
 
-    def test_max_translations_per_user(self):
-        """ MAX translations per user - recycle the least recently used """
-
-        self.nat44_add_address(self.nat_addr)
-        flags = self.config_flags.NAT_IS_INSIDE
-        self.vapi.nat44_interface_add_del_feature(
-            sw_if_index=self.pg0.sw_if_index,
-            flags=flags, is_add=1)
-        self.vapi.nat44_interface_add_del_feature(
-            sw_if_index=self.pg1.sw_if_index,
-            is_add=1)
-
-        # get maximum number of translations per user
-        nat44_config = self.vapi.nat_show_config()
-
-        # send more than maximum number of translations per user packets
-        pkts_num = nat44_config.max_translations_per_user + 5
-        pkts = []
-        for port in range(0, pkts_num):
-            p = (Ether(dst=self.pg0.local_mac, src=self.pg0.remote_mac) /
-                 IP(src=self.pg0.remote_ip4, dst=self.pg1.remote_ip4) /
-                 TCP(sport=1025 + port))
-            pkts.append(p)
-        self.pg0.add_stream(pkts)
-        self.pg_enable_capture(self.pg_interfaces)
-        self.pg_start()
-
-        # verify number of translated packet
-        self.pg1.get_capture(pkts_num)
-
-        users = self.vapi.nat44_user_dump()
-        for user in users:
-            if user.ip_address == self.pg0.remote_ip4n:
-                self.assertEqual(user.nsessions,
-                                 nat44_config.max_translations_per_user)
-                self.assertEqual(user.nstaticsessions, 0)
-
-        tcp_port = 22
-        self.nat44_add_static_mapping(self.pg0.remote_ip4, self.nat_addr,
-                                      tcp_port, tcp_port,
-                                      proto=IP_PROTOS.tcp)
-        p = (Ether(dst=self.pg0.local_mac, src=self.pg0.remote_mac) /
-             IP(src=self.pg0.remote_ip4, dst=self.pg1.remote_ip4) /
-             TCP(sport=tcp_port))
-        self.pg0.add_stream(p)
-        self.pg_enable_capture(self.pg_interfaces)
-        self.pg_start()
-        self.pg1.get_capture(1)
-        users = self.vapi.nat44_user_dump()
-        for user in users:
-            if user.ip_address == self.pg0.remote_ip4n:
-                self.assertEqual(user.nsessions,
-                                 nat44_config.max_translations_per_user - 1)
-                self.assertEqual(user.nstaticsessions, 1)
-
     def test_interface_addr(self):
         """ Acquire NAT44 addresses from interface """
         self.vapi.nat44_add_del_interface_addr(
@@ -2687,7 +2562,7 @@ class TestNAT44(MethodHolder):
 
     def test_interface_addr_static_mapping(self):
         """ Static mapping with addresses from interface """
-        tag = b"testTAG"
+        tag = "testTAG"
 
         self.vapi.nat44_add_del_interface_addr(
             is_add=1,
@@ -2702,7 +2577,7 @@ class TestNAT44(MethodHolder):
         self.assertEqual(1, len(static_mappings))
         self.assertEqual(self.pg7.sw_if_index,
                          static_mappings[0].external_sw_if_index)
-        self.assertEqual((static_mappings[0].tag).split(b'\0', 1)[0], tag)
+        self.assertEqual(static_mappings[0].tag, tag)
 
         # configure interface address and check static mappings
         self.pg7.config_ip4()
@@ -2713,7 +2588,7 @@ class TestNAT44(MethodHolder):
             if sm.external_sw_if_index == 0xFFFFFFFF:
                 self.assertEqual(str(sm.external_ip_address),
                                  self.pg7.local_ip4)
-                self.assertEqual((sm.tag).split(b'\0', 1)[0], tag)
+                self.assertEqual(sm.tag, tag)
                 resolved = True
         self.assertTrue(resolved)
 
@@ -2723,7 +2598,7 @@ class TestNAT44(MethodHolder):
         self.assertEqual(1, len(static_mappings))
         self.assertEqual(self.pg7.sw_if_index,
                          static_mappings[0].external_sw_if_index)
-        self.assertEqual((static_mappings[0].tag).split(b'\0', 1)[0], tag)
+        self.assertEqual(static_mappings[0].tag, tag)
 
         # configure interface address again and check static mappings
         self.pg7.config_ip4()
@@ -2734,7 +2609,7 @@ class TestNAT44(MethodHolder):
             if sm.external_sw_if_index == 0xFFFFFFFF:
                 self.assertEqual(str(sm.external_ip_address),
                                  self.pg7.local_ip4)
-                self.assertEqual((sm.tag).split(b'\0', 1)[0], tag)
+                self.assertEqual(sm.tag, tag)
                 resolved = True
         self.assertTrue(resolved)
 
@@ -2802,8 +2677,8 @@ class TestNAT44(MethodHolder):
         self.vapi.nat44_interface_add_del_feature(
             sw_if_index=self.pg1.sw_if_index,
             is_add=1)
-        self.vapi.set_ipfix_exporter(collector_address=self.pg3.remote_ip4n,
-                                     src_address=self.pg3.local_ip4n,
+        self.vapi.set_ipfix_exporter(collector_address=self.pg3.remote_ip4,
+                                     src_address=self.pg3.local_ip4,
                                      path_mtu=512,
                                      template_interval=10,
                                      collector_port=collector_port)
@@ -2819,7 +2694,7 @@ class TestNAT44(MethodHolder):
         self.verify_capture_out(capture)
         self.nat44_add_address(self.nat_addr, is_add=0)
         self.vapi.ipfix_flush()
-        capture = self.pg3.get_capture(9)
+        capture = self.pg3.get_capture(7)
         ipfix = IPFIXDecoder()
         # first load template
         for p in capture:
@@ -2847,8 +2722,8 @@ class TestNAT44(MethodHolder):
         self.vapi.nat44_interface_add_del_feature(
             sw_if_index=self.pg1.sw_if_index,
             is_add=1)
-        self.vapi.set_ipfix_exporter(collector_address=self.pg3.remote_ip4n,
-                                     src_address=self.pg3.local_ip4n,
+        self.vapi.set_ipfix_exporter(collector_address=self.pg3.remote_ip4,
+                                     src_address=self.pg3.local_ip4,
                                      path_mtu=512,
                                      template_interval=10)
         self.vapi.nat_ipfix_enable_disable(domain_id=self.ipfix_domain_id,
@@ -2864,7 +2739,7 @@ class TestNAT44(MethodHolder):
         self.pg1.assert_nothing_captured()
         sleep(1)
         self.vapi.ipfix_flush()
-        capture = self.pg3.get_capture(9)
+        capture = self.pg3.get_capture(7)
         ipfix = IPFIXDecoder()
         # first load template
         for p in capture:
@@ -2910,8 +2785,8 @@ class TestNAT44(MethodHolder):
         self.pg_start()
 
         self.pg1.get_capture(max_sessions)
-        self.vapi.set_ipfix_exporter(collector_address=self.pg3.remote_ip4n,
-                                     src_address=self.pg3.local_ip4n,
+        self.vapi.set_ipfix_exporter(collector_address=self.pg3.remote_ip4,
+                                     src_address=self.pg3.local_ip4,
                                      path_mtu=512,
                                      template_interval=10)
         self.vapi.nat_ipfix_enable_disable(domain_id=self.ipfix_domain_id,
@@ -2927,7 +2802,7 @@ class TestNAT44(MethodHolder):
         self.pg1.assert_nothing_captured()
         sleep(1)
         self.vapi.ipfix_flush()
-        capture = self.pg3.get_capture(9)
+        capture = self.pg3.get_capture(7)
         ipfix = IPFIXDecoder()
         # first load template
         for p in capture:
@@ -2950,7 +2825,7 @@ class TestNAT44(MethodHolder):
         """ Test syslog address and port mapping creation and deletion """
         self.vapi.syslog_set_filter(
             self.SYSLOG_SEVERITY.SYSLOG_API_SEVERITY_INFO)
-        self.vapi.syslog_set_sender(self.pg3.local_ip4n, self.pg3.remote_ip4n)
+        self.vapi.syslog_set_sender(self.pg3.local_ip4, self.pg3.remote_ip4)
         self.nat44_add_address(self.nat_addr)
         flags = self.config_flags.NAT_IS_INSIDE
         self.vapi.nat44_interface_add_del_feature(
@@ -3052,8 +2927,8 @@ class TestNAT44(MethodHolder):
 
         self.pg0.unconfig_ip4()
         self.pg1.unconfig_ip4()
-        self.vapi.ip_table_add_del(is_add=1, table_id=vrf_id1)
-        self.vapi.ip_table_add_del(is_add=1, table_id=vrf_id2)
+        self.vapi.ip_table_add_del(is_add=1, table={'table_id': vrf_id1})
+        self.vapi.ip_table_add_del(is_add=1, table={'table_id': vrf_id2})
         self.pg0.set_table_ip4(vrf_id1)
         self.pg1.set_table_ip4(vrf_id2)
         self.pg0.config_ip4()
@@ -3100,8 +2975,8 @@ class TestNAT44(MethodHolder):
             self.pg1.config_ip4()
             self.pg0.resolve_arp()
             self.pg1.resolve_arp()
-            self.vapi.ip_table_add_del(is_add=0, table_id=vrf_id1)
-            self.vapi.ip_table_add_del(is_add=0, table_id=vrf_id2)
+            self.vapi.ip_table_add_del(is_add=0, table={'table_id': vrf_id1})
+            self.vapi.ip_table_add_del(is_add=0, table={'table_id': vrf_id2})
 
     def test_vrf_feature_independent(self):
         """ NAT44 tenant VRF independent address pool mode """
@@ -3618,7 +3493,7 @@ class TestNAT44(MethodHolder):
         self.pg_start()
         self.pg1.get_capture(len(pkts))
 
-        sessions = self.vapi.nat44_user_session_dump(self.pg0.remote_ip4n, 0)
+        sessions = self.vapi.nat44_user_session_dump(self.pg0.remote_ip4, 0)
         nsessions = len(sessions)
 
         self.vapi.nat44_del_session(address=sessions[0].inside_ip_address,
@@ -3629,7 +3504,7 @@ class TestNAT44(MethodHolder):
                                     port=sessions[1].outside_port,
                                     protocol=sessions[1].protocol)
 
-        sessions = self.vapi.nat44_user_session_dump(self.pg0.remote_ip4n, 0)
+        sessions = self.vapi.nat44_user_session_dump(self.pg0.remote_ip4, 0)
         self.assertEqual(nsessions - len(sessions), 2)
 
         self.vapi.nat44_del_session(address=sessions[0].inside_ip_address,
@@ -3638,25 +3513,6 @@ class TestNAT44(MethodHolder):
                                     flags=self.config_flags.NAT_IS_INSIDE)
 
         self.verify_no_nat44_user()
-
-    def test_set_get_reass(self):
-        """ NAT44 set/get virtual fragmentation reassembly """
-        reas_cfg1 = self.vapi.nat_get_reass()
-
-        self.vapi.nat_set_reass(timeout=reas_cfg1.ip4_timeout + 5,
-                                max_reass=reas_cfg1.ip4_max_reass * 2,
-                                max_frag=reas_cfg1.ip4_max_frag * 2,
-                                drop_frag=0)
-
-        reas_cfg2 = self.vapi.nat_get_reass()
-
-        self.assertEqual(reas_cfg1.ip4_timeout + 5, reas_cfg2.ip4_timeout)
-        self.assertEqual(reas_cfg1.ip4_max_reass * 2, reas_cfg2.ip4_max_reass)
-        self.assertEqual(reas_cfg1.ip4_max_frag * 2, reas_cfg2.ip4_max_frag)
-
-        self.vapi.nat_set_reass(timeout=2, max_reass=1024, max_frag=5,
-                                drop_frag=1)
-        self.assertTrue(self.vapi.nat_get_reass().ip4_drop_frag)
 
     def test_frag_in_order(self):
         """ NAT44 translate fragments arriving in order """
@@ -3670,21 +3526,9 @@ class TestNAT44(MethodHolder):
             sw_if_index=self.pg1.sw_if_index,
             is_add=1)
 
-        reas_cfg1 = self.vapi.nat_get_reass()
-        # this test was intermittently failing in some cases
-        # until we temporarily bump the reassembly timeouts
-        self.vapi.nat_set_reass(timeout=20, max_reass=1024, max_frag=5,
-                                drop_frag=0)
-
         self.frag_in_order(proto=IP_PROTOS.tcp)
         self.frag_in_order(proto=IP_PROTOS.udp)
         self.frag_in_order(proto=IP_PROTOS.icmp)
-
-        # restore the reassembly timeouts
-        self.vapi.nat_set_reass(timeout=reas_cfg1.ip4_timeout,
-                                max_reass=reas_cfg1.ip4_max_reass,
-                                max_frag=reas_cfg1.ip4_max_frag,
-                                drop_frag=reas_cfg1.ip4_drop_frag)
 
     def test_frag_forwarding(self):
         """ NAT44 forwarding fragment test """
@@ -3830,60 +3674,6 @@ class TestNAT44(MethodHolder):
             self.assertGreaterEqual(tcp.sport, 1025)
             self.assertLessEqual(tcp.sport, 1027)
 
-    def test_ipfix_max_frags(self):
-        """ IPFIX logging maximum fragments pending reassembly exceeded """
-        self.nat44_add_address(self.nat_addr)
-        flags = self.config_flags.NAT_IS_INSIDE
-        self.vapi.nat44_interface_add_del_feature(
-            sw_if_index=self.pg0.sw_if_index,
-            flags=flags, is_add=1)
-        self.vapi.nat44_interface_add_del_feature(
-            sw_if_index=self.pg1.sw_if_index,
-            is_add=1)
-        self.vapi.nat_set_reass(timeout=2, max_reass=1024, max_frag=1,
-                                drop_frag=0)
-        self.vapi.set_ipfix_exporter(collector_address=self.pg3.remote_ip4n,
-                                     src_address=self.pg3.local_ip4n,
-                                     path_mtu=512,
-                                     template_interval=10)
-        self.vapi.nat_ipfix_enable_disable(domain_id=self.ipfix_domain_id,
-                                           src_port=self.ipfix_src_port,
-                                           enable=1)
-
-        data = b"A" * 4 + b"B" * 16 + b"C" * 3
-        self.tcp_port_in = random.randint(1025, 65535)
-        pkts = self.create_stream_frag(self.pg0,
-                                       self.pg1.remote_ip4,
-                                       self.tcp_port_in,
-                                       20,
-                                       data)
-        pkts.reverse()
-        self.pg0.add_stream(pkts)
-        self.pg_enable_capture(self.pg_interfaces)
-        self.pg_start()
-        self.pg1.assert_nothing_captured()
-        sleep(1)
-        self.vapi.ipfix_flush()
-        capture = self.pg3.get_capture(9)
-        ipfix = IPFIXDecoder()
-        # first load template
-        for p in capture:
-            self.assertTrue(p.haslayer(IPFIX))
-            self.assertEqual(p[IP].src, self.pg3.local_ip4)
-            self.assertEqual(p[IP].dst, self.pg3.remote_ip4)
-            self.assertEqual(p[UDP].sport, self.ipfix_src_port)
-            self.assertEqual(p[UDP].dport, 4739)
-            self.assertEqual(p[IPFIX].observationDomainID,
-                             self.ipfix_domain_id)
-            if p.haslayer(Template):
-                ipfix.add_template(p.getlayer(Template))
-        # verify events in data set
-        for p in capture:
-            if p.haslayer(Data):
-                data = ipfix.decode_data_set(p.getlayer(Set))
-                self.verify_ipfix_max_fragments_ip4(data, 1,
-                                                    self.pg0.remote_ip4n)
-
     def test_multiple_outside_vrf(self):
         """ Multiple outside VRF """
         vrf_id1 = 1
@@ -3891,8 +3681,8 @@ class TestNAT44(MethodHolder):
 
         self.pg1.unconfig_ip4()
         self.pg2.unconfig_ip4()
-        self.vapi.ip_table_add_del(is_add=1, table_id=vrf_id1)
-        self.vapi.ip_table_add_del(is_add=1, table_id=vrf_id2)
+        self.vapi.ip_table_add_del(is_add=1, table={'table_id': vrf_id1})
+        self.vapi.ip_table_add_del(is_add=1, table={'table_id': vrf_id2})
         self.pg1.set_table_ip4(vrf_id1)
         self.pg2.set_table_ip4(vrf_id2)
         self.pg1.config_ip4()
@@ -4111,7 +3901,7 @@ class TestNAT44(MethodHolder):
 
         # delete one session
         self.pg_enable_capture(self.pg_interfaces)
-        self.vapi.nat44_del_session(address=self.pg0.remote_ip4n,
+        self.vapi.nat44_del_session(address=self.pg0.remote_ip4,
                                     port=self.tcp_port_in,
                                     protocol=IP_PROTOS.tcp,
                                     flags=self.config_flags.NAT_IS_INSIDE)
@@ -4381,12 +4171,144 @@ class TestNAT44(MethodHolder):
         self.logger.info(self.vapi.cli("show nat44 static mappings"))
         self.logger.info(self.vapi.cli("show nat44 interface address"))
         self.logger.info(self.vapi.cli("show nat44 sessions detail"))
-        self.logger.info(self.vapi.cli("show nat virtual-reassembly"))
         self.logger.info(self.vapi.cli("show nat44 hash tables detail"))
         self.logger.info(self.vapi.cli("show nat timeouts"))
         self.logger.info(
             self.vapi.cli("show nat addr-port-assignment-alg"))
         self.logger.info(self.vapi.cli("show nat ha"))
+
+
+class TestNAT44EndpointDependent2(MethodHolder):
+    """ Endpoint-Dependent mapping and filtering test cases """
+
+    @classmethod
+    def setUpConstants(cls):
+        super(TestNAT44EndpointDependent2, cls).setUpConstants()
+        cls.vpp_cmdline.extend(["nat", "{", "endpoint-dependent", "}"])
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestNAT44EndpointDependent2, cls).tearDownClass()
+
+    def tearDown(self):
+        super(TestNAT44EndpointDependent2, self).tearDown()
+
+    @classmethod
+    def create_and_add_ip4_table(cls, i, table_id):
+        cls.vapi.ip_table_add_del(is_add=1, table={'table_id': table_id})
+        i.set_table_ip4(table_id)
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestNAT44EndpointDependent2, cls).setUpClass()
+
+        cls.create_pg_interfaces(range(3))
+        cls.interfaces = list(cls.pg_interfaces)
+
+        cls.create_and_add_ip4_table(cls.pg1, 10)
+
+        for i in cls.interfaces:
+            i.admin_up()
+            i.config_ip4()
+            i.resolve_arp()
+
+            i.generate_remote_hosts(1)
+            i.configure_ipv4_neighbors()
+
+    def setUp(self):
+        super(TestNAT44EndpointDependent2, self).setUp()
+
+        nat_config = self.vapi.nat_show_config()
+        self.assertEqual(1, nat_config.endpoint_dependent)
+
+    def nat_add_inside_interface(self, i):
+        self.vapi.nat44_interface_add_del_feature(
+            flags=self.config_flags.NAT_IS_INSIDE,
+            sw_if_index=i.sw_if_index, is_add=1)
+
+    def nat_add_outside_interface(self, i):
+        self.vapi.nat44_interface_add_del_feature(
+            flags=self.config_flags.NAT_IS_OUTSIDE,
+            sw_if_index=i.sw_if_index, is_add=1)
+
+    def nat_add_interface_address(self, i):
+        self.nat_addr = i.local_ip4
+        self.vapi.nat44_add_del_interface_addr(
+            sw_if_index=i.sw_if_index, is_add=1)
+
+    def nat_add_address(self, address, vrf_id=0xFFFFFFFF):
+        self.nat_addr = address
+        self.nat44_add_address(address, vrf_id=vrf_id)
+
+    def cli(self, command):
+        result = self.vapi.cli(command)
+        self.logger.info(result)
+        # print(result)
+
+    def show_configuration(self):
+        self.cli("show interface")
+        self.cli("show interface address")
+        self.cli("show nat44 addresses")
+        self.cli("show nat44 interfaces")
+
+    def create_tcp_stream(self, in_if, out_if, count):
+        """
+        Create tcp packet stream
+
+        :param in_if: Inside interface
+        :param out_if: Outside interface
+        :param count: count of packets to generate
+        """
+        pkts = []
+        port = 6303
+
+        for i in range(count):
+            p = (Ether(dst=in_if.local_mac, src=in_if.remote_mac) /
+                 IP(src=in_if.remote_ip4, dst=out_if.remote_ip4, ttl=64) /
+                 TCP(sport=port + i, dport=20))
+            pkts.append(p)
+
+        return pkts
+
+    def test_session_limit_per_vrf(self):
+
+        inside = self.pg0
+        inside_vrf10 = self.pg1
+        outside = self.pg2
+
+        limit = 5
+
+        # 2 interfaces pg0, pg1 (vrf10, limit 1 tcp session)
+        # non existing vrf_id makes process core dump
+        self.vapi.nat44_set_session_limit(session_limit=limit, vrf_id=10)
+
+        self.nat_add_inside_interface(inside)
+        self.nat_add_inside_interface(inside_vrf10)
+        self.nat_add_outside_interface(outside)
+
+        # vrf independent
+        self.nat_add_interface_address(outside)
+
+        # BUG: causing core dump - when bad vrf_id is specified
+        # self.nat44_add_address(outside.local_ip4, vrf_id=20)
+
+        self.show_configuration()
+
+        stream = self.create_tcp_stream(inside_vrf10, outside, limit * 2)
+        inside_vrf10.add_stream(stream)
+
+        self.pg_enable_capture(self.pg_interfaces)
+        self.pg_start()
+
+        capture = outside.get_capture(limit)
+
+        stream = self.create_tcp_stream(inside, outside, limit * 2)
+        inside.add_stream(stream)
+
+        self.pg_enable_capture(self.pg_interfaces)
+        self.pg_start()
+
+        capture = outside.get_capture(len(stream))
 
 
 class TestNAT44EndpointDependent(MethodHolder):
@@ -4401,112 +4323,105 @@ class TestNAT44EndpointDependent(MethodHolder):
     def setUpClass(cls):
         super(TestNAT44EndpointDependent, cls).setUpClass()
         cls.vapi.cli("set log class nat level debug")
-        try:
-            cls.tcp_port_in = 6303
-            cls.tcp_port_out = 6303
-            cls.udp_port_in = 6304
-            cls.udp_port_out = 6304
-            cls.icmp_id_in = 6305
-            cls.icmp_id_out = 6305
-            cls.nat_addr = '10.0.0.3'
-            cls.ipfix_src_port = 4739
-            cls.ipfix_domain_id = 1
-            cls.tcp_external_port = 80
 
-            cls.create_pg_interfaces(range(9))
-            cls.interfaces = list(cls.pg_interfaces[0:3])
+        cls.tcp_port_in = 6303
+        cls.tcp_port_out = 6303
+        cls.udp_port_in = 6304
+        cls.udp_port_out = 6304
+        cls.icmp_id_in = 6305
+        cls.icmp_id_out = 6305
+        cls.nat_addr = '10.0.0.3'
+        cls.ipfix_src_port = 4739
+        cls.ipfix_domain_id = 1
+        cls.tcp_external_port = 80
 
-            for i in cls.interfaces:
-                i.admin_up()
-                i.config_ip4()
-                i.resolve_arp()
+        cls.create_pg_interfaces(range(9))
+        cls.interfaces = list(cls.pg_interfaces[0:3])
 
-            cls.pg0.generate_remote_hosts(3)
-            cls.pg0.configure_ipv4_neighbors()
+        for i in cls.interfaces:
+            i.admin_up()
+            i.config_ip4()
+            i.resolve_arp()
 
-            cls.pg3.admin_up()
+        cls.pg0.generate_remote_hosts(3)
+        cls.pg0.configure_ipv4_neighbors()
 
-            cls.pg4.generate_remote_hosts(2)
-            cls.pg4.config_ip4()
-            ip_addr_n = socket.inet_pton(socket.AF_INET, "10.0.0.1")
-            cls.vapi.sw_interface_add_del_address(
-                sw_if_index=cls.pg4.sw_if_index, address=ip_addr_n,
-                address_length=24)
-            cls.pg4.admin_up()
-            cls.pg4.resolve_arp()
-            cls.pg4._remote_hosts[1]._ip4 = cls.pg4._remote_hosts[0]._ip4
-            cls.pg4.resolve_arp()
+        cls.pg3.admin_up()
 
-            zero_ip4n = socket.inet_pton(socket.AF_INET, "0.0.0.0")
-            cls.vapi.ip_table_add_del(is_add=1, table_id=1)
+        cls.pg4.generate_remote_hosts(2)
+        cls.pg4.config_ip4()
+        cls.vapi.sw_interface_add_del_address(
+            sw_if_index=cls.pg4.sw_if_index,
+            prefix="10.0.0.1/24")
 
-            cls.pg5._local_ip4 = "10.1.1.1"
-            cls.pg5._local_ip4n = socket.inet_pton(socket.AF_INET,
-                                                   cls.pg5.local_ip4)
-            cls.pg5._remote_hosts[0]._ip4 = "10.1.1.2"
-            cls.pg5._remote_hosts[0]._ip4n = socket.inet_pton(
-                socket.AF_INET, cls.pg5.remote_ip4)
-            cls.pg5.set_table_ip4(1)
-            cls.pg5.config_ip4()
-            cls.pg5.admin_up()
-            r1 = VppIpRoute(cls, cls.pg5.remote_ip4, 32,
-                            [VppRoutePath("0.0.0.0",
-                                          cls.pg5.sw_if_index)],
-                            table_id=1,
-                            register=False)
-            r1.add_vpp_config()
+        cls.pg4.admin_up()
+        cls.pg4.resolve_arp()
+        cls.pg4._remote_hosts[1]._ip4 = cls.pg4._remote_hosts[0]._ip4
+        cls.pg4.resolve_arp()
 
-            cls.pg6._local_ip4 = "10.1.2.1"
-            cls.pg6._local_ip4n = socket.inet_pton(socket.AF_INET,
-                                                   cls.pg6.local_ip4)
-            cls.pg6._remote_hosts[0]._ip4 = "10.1.2.2"
-            cls.pg6._remote_hosts[0]._ip4n = socket.inet_pton(
-                socket.AF_INET, cls.pg6.remote_ip4)
-            cls.pg6.set_table_ip4(1)
-            cls.pg6.config_ip4()
-            cls.pg6.admin_up()
+        zero_ip4 = socket.inet_pton(socket.AF_INET, "0.0.0.0")
+        cls.vapi.ip_table_add_del(is_add=1, table={'table_id': 1})
 
-            r2 = VppIpRoute(cls, cls.pg6.remote_ip4, 32,
-                            [VppRoutePath("0.0.0.0",
-                                          cls.pg6.sw_if_index)],
-                            table_id=1,
-                            register=False)
-            r3 = VppIpRoute(cls, cls.pg6.remote_ip4, 16,
-                            [VppRoutePath("0.0.0.0",
-                                          0xffffffff,
-                                          nh_table_id=1)],
-                            table_id=0,
-                            register=False)
-            r4 = VppIpRoute(cls, "0.0.0.0", 0,
-                            [VppRoutePath("0.0.0.0", 0xffffffff,
-                                          nh_table_id=0)],
-                            table_id=1,
-                            register=False)
-            r5 = VppIpRoute(cls, "0.0.0.0", 0,
-                            [VppRoutePath(cls.pg1.local_ip4,
-                                          cls.pg1.sw_if_index)],
-                            register=False)
-            r2.add_vpp_config()
-            r3.add_vpp_config()
-            r4.add_vpp_config()
-            r5.add_vpp_config()
+        cls.pg5._local_ip4 = "10.1.1.1"
+        cls.pg5._remote_hosts[0]._ip4 = "10.1.1.2"
+        cls.pg5.set_table_ip4(1)
+        cls.pg5.config_ip4()
+        cls.pg5.admin_up()
+        r1 = VppIpRoute(cls, cls.pg5.remote_ip4, 32,
+                        [VppRoutePath("0.0.0.0",
+                                      cls.pg5.sw_if_index)],
+                        table_id=1,
+                        register=False)
+        r1.add_vpp_config()
 
-            cls.pg5.resolve_arp()
-            cls.pg6.resolve_arp()
+        cls.pg6._local_ip4 = "10.1.2.1"
+        cls.pg6._remote_hosts[0]._ip4 = "10.1.2.2"
+        cls.pg6.set_table_ip4(1)
+        cls.pg6.config_ip4()
+        cls.pg6.admin_up()
 
-            cls.pg7.admin_up()
-            cls.pg7.config_ip4()
-            cls.pg7.resolve_arp()
-            cls.pg7.generate_remote_hosts(3)
-            cls.pg7.configure_ipv4_neighbors()
+        r2 = VppIpRoute(cls, cls.pg6.remote_ip4, 32,
+                        [VppRoutePath("0.0.0.0",
+                                      cls.pg6.sw_if_index)],
+                        table_id=1,
+                        register=False)
+        r3 = VppIpRoute(cls, cls.pg6.remote_ip4, 16,
+                        [VppRoutePath("0.0.0.0",
+                                      0xffffffff,
+                                      nh_table_id=1)],
+                        table_id=0,
+                        register=False)
+        r4 = VppIpRoute(cls, "0.0.0.0", 0,
+                        [VppRoutePath("0.0.0.0", 0xffffffff,
+                                      nh_table_id=0)],
+                        table_id=1,
+                        register=False)
+        r5 = VppIpRoute(cls, "0.0.0.0", 0,
+                        [VppRoutePath(cls.pg1.local_ip4,
+                                      cls.pg1.sw_if_index)],
+                        register=False)
+        r2.add_vpp_config()
+        r3.add_vpp_config()
+        r4.add_vpp_config()
+        r5.add_vpp_config()
 
-            cls.pg8.admin_up()
-            cls.pg8.config_ip4()
-            cls.pg8.resolve_arp()
+        cls.pg5.resolve_arp()
+        cls.pg6.resolve_arp()
 
-        except Exception:
-            super(TestNAT44EndpointDependent, cls).tearDownClass()
-            raise
+        cls.pg7.admin_up()
+        cls.pg7.config_ip4()
+        cls.pg7.resolve_arp()
+        cls.pg7.generate_remote_hosts(3)
+        cls.pg7.configure_ipv4_neighbors()
+
+        cls.pg8.admin_up()
+        cls.pg8.config_ip4()
+        cls.pg8.resolve_arp()
+
+    def setUp(self):
+        super(TestNAT44EndpointDependent, self).setUp()
+        self.vapi.nat_set_timeouts(
+            udp=300, tcp_established=7440, tcp_transitory=240, icmp=60)
 
     @classmethod
     def tearDownClass(cls):
@@ -4536,17 +4451,7 @@ class TestNAT44EndpointDependent(MethodHolder):
             sw_if_index=self.pg1.sw_if_index,
             is_add=1)
         self.vapi.nat44_forwarding_enable_disable(enable=True)
-        reas_cfg1 = self.vapi.nat_get_reass()
-        # this test was intermittently failing in some cases
-        # until we temporarily bump the reassembly timeouts
-        self.vapi.nat_set_reass(timeout=20, max_reass=1024, max_frag=5,
-                                drop_frag=0)
         self.frag_in_order(proto=IP_PROTOS.tcp, dont_translate=True)
-        # restore the reassembly timeouts
-        self.vapi.nat_set_reass(timeout=reas_cfg1.ip4_timeout,
-                                max_reass=reas_cfg1.ip4_max_reass,
-                                max_frag=reas_cfg1.ip4_max_frag,
-                                drop_frag=reas_cfg1.ip4_drop_frag)
 
     def test_frag_out_of_order(self):
         """ NAT44 translate fragments arriving out of order """
@@ -4614,9 +4519,6 @@ class TestNAT44EndpointDependent(MethodHolder):
                                       self.server_out_addr,
                                       proto=IP_PROTOS.icmp)
 
-        self.vapi.nat_set_reass(timeout=10, max_reass=1024, max_frag=5,
-                                drop_frag=0)
-
         self.frag_in_order_in_plus_out(proto=IP_PROTOS.tcp)
         self.frag_in_order_in_plus_out(proto=IP_PROTOS.udp)
         self.frag_in_order_in_plus_out(proto=IP_PROTOS.icmp)
@@ -4661,9 +4563,6 @@ class TestNAT44EndpointDependent(MethodHolder):
                                       self.server_out_addr,
                                       proto=IP_PROTOS.icmp)
 
-        self.vapi.nat_set_reass(timeout=10, max_reass=1024, max_frag=5,
-                                drop_frag=0)
-
         self.frag_out_of_order_in_plus_out(proto=IP_PROTOS.tcp)
         self.frag_out_of_order_in_plus_out(proto=IP_PROTOS.udp)
         self.frag_out_of_order_in_plus_out(proto=IP_PROTOS.icmp)
@@ -4697,6 +4596,43 @@ class TestNAT44EndpointDependent(MethodHolder):
         self.reass_hairpinning(proto=IP_PROTOS.tcp)
         self.reass_hairpinning(proto=IP_PROTOS.udp)
         self.reass_hairpinning(proto=IP_PROTOS.icmp)
+
+    def test_clear_sessions(self):
+        """ NAT44 ED session clearing test """
+
+        self.nat44_add_address(self.nat_addr)
+        flags = self.config_flags.NAT_IS_INSIDE
+        self.vapi.nat44_interface_add_del_feature(
+            sw_if_index=self.pg0.sw_if_index,
+            flags=flags, is_add=1)
+        self.vapi.nat44_interface_add_del_feature(
+            sw_if_index=self.pg1.sw_if_index,
+            is_add=1)
+
+        nat_config = self.vapi.nat_show_config()
+        self.assertEqual(1, nat_config.endpoint_dependent)
+
+        pkts = self.create_stream_in(self.pg0, self.pg1)
+        self.pg0.add_stream(pkts)
+        self.pg_enable_capture(self.pg_interfaces)
+        self.pg_start()
+        capture = self.pg1.get_capture(len(pkts))
+        self.verify_capture_out(capture)
+
+        sessions = self.statistics.get_counter('/nat44/total-sessions')
+        self.assertTrue(sessions[0][0] > 0)
+        self.logger.info("sessions before clearing: %s" % sessions[0][0])
+
+        # just for testing purposes
+        self.logger.info(self.vapi.cli("show nat44 summary"))
+
+        self.vapi.cli("clear nat44 sessions")
+
+        self.logger.info(self.vapi.cli("show nat44 summary"))
+
+        sessions = self.statistics.get_counter('/nat44/total-sessions')
+        self.assertEqual(sessions[0][0], 0)
+        self.logger.info("sessions after clearing: %s" % sessions[0][0])
 
     def test_dynamic(self):
         """ NAT44 dynamic translation test """
@@ -4773,10 +4709,55 @@ class TestNAT44EndpointDependent(MethodHolder):
             '/err/nat44-ed-out2in/good out2in packets processed')
         self.assertEqual(err - totaln, 3)
 
-        users = self.statistics.get_counter('/nat44/total-users')
-        self.assertEqual(users[0][0], 1)
         sessions = self.statistics.get_counter('/nat44/total-sessions')
         self.assertEqual(sessions[0][0], 3)
+
+    def test_dynamic_out_of_ports(self):
+        """ NAT44 dynamic translation test: out of ports """
+
+        flags = self.config_flags.NAT_IS_INSIDE
+        self.vapi.nat44_interface_add_del_feature(
+            sw_if_index=self.pg0.sw_if_index,
+            flags=flags, is_add=1)
+        self.vapi.nat44_interface_add_del_feature(
+            sw_if_index=self.pg1.sw_if_index,
+            is_add=1)
+
+        nat_config = self.vapi.nat_show_config()
+        self.assertEqual(1, nat_config.endpoint_dependent)
+
+        # in2out and no NAT addresses added
+        err_old = self.statistics.get_err_counter(
+            '/err/nat44-ed-in2out-slowpath/out of ports')
+
+        pkts = self.create_stream_in(self.pg0, self.pg1)
+        self.pg0.add_stream(pkts)
+        self.pg_enable_capture(self.pg_interfaces)
+        self.pg_start()
+        self.pg1.get_capture(0, timeout=1)
+
+        err_new = self.statistics.get_err_counter(
+            '/err/nat44-ed-in2out-slowpath/out of ports')
+
+        self.assertEqual(err_new - err_old, len(pkts))
+
+        # in2out after NAT addresses added
+        self.nat44_add_address(self.nat_addr)
+
+        err_old = self.statistics.get_err_counter(
+            '/err/nat44-ed-in2out-slowpath/out of ports')
+
+        pkts = self.create_stream_in(self.pg0, self.pg1)
+        self.pg0.add_stream(pkts)
+        self.pg_enable_capture(self.pg_interfaces)
+        self.pg_start()
+        capture = self.pg1.get_capture(len(pkts))
+        self.verify_capture_out(capture)
+
+        err_new = self.statistics.get_err_counter(
+            '/err/nat44-ed-in2out-slowpath/out of ports')
+
+        self.assertEqual(err_new, err_old)
 
     def test_dynamic_output_feature_vrf(self):
         """ NAT44 dynamic translation test: output-feature, VRF"""
@@ -4794,7 +4775,8 @@ class TestNAT44EndpointDependent(MethodHolder):
             is_add=1)
 
         try:
-            self.vapi.ip_table_add_del(is_add=1, table_id=new_vrf_id)
+            self.vapi.ip_table_add_del(is_add=1,
+                                       table={'table_id': new_vrf_id})
 
             self.pg7.unconfig_ip4()
             self.pg7.set_table_ip4(new_vrf_id)
@@ -4869,8 +4851,6 @@ class TestNAT44EndpointDependent(MethodHolder):
                 '/err/nat44-ed-out2in/good out2in packets processed')
             self.assertEqual(err - totaln, 3)
 
-            users = self.statistics.get_counter('/nat44/total-users')
-            self.assertEqual(users[0][0], 1)
             sessions = self.statistics.get_counter('/nat44/total-sessions')
             self.assertEqual(sessions[0][0], 3)
 
@@ -4885,7 +4865,8 @@ class TestNAT44EndpointDependent(MethodHolder):
             self.pg8.config_ip4()
             self.pg8.resolve_arp()
 
-            self.vapi.ip_table_add_del(is_add=0, table_id=new_vrf_id)
+            self.vapi.ip_table_add_del(is_add=0,
+                                       table={'table_id': new_vrf_id})
 
     def test_forwarding(self):
         """ NAT44 forwarding test """
@@ -4950,7 +4931,7 @@ class TestNAT44EndpointDependent(MethodHolder):
                 self.pg0.remote_hosts[0] = host0
 
             user = self.pg0.remote_hosts[1]
-            sessions = self.vapi.nat44_user_session_dump(user.ip4n, 0)
+            sessions = self.vapi.nat44_user_session_dump(user.ip4, 0)
             self.assertEqual(len(sessions), 3)
             self.assertTrue(sessions[0].flags &
                             self.config_flags.NAT_IS_EXT_HOST_VALID)
@@ -4962,7 +4943,7 @@ class TestNAT44EndpointDependent(MethodHolder):
                        self.config_flags.NAT_IS_EXT_HOST_VALID),
                 ext_host_address=sessions[0].ext_host_address,
                 ext_host_port=sessions[0].ext_host_port)
-            sessions = self.vapi.nat44_user_session_dump(user.ip4n, 0)
+            sessions = self.vapi.nat44_user_session_dump(user.ip4, 0)
             self.assertEqual(len(sessions), 2)
 
         finally:
@@ -4983,11 +4964,11 @@ class TestNAT44EndpointDependent(MethodHolder):
         server1 = self.pg0.remote_hosts[0]
         server2 = self.pg0.remote_hosts[1]
 
-        locals = [{'addr': server1.ip4n,
+        locals = [{'addr': server1.ip4,
                    'port': local_port,
                    'probability': 70,
                    'vrf_id': 0},
-                  {'addr': server2.ip4n,
+                  {'addr': server2.ip4,
                    'port': local_port,
                    'probability': 30,
                    'vrf_id': 0}]
@@ -5051,7 +5032,7 @@ class TestNAT44EndpointDependent(MethodHolder):
             self.logger.error(ppp("Unexpected or invalid packet:", p))
             raise
 
-        sessions = self.vapi.nat44_user_session_dump(server.ip4n, 0)
+        sessions = self.vapi.nat44_user_session_dump(server.ip4, 0)
         self.assertEqual(len(sessions), 1)
         self.assertTrue(sessions[0].flags &
                         self.config_flags.NAT_IS_EXT_HOST_VALID)
@@ -5063,7 +5044,7 @@ class TestNAT44EndpointDependent(MethodHolder):
                    self.config_flags.NAT_IS_EXT_HOST_VALID),
             ext_host_address=sessions[0].ext_host_address,
             ext_host_port=sessions[0].ext_host_port)
-        sessions = self.vapi.nat44_user_session_dump(server.ip4n, 0)
+        sessions = self.vapi.nat44_user_session_dump(server.ip4, 0)
         self.assertEqual(len(sessions), 0)
 
     @unittest.skipUnless(running_extended_tests, "part of extended tests")
@@ -5077,11 +5058,11 @@ class TestNAT44EndpointDependent(MethodHolder):
         server2 = self.pg0.remote_hosts[1]
         server3 = self.pg0.remote_hosts[2]
 
-        locals = [{'addr': server1.ip4n,
+        locals = [{'addr': server1.ip4,
                    'port': local_port,
                    'probability': 90,
                    'vrf_id': 0},
-                  {'addr': server2.ip4n,
+                  {'addr': server2.ip4,
                    'port': local_port,
                    'probability': 10,
                    'vrf_id': 0}]
@@ -5122,7 +5103,7 @@ class TestNAT44EndpointDependent(MethodHolder):
         self.assertGreater(server1_n, server2_n)
 
         local = {
-            'addr': server3.ip4n,
+            'addr': server3.ip4,
             'port': local_port,
             'probability': 20,
             'vrf_id': 0
@@ -5162,7 +5143,7 @@ class TestNAT44EndpointDependent(MethodHolder):
         self.assertGreater(server3_n, 0)
 
         local = {
-            'addr': server2.ip4n,
+            'addr': server2.ip4,
             'port': local_port,
             'probability': 10,
             'vrf_id': 0
@@ -5201,11 +5182,11 @@ class TestNAT44EndpointDependent(MethodHolder):
         server1 = self.pg0.remote_hosts[0]
         server2 = self.pg0.remote_hosts[1]
 
-        locals = [{'addr': server1.ip4n,
+        locals = [{'addr': server1.ip4,
                    'port': local_port,
                    'probability': 70,
                    'vrf_id': 0},
-                  {'addr': server2.ip4n,
+                  {'addr': server2.ip4,
                    'port': local_port,
                    'probability': 30,
                    'vrf_id': 0}]
@@ -5316,11 +5297,11 @@ class TestNAT44EndpointDependent(MethodHolder):
         server1 = self.pg0.remote_hosts[0]
         server2 = self.pg0.remote_hosts[1]
 
-        locals = [{'addr': server1.ip4n,
+        locals = [{'addr': server1.ip4,
                    'port': local_port,
                    'probability': 50,
                    'vrf_id': 0},
-                  {'addr': server2.ip4n,
+                  {'addr': server2.ip4,
                    'port': local_port,
                    'probability': 50,
                    'vrf_id': 0}]
@@ -5513,7 +5494,7 @@ class TestNAT44EndpointDependent(MethodHolder):
         self.nat44_add_address(self.nat_addr)
         flags = self.config_flags.NAT_IS_ADDR_ONLY
         self.vapi.nat44_add_del_identity_mapping(
-            ip_address=self.pg1.remote_ip4n, sw_if_index=0xFFFFFFFF,
+            ip_address=self.pg1.remote_ip4, sw_if_index=0xFFFFFFFF,
             flags=flags, is_add=1)
         flags = self.config_flags.NAT_IS_OUT2IN_ONLY
         self.nat44_add_static_mapping(self.pg0.remote_ip4, external_addr,
@@ -5804,11 +5785,11 @@ class TestNAT44EndpointDependent(MethodHolder):
                                           proto=IP_PROTOS.tcp,
                                           flags=flags)
         else:
-            locals = [{'addr': server1.ip4n,
+            locals = [{'addr': server1.ip4,
                        'port': port_in1,
                        'probability': 50,
                        'vrf_id': 0},
-                      {'addr': server2.ip4n,
+                      {'addr': server2.ip4,
                        'port': port_in2,
                        'probability': 50,
                        'vrf_id': 0}]
@@ -5897,7 +5878,7 @@ class TestNAT44EndpointDependent(MethodHolder):
             raise
 
         if eh_translate:
-            sessions = self.vapi.nat44_user_session_dump(server.ip4n, 0)
+            sessions = self.vapi.nat44_user_session_dump(server.ip4, 0)
             self.assertEqual(len(sessions), 1)
             self.assertTrue(sessions[0].flags &
                             self.config_flags.NAT_IS_EXT_HOST_VALID)
@@ -5912,7 +5893,7 @@ class TestNAT44EndpointDependent(MethodHolder):
                        self.config_flags.NAT_IS_EXT_HOST_VALID),
                 ext_host_address=sessions[0].ext_host_nat_address,
                 ext_host_port=sessions[0].ext_host_nat_port)
-            sessions = self.vapi.nat44_user_session_dump(server.ip4n, 0)
+            sessions = self.vapi.nat44_user_session_dump(server.ip4, 0)
             self.assertEqual(len(sessions), 0)
 
     def test_twice_nat(self):
@@ -5991,7 +5972,7 @@ class TestNAT44EndpointDependent(MethodHolder):
                                       80,
                                       proto=IP_PROTOS.tcp,
                                       flags=flags)
-        sessions = self.vapi.nat44_user_session_dump(self.pg0.remote_ip4n, 0)
+        sessions = self.vapi.nat44_user_session_dump(self.pg0.remote_ip4, 0)
         start_sessnum = len(sessions)
 
         # SYN packet out->in
@@ -6050,7 +6031,7 @@ class TestNAT44EndpointDependent(MethodHolder):
         self.pg_start()
         self.pg1.get_capture(1)
 
-        sessions = self.vapi.nat44_user_session_dump(self.pg0.remote_ip4n,
+        sessions = self.vapi.nat44_user_session_dump(self.pg0.remote_ip4,
                                                      0)
         self.assertEqual(len(sessions) - start_sessnum, 0)
 
@@ -6073,8 +6054,11 @@ class TestNAT44EndpointDependent(MethodHolder):
             sw_if_index=self.pg1.sw_if_index,
             is_add=1)
 
-        sessions = self.vapi.nat44_user_session_dump(self.pg0.remote_ip4n, 0)
+        sessions = self.vapi.nat44_user_session_dump(self.pg0.remote_ip4, 0)
         start_sessnum = len(sessions)
+
+        self.vapi.nat_set_timeouts(udp=300, tcp_established=7440,
+                                   tcp_transitory=2, icmp=5)
 
         self.initiate_tcp_session(self.pg0, self.pg1)
 
@@ -6119,8 +6103,55 @@ class TestNAT44EndpointDependent(MethodHolder):
         self.pg_start()
         self.pg1.get_capture(1)
 
-        sessions = self.vapi.nat44_user_session_dump(self.pg0.remote_ip4n,
-                                                     0)
+        sessions = self.vapi.nat44_user_session_dump(self.pg0.remote_ip4, 0)
+        self.assertEqual(len(sessions) - start_sessnum, 1)
+
+        stats = self.statistics.get_counter(
+            '/err/nat44-ed-out2in/drops due to TCP in transitory timeout')
+        out2in_drops = stats[0]
+        stats = self.statistics.get_counter(
+            '/err/nat44-ed-in2out/drops due to TCP in transitory timeout')
+        in2out_drops = stats[0]
+
+        # extra FIN packet out -> in - this should be dropped
+        p = (Ether(src=self.pg1.remote_mac, dst=self.pg1.local_mac) /
+             IP(src=self.pg1.remote_ip4, dst=self.nat_addr) /
+             TCP(sport=self.tcp_external_port, dport=self.tcp_port_out,
+                 flags="FA", seq=300, ack=101))
+
+        self.pg1.add_stream(p)
+        self.pg_enable_capture(self.pg_interfaces)
+        self.pg_start()
+        self.pg0.assert_nothing_captured()
+
+        # extra ACK packet in -> out - this should be dropped
+        p = (Ether(src=self.pg0.remote_mac, dst=self.pg0.local_mac) /
+             IP(src=self.pg0.remote_ip4, dst=self.pg1.remote_ip4) /
+             TCP(sport=self.tcp_port_in, dport=self.tcp_external_port,
+                 flags="A", seq=101, ack=301))
+        self.pg0.add_stream(p)
+        self.pg_enable_capture(self.pg_interfaces)
+        self.pg_start()
+        self.pg1.assert_nothing_captured()
+
+        stats = self.statistics.get_counter(
+            '/err/nat44-ed-out2in/drops due to TCP in transitory timeout')
+        self.assertEqual(stats[0] - out2in_drops, 1)
+        stats = self.statistics.get_counter(
+            '/err/nat44-ed-in2out/drops due to TCP in transitory timeout')
+        self.assertEqual(stats[0] - in2out_drops, 1)
+
+        self.sleep(3)
+        # extra ACK packet in -> out - this will cause session to be wiped
+        p = (Ether(src=self.pg0.remote_mac, dst=self.pg0.local_mac) /
+             IP(src=self.pg0.remote_ip4, dst=self.pg1.remote_ip4) /
+             TCP(sport=self.tcp_port_in, dport=self.tcp_external_port,
+                 flags="A", seq=101, ack=301))
+        self.pg0.add_stream(p)
+        self.pg_enable_capture(self.pg_interfaces)
+        self.pg_start()
+        self.pg1.assert_nothing_captured()
+        sessions = self.vapi.nat44_user_session_dump(self.pg0.remote_ip4, 0)
         self.assertEqual(len(sessions) - start_sessnum, 0)
 
     def test_tcp_session_close_out(self):
@@ -6142,8 +6173,11 @@ class TestNAT44EndpointDependent(MethodHolder):
             sw_if_index=self.pg1.sw_if_index,
             is_add=1)
 
-        sessions = self.vapi.nat44_user_session_dump(self.pg0.remote_ip4n, 0)
+        sessions = self.vapi.nat44_user_session_dump(self.pg0.remote_ip4, 0)
         start_sessnum = len(sessions)
+
+        self.vapi.nat_set_timeouts(udp=300, tcp_established=7440,
+                                   tcp_transitory=2, icmp=5)
 
         self.initiate_tcp_session(self.pg0, self.pg1)
 
@@ -6178,8 +6212,55 @@ class TestNAT44EndpointDependent(MethodHolder):
         self.pg_start()
         self.pg0.get_capture(1)
 
-        sessions = self.vapi.nat44_user_session_dump(self.pg0.remote_ip4n,
-                                                     0)
+        sessions = self.vapi.nat44_user_session_dump(self.pg0.remote_ip4, 0)
+        self.assertEqual(len(sessions) - start_sessnum, 1)
+
+        stats = self.statistics.get_counter(
+            '/err/nat44-ed-out2in/drops due to TCP in transitory timeout')
+        out2in_drops = stats[0]
+        stats = self.statistics.get_counter(
+            '/err/nat44-ed-in2out/drops due to TCP in transitory timeout')
+        in2out_drops = stats[0]
+
+        # extra FIN packet out -> in - this should be dropped
+        p = (Ether(src=self.pg1.remote_mac, dst=self.pg1.local_mac) /
+             IP(src=self.pg1.remote_ip4, dst=self.nat_addr) /
+             TCP(sport=self.tcp_external_port, dport=self.tcp_port_out,
+                 flags="FA", seq=300, ack=101))
+
+        self.pg1.add_stream(p)
+        self.pg_enable_capture(self.pg_interfaces)
+        self.pg_start()
+        self.pg0.assert_nothing_captured()
+
+        # extra ACK packet in -> out - this should be dropped
+        p = (Ether(src=self.pg0.remote_mac, dst=self.pg0.local_mac) /
+             IP(src=self.pg0.remote_ip4, dst=self.pg1.remote_ip4) /
+             TCP(sport=self.tcp_port_in, dport=self.tcp_external_port,
+                 flags="A", seq=101, ack=301))
+        self.pg0.add_stream(p)
+        self.pg_enable_capture(self.pg_interfaces)
+        self.pg_start()
+        self.pg1.assert_nothing_captured()
+
+        stats = self.statistics.get_counter(
+            '/err/nat44-ed-out2in/drops due to TCP in transitory timeout')
+        self.assertEqual(stats[0] - out2in_drops, 1)
+        stats = self.statistics.get_counter(
+            '/err/nat44-ed-in2out/drops due to TCP in transitory timeout')
+        self.assertEqual(stats[0] - in2out_drops, 1)
+
+        self.sleep(3)
+        # extra ACK packet in -> out - this will cause session to be wiped
+        p = (Ether(src=self.pg0.remote_mac, dst=self.pg0.local_mac) /
+             IP(src=self.pg0.remote_ip4, dst=self.pg1.remote_ip4) /
+             TCP(sport=self.tcp_port_in, dport=self.tcp_external_port,
+                 flags="A", seq=101, ack=301))
+        self.pg0.add_stream(p)
+        self.pg_enable_capture(self.pg_interfaces)
+        self.pg_start()
+        self.pg1.assert_nothing_captured()
+        sessions = self.vapi.nat44_user_session_dump(self.pg0.remote_ip4, 0)
         self.assertEqual(len(sessions) - start_sessnum, 0)
 
     def test_tcp_session_close_simultaneous(self):
@@ -6201,8 +6282,11 @@ class TestNAT44EndpointDependent(MethodHolder):
             sw_if_index=self.pg1.sw_if_index,
             is_add=1)
 
-        sessions = self.vapi.nat44_user_session_dump(self.pg0.remote_ip4n, 0)
+        sessions = self.vapi.nat44_user_session_dump(self.pg0.remote_ip4, 0)
         start_sessnum = len(sessions)
+
+        self.vapi.nat_set_timeouts(udp=300, tcp_established=7440,
+                                   tcp_transitory=2, icmp=5)
 
         self.initiate_tcp_session(self.pg0, self.pg1)
 
@@ -6246,8 +6330,55 @@ class TestNAT44EndpointDependent(MethodHolder):
         self.pg_start()
         self.pg0.get_capture(1)
 
-        sessions = self.vapi.nat44_user_session_dump(self.pg0.remote_ip4n,
-                                                     0)
+        sessions = self.vapi.nat44_user_session_dump(self.pg0.remote_ip4, 0)
+        self.assertEqual(len(sessions) - start_sessnum, 1)
+
+        stats = self.statistics.get_counter(
+            '/err/nat44-ed-out2in/drops due to TCP in transitory timeout')
+        out2in_drops = stats[0]
+        stats = self.statistics.get_counter(
+            '/err/nat44-ed-in2out/drops due to TCP in transitory timeout')
+        in2out_drops = stats[0]
+
+        # extra FIN packet out -> in - this should be dropped
+        p = (Ether(src=self.pg1.remote_mac, dst=self.pg1.local_mac) /
+             IP(src=self.pg1.remote_ip4, dst=self.nat_addr) /
+             TCP(sport=self.tcp_external_port, dport=self.tcp_port_out,
+                 flags="FA", seq=300, ack=101))
+
+        self.pg1.add_stream(p)
+        self.pg_enable_capture(self.pg_interfaces)
+        self.pg_start()
+        self.pg0.assert_nothing_captured()
+
+        # extra ACK packet in -> out - this should be dropped
+        p = (Ether(src=self.pg0.remote_mac, dst=self.pg0.local_mac) /
+             IP(src=self.pg0.remote_ip4, dst=self.pg1.remote_ip4) /
+             TCP(sport=self.tcp_port_in, dport=self.tcp_external_port,
+                 flags="A", seq=101, ack=301))
+        self.pg0.add_stream(p)
+        self.pg_enable_capture(self.pg_interfaces)
+        self.pg_start()
+        self.pg1.assert_nothing_captured()
+
+        stats = self.statistics.get_counter(
+            '/err/nat44-ed-out2in/drops due to TCP in transitory timeout')
+        self.assertEqual(stats[0] - out2in_drops, 1)
+        stats = self.statistics.get_counter(
+            '/err/nat44-ed-in2out/drops due to TCP in transitory timeout')
+        self.assertEqual(stats[0] - in2out_drops, 1)
+
+        self.sleep(3)
+        # extra ACK packet in -> out - this will cause session to be wiped
+        p = (Ether(src=self.pg0.remote_mac, dst=self.pg0.local_mac) /
+             IP(src=self.pg0.remote_ip4, dst=self.pg1.remote_ip4) /
+             TCP(sport=self.tcp_port_in, dport=self.tcp_external_port,
+                 flags="A", seq=101, ack=301))
+        self.pg0.add_stream(p)
+        self.pg_enable_capture(self.pg_interfaces)
+        self.pg_start()
+        self.pg1.assert_nothing_captured()
+        sessions = self.vapi.nat44_user_session_dump(self.pg0.remote_ip4, 0)
         self.assertEqual(len(sessions) - start_sessnum, 0)
 
     def test_one_armed_nat44_static(self):
@@ -6473,6 +6604,70 @@ class TestNAT44EndpointDependent(MethodHolder):
         self.pg_start()
         capture = self.pg0.get_capture(len(pkts))
         self.verify_capture_in(capture, self.pg0)
+
+    def test_output_feature_stateful_acl(self):
+        """ NAT44 endpoint-dependent output feature works with stateful ACL """
+        self.nat44_add_address(self.nat_addr)
+        self.vapi.nat44_interface_add_del_output_feature(
+            sw_if_index=self.pg0.sw_if_index,
+            flags=self.config_flags.NAT_IS_INSIDE,
+            is_add=1)
+        self.vapi.nat44_interface_add_del_output_feature(
+            sw_if_index=self.pg1.sw_if_index,
+            flags=self.config_flags.NAT_IS_OUTSIDE,
+            is_add=1)
+
+        # First ensure that the NAT is working sans ACL
+
+        # send packets out2in, no sessions yet so packets should drop
+        pkts_out2in = self.create_stream_out(self.pg1)
+        self.send_and_assert_no_replies(self.pg1, pkts_out2in)
+
+        # send packets into inside intf, ensure received via outside intf
+        pkts_in2out = self.create_stream_in(self.pg0, self.pg1)
+        capture = self.send_and_expect(self.pg0, pkts_in2out, self.pg1,
+                                       len(pkts_in2out))
+        self.verify_capture_out(capture)
+
+        # send out2in again, with sessions created it should work now
+        pkts_out2in = self.create_stream_out(self.pg1)
+        capture = self.send_and_expect(self.pg1, pkts_out2in, self.pg0,
+                                       len(pkts_out2in))
+        self.verify_capture_in(capture, self.pg0)
+
+        # Create an ACL blocking everything
+        out2in_deny_rule = AclRule(is_permit=0)
+        out2in_acl = VppAcl(self, rules=[out2in_deny_rule])
+        out2in_acl.add_vpp_config()
+
+        # create an ACL to permit/reflect everything
+        in2out_reflect_rule = AclRule(is_permit=2)
+        in2out_acl = VppAcl(self, rules=[in2out_reflect_rule])
+        in2out_acl.add_vpp_config()
+
+        # apply as input acl on interface and confirm it blocks everything
+        acl_if = VppAclInterface(self, sw_if_index=self.pg1.sw_if_index,
+                                 n_input=1, acls=[out2in_acl])
+        acl_if.add_vpp_config()
+        self.send_and_assert_no_replies(self.pg1, pkts_out2in)
+
+        # apply output acl
+        acl_if.acls = [out2in_acl, in2out_acl]
+        acl_if.add_vpp_config()
+        # send in2out to generate ACL state (NAT state was created earlier)
+        capture = self.send_and_expect(self.pg0, pkts_in2out, self.pg1,
+                                       len(pkts_in2out))
+        self.verify_capture_out(capture)
+
+        # send out2in again. ACL state exists so it should work now.
+        # TCP packets with the syn flag set also need the ack flag
+        for p in pkts_out2in:
+            if p.haslayer(TCP) and p[TCP].flags & 0x02:
+                p[TCP].flags |= 0x10
+        capture = self.send_and_expect(self.pg1, pkts_out2in, self.pg0,
+                                       len(pkts_out2in))
+        self.verify_capture_in(capture, self.pg0)
+        self.logger.info(self.vapi.cli("show trace"))
 
     def test_multiple_vrf(self):
         """ Multiple VRF setup """
@@ -6864,91 +7059,11 @@ class TestNAT44EndpointDependent(MethodHolder):
         self.pg_start()
         self.pg1.get_capture(1)
 
-        nsessions = 0
-        users = self.vapi.nat44_user_dump()
-        self.assertEqual(len(users), 1)
-        self.assertEqual(str(users[0].ip_address),
-                         self.pg0.remote_ip4)
-        self.assertEqual(users[0].nsessions, 1)
-
-    @unittest.skipUnless(running_extended_tests, "part of extended tests")
-    def test_session_limit_per_user(self):
-        """ Maximum sessions per user limit """
-        self.nat44_add_address(self.nat_addr)
-        flags = self.config_flags.NAT_IS_INSIDE
-        self.vapi.nat44_interface_add_del_feature(
-            sw_if_index=self.pg0.sw_if_index,
-            flags=flags, is_add=1)
-        self.vapi.nat44_interface_add_del_feature(
-            sw_if_index=self.pg1.sw_if_index,
-            is_add=1)
-        self.vapi.set_ipfix_exporter(collector_address=self.pg2.remote_ip4n,
-                                     src_address=self.pg2.local_ip4n,
-                                     path_mtu=512,
-                                     template_interval=10)
-        self.vapi.nat_set_timeouts(udp=5, tcp_established=7440,
-                                   tcp_transitory=240, icmp=60)
-
-        # get maximum number of translations per user
-        nat44_config = self.vapi.nat_show_config()
-
-        pkts = []
-        for port in range(0, nat44_config.max_translations_per_user):
-            p = (Ether(src=self.pg0.remote_mac, dst=self.pg0.local_mac) /
-                 IP(src=self.pg0.remote_ip4, dst=self.pg1.remote_ip4) /
-                 UDP(sport=1025 + port, dport=1025 + port))
-            pkts.append(p)
-
-        self.pg0.add_stream(pkts)
-        self.pg_enable_capture(self.pg_interfaces)
-        self.pg_start()
-        capture = self.pg1.get_capture(len(pkts))
-
-        self.vapi.nat_ipfix_enable_disable(domain_id=self.ipfix_domain_id,
-                                           src_port=self.ipfix_src_port,
-                                           enable=1)
-
-        p = (Ether(src=self.pg0.remote_mac, dst=self.pg0.local_mac) /
-             IP(src=self.pg0.remote_ip4, dst=self.pg1.remote_ip4) /
-             UDP(sport=3001, dport=3002))
-        self.pg0.add_stream(p)
-        self.pg_enable_capture(self.pg_interfaces)
-        self.pg_start()
-        capture = self.pg1.assert_nothing_captured()
-
-        # verify IPFIX logging
-        self.vapi.ipfix_flush()
-        sleep(1)
-        capture = self.pg2.get_capture(10)
-        ipfix = IPFIXDecoder()
-        # first load template
-        for p in capture:
-            self.assertTrue(p.haslayer(IPFIX))
-            if p.haslayer(Template):
-                ipfix.add_template(p.getlayer(Template))
-        # verify events in data set
-        for p in capture:
-            if p.haslayer(Data):
-                data = ipfix.decode_data_set(p.getlayer(Set))
-                self.verify_ipfix_max_entries_per_user(
-                    data,
-                    nat44_config.max_translations_per_user,
-                    self.pg0.remote_ip4n)
-
-        sleep(6)
-        p = (Ether(src=self.pg0.remote_mac, dst=self.pg0.local_mac) /
-             IP(src=self.pg0.remote_ip4, dst=self.pg1.remote_ip4) /
-             UDP(sport=3001, dport=3002))
-        self.pg0.add_stream(p)
-        self.pg_enable_capture(self.pg_interfaces)
-        self.pg_start()
-        self.pg1.get_capture(1)
-
     def test_syslog_sess(self):
         """ Test syslog session creation and deletion """
         self.vapi.syslog_set_filter(
             self.SYSLOG_SEVERITY.SYSLOG_API_SEVERITY_INFO)
-        self.vapi.syslog_set_sender(self.pg2.local_ip4n, self.pg2.remote_ip4n)
+        self.vapi.syslog_set_sender(self.pg2.local_ip4, self.pg2.remote_ip4)
         self.nat44_add_address(self.nat_addr)
         flags = self.config_flags.NAT_IS_INSIDE
         self.vapi.nat44_interface_add_del_feature(
@@ -6991,6 +7106,111 @@ class TestNAT44EndpointDependent(MethodHolder):
         self.logger.info(self.vapi.cli("show nat timeouts"))
 
 
+class TestNAT44EndpointDependent2(MethodHolder):
+    """ Endpoint-Dependent mapping and filtering extra test cases """
+
+    translation_buckets = 5
+
+    @classmethod
+    def setUpConstants(cls):
+        super(TestNAT44EndpointDependent2, cls).setUpConstants()
+        cls.vpp_cmdline.extend([
+            "nat", "{", "endpoint-dependent",
+            "translation hash buckets %d" % cls.translation_buckets,
+            "}"
+        ])
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestNAT44EndpointDependent2, cls).setUpClass()
+        cls.vapi.cli("set log class nat level debug")
+
+        cls.nat_addr = '10.0.0.3'
+
+        cls.create_pg_interfaces(range(2))
+
+        for i in cls.pg_interfaces:
+            i.admin_up()
+            i.config_ip4()
+            i.resolve_arp()
+
+    def setUp(self):
+        super(TestNAT44EndpointDependent2, self).setUp()
+        self.vapi.nat_set_timeouts(
+            udp=1, tcp_established=7440, tcp_transitory=30, icmp=1)
+        self.nat44_add_address(self.nat_addr)
+        flags = self.config_flags.NAT_IS_INSIDE
+        self.vapi.nat44_interface_add_del_feature(
+            sw_if_index=self.pg0.sw_if_index, flags=flags, is_add=1)
+        self.vapi.nat44_interface_add_del_feature(
+            sw_if_index=self.pg1.sw_if_index, is_add=1)
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestNAT44EndpointDependent2, cls).tearDownClass()
+
+    def init_tcp_session(self, in_if, out_if, sport, ext_dport):
+        # SYN packet in->out
+        p = (Ether(src=in_if.remote_mac, dst=in_if.local_mac) /
+             IP(src=in_if.remote_ip4, dst=out_if.remote_ip4) /
+             TCP(sport=sport, dport=ext_dport, flags="S"))
+        in_if.add_stream(p)
+        self.pg_enable_capture(self.pg_interfaces)
+        self.pg_start()
+        capture = out_if.get_capture(1)
+        p = capture[0]
+        tcp_port_out = p[TCP].sport
+
+        # SYN + ACK packet out->in
+        p = (Ether(src=out_if.remote_mac, dst=out_if.local_mac) /
+             IP(src=out_if.remote_ip4, dst=self.nat_addr) /
+             TCP(sport=ext_dport, dport=tcp_port_out, flags="SA"))
+        out_if.add_stream(p)
+        self.pg_enable_capture(self.pg_interfaces)
+        self.pg_start()
+        in_if.get_capture(1)
+
+        # ACK packet in->out
+        p = (Ether(src=in_if.remote_mac, dst=in_if.local_mac) /
+             IP(src=in_if.remote_ip4, dst=out_if.remote_ip4) /
+             TCP(sport=sport, dport=ext_dport, flags="A"))
+        in_if.add_stream(p)
+        self.pg_enable_capture(self.pg_interfaces)
+        self.pg_start()
+        out_if.get_capture(1)
+
+        return tcp_port_out
+
+    def test_lru_cleanup(self):
+        """ LRU cleanup algorithm """
+        tcp_port_out = self.init_tcp_session(self.pg0, self.pg1, 2000, 80)
+        max_translations = 10 * self.translation_buckets
+        pkts = []
+        for i in range(0, max_translations - 1):
+            p = (Ether(dst=self.pg0.local_mac, src=self.pg0.remote_mac) /
+                 IP(src=self.pg0.remote_ip4, dst=self.pg1.remote_ip4, ttl=64) /
+                 UDP(sport=7000+i, dport=80))
+            pkts.append(p)
+
+        self.pg0.add_stream(pkts)
+        self.pg_enable_capture(self.pg_interfaces)
+        self.pg_start()
+        self.pg1.get_capture(len(pkts))
+        self.sleep(1.5, "wait for timeouts")
+
+        pkts = []
+        for i in range(0, max_translations - 1):
+            p = (Ether(dst=self.pg0.local_mac, src=self.pg0.remote_mac) /
+                 IP(src=self.pg0.remote_ip4, dst=self.pg1.remote_ip4, ttl=64) /
+                 ICMP(id=8000+i, type='echo-request'))
+            pkts.append(p)
+
+        self.pg0.add_stream(pkts)
+        self.pg_enable_capture(self.pg_interfaces)
+        self.pg_start()
+        self.pg1.get_capture(len(pkts))
+
+
 class TestNAT44Out2InDPO(MethodHolder):
     """ NAT44 Test Cases using out2in DPO """
 
@@ -7004,35 +7224,30 @@ class TestNAT44Out2InDPO(MethodHolder):
         super(TestNAT44Out2InDPO, cls).setUpClass()
         cls.vapi.cli("set log class nat level debug")
 
-        try:
-            cls.tcp_port_in = 6303
-            cls.tcp_port_out = 6303
-            cls.udp_port_in = 6304
-            cls.udp_port_out = 6304
-            cls.icmp_id_in = 6305
-            cls.icmp_id_out = 6305
-            cls.nat_addr = '10.0.0.3'
-            cls.dst_ip4 = '192.168.70.1'
+        cls.tcp_port_in = 6303
+        cls.tcp_port_out = 6303
+        cls.udp_port_in = 6304
+        cls.udp_port_out = 6304
+        cls.icmp_id_in = 6305
+        cls.icmp_id_out = 6305
+        cls.nat_addr = '10.0.0.3'
+        cls.dst_ip4 = '192.168.70.1'
 
-            cls.create_pg_interfaces(range(2))
+        cls.create_pg_interfaces(range(2))
 
-            cls.pg0.admin_up()
-            cls.pg0.config_ip4()
-            cls.pg0.resolve_arp()
+        cls.pg0.admin_up()
+        cls.pg0.config_ip4()
+        cls.pg0.resolve_arp()
 
-            cls.pg1.admin_up()
-            cls.pg1.config_ip6()
-            cls.pg1.resolve_ndp()
+        cls.pg1.admin_up()
+        cls.pg1.config_ip6()
+        cls.pg1.resolve_ndp()
 
-            r1 = VppIpRoute(cls, "::", 0,
-                            [VppRoutePath(cls.pg1.remote_ip6,
-                                          cls.pg1.sw_if_index)],
-                            register=False)
-            r1.add_vpp_config()
-
-        except Exception:
-            super(TestNAT44Out2InDPO, cls).tearDownClass()
-            raise
+        r1 = VppIpRoute(cls, "::", 0,
+                        [VppRoutePath(cls.pg1.remote_ip6,
+                                      cls.pg1.sw_if_index)],
+                        register=False)
+        r1.add_vpp_config()
 
     @classmethod
     def tearDownClass(cls):
@@ -7138,28 +7353,23 @@ class TestDeterministicNAT(MethodHolder):
         super(TestDeterministicNAT, cls).setUpClass()
         cls.vapi.cli("set log class nat level debug")
 
-        try:
-            cls.tcp_port_in = 6303
-            cls.tcp_external_port = 6303
-            cls.udp_port_in = 6304
-            cls.udp_external_port = 6304
-            cls.icmp_id_in = 6305
-            cls.nat_addr = '10.0.0.3'
+        cls.tcp_port_in = 6303
+        cls.tcp_external_port = 6303
+        cls.udp_port_in = 6304
+        cls.udp_external_port = 6304
+        cls.icmp_id_in = 6305
+        cls.nat_addr = '10.0.0.3'
 
-            cls.create_pg_interfaces(range(3))
-            cls.interfaces = list(cls.pg_interfaces)
+        cls.create_pg_interfaces(range(3))
+        cls.interfaces = list(cls.pg_interfaces)
 
-            for i in cls.interfaces:
-                i.admin_up()
-                i.config_ip4()
-                i.resolve_arp()
+        for i in cls.interfaces:
+            i.admin_up()
+            i.config_ip4()
+            i.resolve_arp()
 
-            cls.pg0.generate_remote_hosts(2)
-            cls.pg0.configure_ipv4_neighbors()
-
-        except Exception:
-            super(TestDeterministicNAT, cls).tearDownClass()
-            raise
+        cls.pg0.generate_remote_hosts(2)
+        cls.pg0.configure_ipv4_neighbors()
 
     @classmethod
     def tearDownClass(cls):
@@ -7306,7 +7516,7 @@ class TestDeterministicNAT(MethodHolder):
 
         nat_ip = "10.0.0.10"
 
-        self.vapi.nat_det_add_del_map(is_add=1, in_addr=self.pg0.remote_ip4n,
+        self.vapi.nat_det_add_del_map(is_add=1, in_addr=self.pg0.remote_ip4,
                                       in_plen=32,
                                       out_addr=socket.inet_aton(nat_ip),
                                       out_plen=32)
@@ -7336,7 +7546,7 @@ class TestDeterministicNAT(MethodHolder):
         self.verify_capture_in(capture, self.pg0)
 
         # session dump test
-        sessions = self.vapi.nat_det_session_dump(self.pg0.remote_ip4n)
+        sessions = self.vapi.nat_det_session_dump(self.pg0.remote_ip4)
         self.assertEqual(len(sessions), 3)
 
         # TCP session
@@ -7369,7 +7579,7 @@ class TestDeterministicNAT(MethodHolder):
         host0 = self.pg0.remote_hosts[0]
         host1 = self.pg0.remote_hosts[1]
 
-        self.vapi.nat_det_add_del_map(is_add=1, in_addr=host0.ip4n, in_plen=24,
+        self.vapi.nat_det_add_del_map(is_add=1, in_addr=host0.ip4, in_plen=24,
                                       out_addr=socket.inet_aton(nat_ip),
                                       out_plen=32)
         flags = self.config_flags.NAT_IS_INSIDE
@@ -7467,21 +7677,21 @@ class TestDeterministicNAT(MethodHolder):
         # session close api test
         self.vapi.nat_det_close_session_out(socket.inet_aton(nat_ip),
                                             port_out1,
-                                            self.pg1.remote_ip4n,
+                                            self.pg1.remote_ip4,
                                             external_port)
         dms = self.vapi.nat_det_map_dump()
         self.assertEqual(dms[0].ses_num, 1)
 
-        self.vapi.nat_det_close_session_in(host0.ip4n,
+        self.vapi.nat_det_close_session_in(host0.ip4,
                                            port_in,
-                                           self.pg1.remote_ip4n,
+                                           self.pg1.remote_ip4,
                                            external_port)
         dms = self.vapi.nat_det_map_dump()
         self.assertEqual(dms[0].ses_num, 0)
 
     def test_tcp_session_close_detection_in(self):
         """ Deterministic NAT TCP session close from inside network """
-        self.vapi.nat_det_add_del_map(is_add=1, in_addr=self.pg0.remote_ip4n,
+        self.vapi.nat_det_add_del_map(is_add=1, in_addr=self.pg0.remote_ip4,
                                       in_plen=32,
                                       out_addr=socket.inet_aton(self.nat_addr),
                                       out_plen=32)
@@ -7547,7 +7757,7 @@ class TestDeterministicNAT(MethodHolder):
 
     def test_tcp_session_close_detection_out(self):
         """ Deterministic NAT TCP session close from outside network """
-        self.vapi.nat_det_add_del_map(is_add=1, in_addr=self.pg0.remote_ip4n,
+        self.vapi.nat_det_add_del_map(is_add=1, in_addr=self.pg0.remote_ip4,
                                       in_plen=32,
                                       out_addr=socket.inet_aton(self.nat_addr),
                                       out_plen=32)
@@ -7614,7 +7824,7 @@ class TestDeterministicNAT(MethodHolder):
     @unittest.skipUnless(running_extended_tests, "part of extended tests")
     def test_session_timeout(self):
         """ Deterministic NAT session timeouts """
-        self.vapi.nat_det_add_del_map(is_add=1, in_addr=self.pg0.remote_ip4n,
+        self.vapi.nat_det_add_del_map(is_add=1, in_addr=self.pg0.remote_ip4,
                                       in_plen=32,
                                       out_addr=socket.inet_aton(self.nat_addr),
                                       out_plen=32)
@@ -7642,7 +7852,7 @@ class TestDeterministicNAT(MethodHolder):
     @unittest.skipUnless(running_extended_tests, "part of extended tests")
     def test_session_limit_per_user(self):
         """ Deterministic NAT maximum sessions per user limit """
-        self.vapi.nat_det_add_del_map(is_add=1, in_addr=self.pg0.remote_ip4n,
+        self.vapi.nat_det_add_del_map(is_add=1, in_addr=self.pg0.remote_ip4,
                                       in_plen=32,
                                       out_addr=socket.inet_aton(self.nat_addr),
                                       out_plen=32)
@@ -7653,8 +7863,8 @@ class TestDeterministicNAT(MethodHolder):
         self.vapi.nat44_interface_add_del_feature(
             sw_if_index=self.pg1.sw_if_index,
             is_add=1)
-        self.vapi.set_ipfix_exporter(collector_address=self.pg2.remote_ip4n,
-                                     src_address=self.pg2.local_ip4n,
+        self.vapi.set_ipfix_exporter(collector_address=self.pg2.remote_ip4,
+                                     src_address=self.pg2.local_ip4,
                                      path_mtu=512,
                                      template_interval=10)
         self.vapi.nat_ipfix_enable_disable(domain_id=1, src_port=4739,
@@ -7712,7 +7922,7 @@ class TestDeterministicNAT(MethodHolder):
                 data = ipfix.decode_data_set(p.getlayer(Set))
                 self.verify_ipfix_max_entries_per_user(data,
                                                        1000,
-                                                       self.pg0.remote_ip4n)
+                                                       self.pg0.remote_ip4)
 
     def clear_nat_det(self):
         """
@@ -7762,55 +7972,51 @@ class TestNAT64(MethodHolder):
     def setUpClass(cls):
         super(TestNAT64, cls).setUpClass()
 
-        try:
-            cls.tcp_port_in = 6303
-            cls.tcp_port_out = 6303
-            cls.udp_port_in = 6304
-            cls.udp_port_out = 6304
-            cls.icmp_id_in = 6305
-            cls.icmp_id_out = 6305
-            cls.tcp_external_port = 80
-            cls.nat_addr = '10.0.0.3'
-            cls.nat_addr_n = socket.inet_pton(socket.AF_INET, cls.nat_addr)
-            cls.vrf1_id = 10
-            cls.vrf1_nat_addr = '10.0.10.3'
-            cls.ipfix_src_port = 4739
-            cls.ipfix_domain_id = 1
+        cls.tcp_port_in = 6303
+        cls.tcp_port_out = 6303
+        cls.udp_port_in = 6304
+        cls.udp_port_out = 6304
+        cls.icmp_id_in = 6305
+        cls.icmp_id_out = 6305
+        cls.tcp_external_port = 80
+        cls.nat_addr = '10.0.0.3'
+        cls.nat_addr_n = socket.inet_pton(socket.AF_INET, cls.nat_addr)
+        cls.vrf1_id = 10
+        cls.vrf1_nat_addr = '10.0.10.3'
+        cls.ipfix_src_port = 4739
+        cls.ipfix_domain_id = 1
 
-            cls.create_pg_interfaces(range(6))
-            cls.ip6_interfaces = list(cls.pg_interfaces[0:1])
-            cls.ip6_interfaces.append(cls.pg_interfaces[2])
-            cls.ip4_interfaces = list(cls.pg_interfaces[1:2])
+        cls.create_pg_interfaces(range(6))
+        cls.ip6_interfaces = list(cls.pg_interfaces[0:1])
+        cls.ip6_interfaces.append(cls.pg_interfaces[2])
+        cls.ip4_interfaces = list(cls.pg_interfaces[1:2])
 
-            cls.vapi.ip_table_add_del(is_ipv6=1, is_add=1,
-                                      table_id=cls.vrf1_id)
+        cls.vapi.ip_table_add_del(is_add=1,
+                                  table={'table_id': cls.vrf1_id,
+                                         'is_ip6': 1})
 
-            cls.pg_interfaces[2].set_table_ip6(cls.vrf1_id)
+        cls.pg_interfaces[2].set_table_ip6(cls.vrf1_id)
 
-            cls.pg0.generate_remote_hosts(2)
+        cls.pg0.generate_remote_hosts(2)
 
-            for i in cls.ip6_interfaces:
-                i.admin_up()
-                i.config_ip6()
-                i.configure_ipv6_neighbors()
+        for i in cls.ip6_interfaces:
+            i.admin_up()
+            i.config_ip6()
+            i.configure_ipv6_neighbors()
 
-            for i in cls.ip4_interfaces:
-                i.admin_up()
-                i.config_ip4()
-                i.resolve_arp()
+        for i in cls.ip4_interfaces:
+            i.admin_up()
+            i.config_ip4()
+            i.resolve_arp()
 
-            cls.pg3.admin_up()
-            cls.pg3.config_ip4()
-            cls.pg3.resolve_arp()
-            cls.pg3.config_ip6()
-            cls.pg3.configure_ipv6_neighbors()
+        cls.pg3.admin_up()
+        cls.pg3.config_ip4()
+        cls.pg3.resolve_arp()
+        cls.pg3.config_ip6()
+        cls.pg3.configure_ipv6_neighbors()
 
-            cls.pg5.admin_up()
-            cls.pg5.config_ip6()
-
-        except Exception:
-            super(TestNAT64, cls).tearDownClass()
-            raise
+        cls.pg5.admin_up()
+        cls.pg5.config_ip6()
 
     @classmethod
     def tearDownClass(cls):
@@ -8118,19 +8324,19 @@ class TestNAT64(MethodHolder):
         self.vapi.nat64_add_del_interface(is_add=1, flags=0,
                                           sw_if_index=self.pg1.sw_if_index)
 
-        self.vapi.nat64_add_del_static_bib(i_addr=self.pg0.remote_ip6n,
+        self.vapi.nat64_add_del_static_bib(i_addr=self.pg0.remote_ip6,
                                            o_addr=self.nat_addr,
                                            i_port=self.tcp_port_in,
                                            o_port=self.tcp_port_out,
                                            proto=IP_PROTOS.tcp, vrf_id=0,
                                            is_add=1)
-        self.vapi.nat64_add_del_static_bib(i_addr=self.pg0.remote_ip6n,
+        self.vapi.nat64_add_del_static_bib(i_addr=self.pg0.remote_ip6,
                                            o_addr=self.nat_addr,
                                            i_port=self.udp_port_in,
                                            o_port=self.udp_port_out,
                                            proto=IP_PROTOS.udp, vrf_id=0,
                                            is_add=1)
-        self.vapi.nat64_add_del_static_bib(i_addr=self.pg0.remote_ip6n,
+        self.vapi.nat64_add_del_static_bib(i_addr=self.pg0.remote_ip6,
                                            o_addr=self.nat_addr,
                                            i_port=self.icmp_id_in,
                                            o_port=self.icmp_id_out,
@@ -8442,8 +8648,7 @@ class TestNAT64(MethodHolder):
 
         prefix = self.vapi.nat64_prefix_dump()
         self.assertEqual(len(prefix), 1)
-        self.assertEqual(prefix[0].prefix,
-                         IPv6Network(unicode(global_pref64_str)))
+        self.assertEqual(str(prefix[0].prefix), global_pref64_str)
         self.assertEqual(prefix[0].vrf_id, 0)
 
         # Add tenant specific prefix
@@ -8725,9 +8930,6 @@ class TestNAT64(MethodHolder):
         self.vapi.nat64_add_del_interface(is_add=1, flags=0,
                                           sw_if_index=self.pg1.sw_if_index)
 
-        reass = self.vapi.nat_reass_dump()
-        reass_n_start = len(reass)
-
         # in2out
         data = b'a' * 200
         pkts = self.create_stream_frag_ip6(self.pg0, self.pg1.remote_ip4,
@@ -8755,20 +8957,16 @@ class TestNAT64(MethodHolder):
         self.pg_enable_capture(self.pg_interfaces)
         self.pg_start()
         frags = self.pg0.get_capture(len(pkts))
+        self.logger.debug(ppc("Captured:", frags))
         src = self.compose_ip6(self.pg1.remote_ip4, '64:ff9b::', 96)
         p = self.reass_frags_and_verify_ip6(frags, src, self.pg0.remote_ip6)
         self.assertEqual(p[TCP].sport, 20)
         self.assertEqual(p[TCP].dport, self.tcp_port_in)
         self.assertEqual(data, p[Raw].load)
 
-        reass = self.vapi.nat_reass_dump()
-        reass_n_end = len(reass)
-
-        self.assertEqual(reass_n_end - reass_n_start, 2)
-
     def test_reass_hairpinning(self):
         """ NAT64 fragments hairpinning """
-        data = 'a' * 200
+        data = b'a' * 200
         server = self.pg0.remote_hosts[1]
         server_in_port = random.randint(1025, 65535)
         server_out_port = random.randint(1025, 65535)
@@ -8804,6 +9002,7 @@ class TestNAT64(MethodHolder):
         self.pg_enable_capture(self.pg_interfaces)
         self.pg_start()
         frags = self.pg0.get_capture(len(pkts))
+        self.logger.debug(ppc("Captured:", frags))
         p = self.reass_frags_and_verify_ip6(frags, nat_addr_ip6, server.ip6)
         self.assertNotEqual(p[TCP].sport, client_in_port)
         self.assertEqual(p[TCP].dport, server_in_port)
@@ -8917,8 +9116,8 @@ class TestNAT64(MethodHolder):
         self.pg_start()
         self.pg1.get_capture(max_sessions)
 
-        self.vapi.set_ipfix_exporter(collector_address=self.pg3.remote_ip4n,
-                                     src_address=self.pg3.local_ip4n,
+        self.vapi.set_ipfix_exporter(collector_address=self.pg3.remote_ip4,
+                                     src_address=self.pg3.local_ip4,
                                      path_mtu=512,
                                      template_interval=10)
         self.vapi.nat_ipfix_enable_disable(domain_id=self.ipfix_domain_id,
@@ -8934,7 +9133,7 @@ class TestNAT64(MethodHolder):
         self.pg1.assert_nothing_captured()
         sleep(1)
         self.vapi.ipfix_flush()
-        capture = self.pg3.get_capture(9)
+        capture = self.pg3.get_capture(7)
         ipfix = IPFIXDecoder()
         # first load template
         for p in capture:
@@ -8976,57 +9175,6 @@ class TestNAT64(MethodHolder):
                 data = ipfix.decode_data_set(p.getlayer(Set))
                 self.verify_ipfix_max_bibs(data, max_bibs)
 
-    def test_ipfix_max_frags(self):
-        """ IPFIX logging maximum fragments pending reassembly exceeded """
-        self.vapi.nat64_add_del_pool_addr_range(start_addr=self.nat_addr,
-                                                end_addr=self.nat_addr,
-                                                vrf_id=0xFFFFFFFF,
-                                                is_add=1)
-        flags = self.config_flags.NAT_IS_INSIDE
-        self.vapi.nat64_add_del_interface(is_add=1, flags=flags,
-                                          sw_if_index=self.pg0.sw_if_index)
-        self.vapi.nat64_add_del_interface(is_add=1, flags=0,
-                                          sw_if_index=self.pg1.sw_if_index)
-        self.vapi.nat_set_reass(timeout=2, max_reass=1024, max_frag=1,
-                                drop_frag=0, is_ip6=1)
-        self.vapi.set_ipfix_exporter(collector_address=self.pg3.remote_ip4n,
-                                     src_address=self.pg3.local_ip4n,
-                                     path_mtu=512,
-                                     template_interval=10)
-        self.vapi.nat_ipfix_enable_disable(domain_id=self.ipfix_domain_id,
-                                           src_port=self.ipfix_src_port,
-                                           enable=1)
-
-        data = b'a' * 200
-        pkts = self.create_stream_frag_ip6(self.pg0, self.pg1.remote_ip4,
-                                           self.tcp_port_in, 20, data)
-        pkts.reverse()
-        self.pg0.add_stream(pkts)
-        self.pg_enable_capture(self.pg_interfaces)
-        self.pg_start()
-        self.pg1.assert_nothing_captured()
-        sleep(1)
-        self.vapi.ipfix_flush()
-        capture = self.pg3.get_capture(9)
-        ipfix = IPFIXDecoder()
-        # first load template
-        for p in capture:
-            self.assertTrue(p.haslayer(IPFIX))
-            self.assertEqual(p[IP].src, self.pg3.local_ip4)
-            self.assertEqual(p[IP].dst, self.pg3.remote_ip4)
-            self.assertEqual(p[UDP].sport, self.ipfix_src_port)
-            self.assertEqual(p[UDP].dport, 4739)
-            self.assertEqual(p[IPFIX].observationDomainID,
-                             self.ipfix_domain_id)
-            if p.haslayer(Template):
-                ipfix.add_template(p.getlayer(Template))
-        # verify events in data set
-        for p in capture:
-            if p.haslayer(Data):
-                data = ipfix.decode_data_set(p.getlayer(Set))
-                self.verify_ipfix_max_fragments_ip6(data, 1,
-                                                    self.pg0.remote_ip6n)
-
     def test_ipfix_bib_ses(self):
         """ IPFIX logging NAT64 BIB/session create and delete events """
         self.tcp_port_in = random.randint(1025, 65535)
@@ -9043,8 +9191,8 @@ class TestNAT64(MethodHolder):
                                           sw_if_index=self.pg0.sw_if_index)
         self.vapi.nat64_add_del_interface(is_add=1, flags=0,
                                           sw_if_index=self.pg1.sw_if_index)
-        self.vapi.set_ipfix_exporter(collector_address=self.pg3.remote_ip4n,
-                                     src_address=self.pg3.local_ip4n,
+        self.vapi.set_ipfix_exporter(collector_address=self.pg3.remote_ip4,
+                                     src_address=self.pg3.local_ip4,
                                      path_mtu=512,
                                      template_interval=10)
         self.vapi.nat_ipfix_enable_disable(domain_id=self.ipfix_domain_id,
@@ -9061,7 +9209,7 @@ class TestNAT64(MethodHolder):
         p = self.pg1.get_capture(1)
         self.tcp_port_out = p[0][TCP].sport
         self.vapi.ipfix_flush()
-        capture = self.pg3.get_capture(10)
+        capture = self.pg3.get_capture(8)
         ipfix = IPFIXDecoder()
         # first load template
         for p in capture:
@@ -9079,11 +9227,11 @@ class TestNAT64(MethodHolder):
             if p.haslayer(Data):
                 data = ipfix.decode_data_set(p.getlayer(Set))
                 if scapy.compat.orb(data[0][230]) == 10:
-                    self.verify_ipfix_bib(data, 1, self.pg0.remote_ip6n)
+                    self.verify_ipfix_bib(data, 1, self.pg0.remote_ip6)
                 elif scapy.compat.orb(data[0][230]) == 6:
                     self.verify_ipfix_nat64_ses(data,
                                                 1,
-                                                self.pg0.remote_ip6n,
+                                                self.pg0.remote_ip6,
                                                 self.pg1.remote_ip4,
                                                 25)
                 else:
@@ -9109,11 +9257,11 @@ class TestNAT64(MethodHolder):
             if p.haslayer(Data):
                 data = ipfix.decode_data_set(p.getlayer(Set))
                 if scapy.compat.orb(data[0][230]) == 11:
-                    self.verify_ipfix_bib(data, 0, self.pg0.remote_ip6n)
+                    self.verify_ipfix_bib(data, 0, self.pg0.remote_ip6)
                 elif scapy.compat.orb(data[0][230]) == 7:
                     self.verify_ipfix_nat64_ses(data,
                                                 0,
-                                                self.pg0.remote_ip6n,
+                                                self.pg0.remote_ip6,
                                                 self.pg1.remote_ip4,
                                                 25)
                 else:
@@ -9137,7 +9285,7 @@ class TestNAT64(MethodHolder):
                                           sw_if_index=self.pg1.sw_if_index)
         self.vapi.syslog_set_filter(
             self.SYSLOG_SEVERITY.SYSLOG_API_SEVERITY_INFO)
-        self.vapi.syslog_set_sender(self.pg3.local_ip4n, self.pg3.remote_ip4n)
+        self.vapi.syslog_set_sender(self.pg3.local_ip4, self.pg3.remote_ip4)
 
         p = (Ether(src=self.pg0.remote_mac, dst=self.pg0.local_mac) /
              IPv6(src=self.pg0.remote_ip6, dst=remote_host_ip6) /
@@ -9226,312 +9374,6 @@ class TestNAT64(MethodHolder):
         self.logger.info(self.vapi.cli("show nat64 prefix"))
         self.logger.info(self.vapi.cli("show nat64 bib all"))
         self.logger.info(self.vapi.cli("show nat64 session table all"))
-        self.logger.info(self.vapi.cli("show nat virtual-reassembly"))
-
-
-class TestDSlite(MethodHolder):
-    """ DS-Lite Test Cases """
-
-    @classmethod
-    def setUpClass(cls):
-        super(TestDSlite, cls).setUpClass()
-
-        try:
-            cls.nat_addr = '10.0.0.3'
-
-            cls.create_pg_interfaces(range(3))
-            cls.pg0.admin_up()
-            cls.pg0.config_ip4()
-            cls.pg0.resolve_arp()
-            cls.pg1.admin_up()
-            cls.pg1.config_ip6()
-            cls.pg1.generate_remote_hosts(2)
-            cls.pg1.configure_ipv6_neighbors()
-            cls.pg2.admin_up()
-            cls.pg2.config_ip4()
-            cls.pg2.resolve_arp()
-
-        except Exception:
-            super(TestDSlite, cls).tearDownClass()
-            raise
-
-    @classmethod
-    def tearDownClass(cls):
-        super(TestDSlite, cls).tearDownClass()
-
-    def verify_syslog_apmadd(self, data, isaddr, isport, xsaddr, xsport,
-                             sv6enc, proto):
-        message = data.decode('utf-8')
-        try:
-            message = SyslogMessage.parse(message)
-        except ParseError as e:
-            self.logger.error(e)
-        else:
-            self.assertEqual(message.severity, SyslogSeverity.info)
-            self.assertEqual(message.appname, 'NAT')
-            self.assertEqual(message.msgid, 'APMADD')
-            sd_params = message.sd.get('napmap')
-            self.assertTrue(sd_params is not None)
-            self.assertEqual(sd_params.get('IATYP'), 'IPv4')
-            self.assertEqual(sd_params.get('ISADDR'), isaddr)
-            self.assertEqual(sd_params.get('ISPORT'), "%d" % isport)
-            self.assertEqual(sd_params.get('XATYP'), 'IPv4')
-            self.assertEqual(sd_params.get('XSADDR'), xsaddr)
-            self.assertEqual(sd_params.get('XSPORT'), "%d" % xsport)
-            self.assertEqual(sd_params.get('PROTO'), "%d" % proto)
-            self.assertTrue(sd_params.get('SSUBIX') is not None)
-            self.assertEqual(sd_params.get('SV6ENC'), sv6enc)
-
-    def test_dslite(self):
-        """ Test DS-Lite """
-        nat_config = self.vapi.nat_show_config()
-        self.assertEqual(0, nat_config.dslite_ce)
-
-        self.vapi.dslite_add_del_pool_addr_range(start_addr=self.nat_addr,
-                                                 end_addr=self.nat_addr,
-                                                 is_add=1)
-        aftr_ip4 = '192.0.0.1'
-        aftr_ip6 = '2001:db8:85a3::8a2e:370:1'
-        self.vapi.dslite_set_aftr_addr(ip4_addr=aftr_ip4, ip6_addr=aftr_ip6)
-        self.vapi.syslog_set_sender(self.pg2.local_ip4n, self.pg2.remote_ip4n)
-
-        # UDP
-        p = (Ether(dst=self.pg1.local_mac, src=self.pg1.remote_mac) /
-             IPv6(dst=aftr_ip6, src=self.pg1.remote_hosts[0].ip6) /
-             IP(dst=self.pg0.remote_ip4, src='192.168.1.1') /
-             UDP(sport=20000, dport=10000))
-        self.pg1.add_stream(p)
-        self.pg_enable_capture(self.pg_interfaces)
-        self.pg_start()
-        capture = self.pg0.get_capture(1)
-        capture = capture[0]
-        self.assertFalse(capture.haslayer(IPv6))
-        self.assertEqual(capture[IP].src, self.nat_addr)
-        self.assertEqual(capture[IP].dst, self.pg0.remote_ip4)
-        self.assertNotEqual(capture[UDP].sport, 20000)
-        self.assertEqual(capture[UDP].dport, 10000)
-        self.assert_packet_checksums_valid(capture)
-        out_port = capture[UDP].sport
-        capture = self.pg2.get_capture(1)
-        self.verify_syslog_apmadd(capture[0][Raw].load, '192.168.1.1',
-                                  20000, self.nat_addr, out_port,
-                                  self.pg1.remote_hosts[0].ip6, IP_PROTOS.udp)
-
-        p = (Ether(dst=self.pg0.local_mac, src=self.pg0.remote_mac) /
-             IP(dst=self.nat_addr, src=self.pg0.remote_ip4) /
-             UDP(sport=10000, dport=out_port))
-        self.pg0.add_stream(p)
-        self.pg_enable_capture(self.pg_interfaces)
-        self.pg_start()
-        capture = self.pg1.get_capture(1)
-        capture = capture[0]
-        self.assertEqual(capture[IPv6].src, aftr_ip6)
-        self.assertEqual(capture[IPv6].dst, self.pg1.remote_hosts[0].ip6)
-        self.assertEqual(capture[IP].src, self.pg0.remote_ip4)
-        self.assertEqual(capture[IP].dst, '192.168.1.1')
-        self.assertEqual(capture[UDP].sport, 10000)
-        self.assertEqual(capture[UDP].dport, 20000)
-        self.assert_packet_checksums_valid(capture)
-
-        # TCP
-        p = (Ether(dst=self.pg1.local_mac, src=self.pg1.remote_mac) /
-             IPv6(dst=aftr_ip6, src=self.pg1.remote_hosts[1].ip6) /
-             IP(dst=self.pg0.remote_ip4, src='192.168.1.1') /
-             TCP(sport=20001, dport=10001))
-        self.pg1.add_stream(p)
-        self.pg_enable_capture(self.pg_interfaces)
-        self.pg_start()
-        capture = self.pg0.get_capture(1)
-        capture = capture[0]
-        self.assertFalse(capture.haslayer(IPv6))
-        self.assertEqual(capture[IP].src, self.nat_addr)
-        self.assertEqual(capture[IP].dst, self.pg0.remote_ip4)
-        self.assertNotEqual(capture[TCP].sport, 20001)
-        self.assertEqual(capture[TCP].dport, 10001)
-        self.assert_packet_checksums_valid(capture)
-        out_port = capture[TCP].sport
-
-        p = (Ether(dst=self.pg0.local_mac, src=self.pg0.remote_mac) /
-             IP(dst=self.nat_addr, src=self.pg0.remote_ip4) /
-             TCP(sport=10001, dport=out_port))
-        self.pg0.add_stream(p)
-        self.pg_enable_capture(self.pg_interfaces)
-        self.pg_start()
-        capture = self.pg1.get_capture(1)
-        capture = capture[0]
-        self.assertEqual(capture[IPv6].src, aftr_ip6)
-        self.assertEqual(capture[IPv6].dst, self.pg1.remote_hosts[1].ip6)
-        self.assertEqual(capture[IP].src, self.pg0.remote_ip4)
-        self.assertEqual(capture[IP].dst, '192.168.1.1')
-        self.assertEqual(capture[TCP].sport, 10001)
-        self.assertEqual(capture[TCP].dport, 20001)
-        self.assert_packet_checksums_valid(capture)
-
-        # ICMP
-        p = (Ether(dst=self.pg1.local_mac, src=self.pg1.remote_mac) /
-             IPv6(dst=aftr_ip6, src=self.pg1.remote_hosts[1].ip6) /
-             IP(dst=self.pg0.remote_ip4, src='192.168.1.1') /
-             ICMP(id=4000, type='echo-request'))
-        self.pg1.add_stream(p)
-        self.pg_enable_capture(self.pg_interfaces)
-        self.pg_start()
-        capture = self.pg0.get_capture(1)
-        capture = capture[0]
-        self.assertFalse(capture.haslayer(IPv6))
-        self.assertEqual(capture[IP].src, self.nat_addr)
-        self.assertEqual(capture[IP].dst, self.pg0.remote_ip4)
-        self.assertNotEqual(capture[ICMP].id, 4000)
-        self.assert_packet_checksums_valid(capture)
-        out_id = capture[ICMP].id
-
-        p = (Ether(dst=self.pg0.local_mac, src=self.pg0.remote_mac) /
-             IP(dst=self.nat_addr, src=self.pg0.remote_ip4) /
-             ICMP(id=out_id, type='echo-reply'))
-        self.pg0.add_stream(p)
-        self.pg_enable_capture(self.pg_interfaces)
-        self.pg_start()
-        capture = self.pg1.get_capture(1)
-        capture = capture[0]
-        self.assertEqual(capture[IPv6].src, aftr_ip6)
-        self.assertEqual(capture[IPv6].dst, self.pg1.remote_hosts[1].ip6)
-        self.assertEqual(capture[IP].src, self.pg0.remote_ip4)
-        self.assertEqual(capture[IP].dst, '192.168.1.1')
-        self.assertEqual(capture[ICMP].id, 4000)
-        self.assert_packet_checksums_valid(capture)
-
-        # ping DS-Lite AFTR tunnel endpoint address
-        p = (Ether(dst=self.pg1.local_mac, src=self.pg1.remote_mac) /
-             IPv6(src=self.pg1.remote_hosts[1].ip6, dst=aftr_ip6) /
-             ICMPv6EchoRequest())
-        self.pg1.add_stream(p)
-        self.pg_enable_capture(self.pg_interfaces)
-        self.pg_start()
-        capture = self.pg1.get_capture(1)
-        capture = capture[0]
-        self.assertEqual(capture[IPv6].src, aftr_ip6)
-        self.assertEqual(capture[IPv6].dst, self.pg1.remote_hosts[1].ip6)
-        self.assertTrue(capture.haslayer(ICMPv6EchoReply))
-
-        b4s = self.statistics.get_counter('/dslite/total-b4s')
-        self.assertEqual(b4s[0][0], 2)
-        sessions = self.statistics.get_counter('/dslite/total-sessions')
-        self.assertEqual(sessions[0][0], 3)
-
-    def tearDown(self):
-        super(TestDSlite, self).tearDown()
-
-    def show_commands_at_teardown(self):
-        self.logger.info(self.vapi.cli("show dslite pool"))
-        self.logger.info(
-            self.vapi.cli("show dslite aftr-tunnel-endpoint-address"))
-        self.logger.info(self.vapi.cli("show dslite sessions"))
-
-
-class TestDSliteCE(MethodHolder):
-    """ DS-Lite CE Test Cases """
-
-    @classmethod
-    def setUpConstants(cls):
-        super(TestDSliteCE, cls).setUpConstants()
-        cls.vpp_cmdline.extend(["nat", "{", "dslite ce", "}"])
-
-    @classmethod
-    def setUpClass(cls):
-        super(TestDSliteCE, cls).setUpClass()
-
-        try:
-            cls.create_pg_interfaces(range(2))
-            cls.pg0.admin_up()
-            cls.pg0.config_ip4()
-            cls.pg0.resolve_arp()
-            cls.pg1.admin_up()
-            cls.pg1.config_ip6()
-            cls.pg1.generate_remote_hosts(1)
-            cls.pg1.configure_ipv6_neighbors()
-
-        except Exception:
-            super(TestDSliteCE, cls).tearDownClass()
-            raise
-
-    @classmethod
-    def tearDownClass(cls):
-        super(TestDSliteCE, cls).tearDownClass()
-
-    def test_dslite_ce(self):
-        """ Test DS-Lite CE """
-
-        nat_config = self.vapi.nat_show_config()
-        self.assertEqual(1, nat_config.dslite_ce)
-
-        b4_ip4 = '192.0.0.2'
-        b4_ip6 = '2001:db8:62aa::375e:f4c1:1'
-        self.vapi.dslite_set_b4_addr(ip4_addr=b4_ip4, ip6_addr=b4_ip6)
-
-        aftr_ip4 = '192.0.0.1'
-        aftr_ip6 = '2001:db8:85a3::8a2e:370:1'
-        aftr_ip6_n = socket.inet_pton(socket.AF_INET6, aftr_ip6)
-        self.vapi.dslite_set_aftr_addr(ip4_addr=aftr_ip4, ip6_addr=aftr_ip6)
-
-        r1 = VppIpRoute(self, aftr_ip6, 128,
-                        [VppRoutePath(self.pg1.remote_ip6,
-                                      self.pg1.sw_if_index)])
-        r1.add_vpp_config()
-
-        # UDP encapsulation
-        p = (Ether(dst=self.pg0.local_mac, src=self.pg0.remote_mac) /
-             IP(dst=self.pg1.remote_ip4, src=self.pg0.remote_ip4) /
-             UDP(sport=10000, dport=20000))
-        self.pg0.add_stream(p)
-        self.pg_enable_capture(self.pg_interfaces)
-        self.pg_start()
-        capture = self.pg1.get_capture(1)
-        capture = capture[0]
-        self.assertEqual(capture[IPv6].src, b4_ip6)
-        self.assertEqual(capture[IPv6].dst, aftr_ip6)
-        self.assertEqual(capture[IP].src, self.pg0.remote_ip4)
-        self.assertEqual(capture[IP].dst, self.pg1.remote_ip4)
-        self.assertEqual(capture[UDP].sport, 10000)
-        self.assertEqual(capture[UDP].dport, 20000)
-        self.assert_packet_checksums_valid(capture)
-
-        # UDP decapsulation
-        p = (Ether(dst=self.pg1.local_mac, src=self.pg1.remote_mac) /
-             IPv6(dst=b4_ip6, src=aftr_ip6) /
-             IP(dst=self.pg0.remote_ip4, src=self.pg1.remote_ip4) /
-             UDP(sport=20000, dport=10000))
-        self.pg1.add_stream(p)
-        self.pg_enable_capture(self.pg_interfaces)
-        self.pg_start()
-        capture = self.pg0.get_capture(1)
-        capture = capture[0]
-        self.assertFalse(capture.haslayer(IPv6))
-        self.assertEqual(capture[IP].src, self.pg1.remote_ip4)
-        self.assertEqual(capture[IP].dst, self.pg0.remote_ip4)
-        self.assertEqual(capture[UDP].sport, 20000)
-        self.assertEqual(capture[UDP].dport, 10000)
-        self.assert_packet_checksums_valid(capture)
-
-        # ping DS-Lite B4 tunnel endpoint address
-        p = (Ether(dst=self.pg1.local_mac, src=self.pg1.remote_mac) /
-             IPv6(src=self.pg1.remote_hosts[0].ip6, dst=b4_ip6) /
-             ICMPv6EchoRequest())
-        self.pg1.add_stream(p)
-        self.pg_enable_capture(self.pg_interfaces)
-        self.pg_start()
-        capture = self.pg1.get_capture(1)
-        capture = capture[0]
-        self.assertEqual(capture[IPv6].src, b4_ip6)
-        self.assertEqual(capture[IPv6].dst, self.pg1.remote_hosts[0].ip6)
-        self.assertTrue(capture.haslayer(ICMPv6EchoReply))
-
-    def tearDown(self):
-        super(TestDSliteCE, self).tearDown()
-
-    def show_commands_at_teardown(self):
-        self.logger.info(
-            self.vapi.cli("show dslite aftr-tunnel-endpoint-address"))
-        self.logger.info(
-            self.vapi.cli("show dslite b4-tunnel-endpoint-address"))
 
 
 class TestNAT66(MethodHolder):
@@ -9541,20 +9383,15 @@ class TestNAT66(MethodHolder):
     def setUpClass(cls):
         super(TestNAT66, cls).setUpClass()
 
-        try:
-            cls.nat_addr = 'fd01:ff::2'
+        cls.nat_addr = 'fd01:ff::2'
 
-            cls.create_pg_interfaces(range(2))
-            cls.interfaces = list(cls.pg_interfaces)
+        cls.create_pg_interfaces(range(2))
+        cls.interfaces = list(cls.pg_interfaces)
 
-            for i in cls.interfaces:
-                i.admin_up()
-                i.config_ip6()
-                i.configure_ipv6_neighbors()
-
-        except Exception:
-            super(TestNAT66, cls).tearDownClass()
-            raise
+        for i in cls.interfaces:
+            i.admin_up()
+            i.config_ip6()
+            i.configure_ipv6_neighbors()
 
     @classmethod
     def tearDownClass(cls):
@@ -9568,7 +9405,7 @@ class TestNAT66(MethodHolder):
         self.vapi.nat66_add_del_interface(is_add=1,
                                           sw_if_index=self.pg1.sw_if_index)
         self.vapi.nat66_add_del_static_mapping(
-            local_ip_address=self.pg0.remote_ip6n,
+            local_ip_address=self.pg0.remote_ip6,
             external_ip_address=self.nat_addr,
             is_add=1)
 
@@ -9594,6 +9431,7 @@ class TestNAT66(MethodHolder):
         self.pg_enable_capture(self.pg_interfaces)
         self.pg_start()
         capture = self.pg1.get_capture(len(pkts))
+
         for packet in capture:
             try:
                 self.assertEqual(packet[IPv6].src, self.nat_addr)
@@ -9646,7 +9484,7 @@ class TestNAT66(MethodHolder):
         self.vapi.nat66_add_del_interface(is_add=1, flags=flags,
                                           sw_if_index=self.pg1.sw_if_index)
         self.vapi.nat66_add_del_static_mapping(
-            local_ip_address=self.pg0.remote_ip6n,
+            local_ip_address=self.pg0.remote_ip6,
             external_ip_address=self.nat_addr,
             is_add=1)
 

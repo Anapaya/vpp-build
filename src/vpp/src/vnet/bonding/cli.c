@@ -29,8 +29,6 @@ bond_disable_collecting_distributing (vlib_main_t * vm, slave_if_t * sif)
   bond_if_t *bif;
   int i;
   uword p;
-  vnet_main_t *vnm = vnet_get_main ();
-  vnet_hw_interface_t *hw;
   u8 switching_active = 0;
 
   bif = bond_get_master_by_dev_instance (sif->bif_dev_instance);
@@ -40,12 +38,10 @@ bond_disable_collecting_distributing (vlib_main_t * vm, slave_if_t * sif)
     p = *vec_elt_at_index (bif->active_slaves, i);
     if (p == sif->sw_if_index)
       {
-	if (sif->sw_if_index == bif->sw_if_index_working)
-	  {
-	    switching_active = 1;
-	    if (bif->mode == BOND_MODE_ACTIVE_BACKUP)
-	      bif->is_local_numa = 0;
-	  }
+	if ((bif->mode == BOND_MODE_ACTIVE_BACKUP) && (i == 0) &&
+	    (vec_len (bif->active_slaves) > 1))
+	  /* deleting the active slave for active-backup */
+	  switching_active = 1;
 	vec_del1 (bif->active_slaves, i);
 	if (sif->lacp_enabled && bif->numa_only)
 	  {
@@ -63,42 +59,75 @@ bond_disable_collecting_distributing (vlib_main_t * vm, slave_if_t * sif)
   }
 
   /* We get a new slave just becoming active */
-  if ((bif->mode == BOND_MODE_ACTIVE_BACKUP) && switching_active)
-    {
-      if ((vec_len (bif->active_slaves) >= 1))
-	{
-	  /* scan all slaves and try to find the first slave with local numa node. */
-	  vec_foreach_index (i, bif->active_slaves)
-	  {
-	    p = *vec_elt_at_index (bif->active_slaves, i);
-	    hw = vnet_get_sup_hw_interface (vnm, p);
-	    if (vm->numa_node == hw->numa_node)
-	      {
-		bif->sw_if_index_working = p;
-		bif->is_local_numa = 1;
-		vlib_process_signal_event (bm->vlib_main,
-					   bond_process_node.index,
-					   BOND_SEND_GARP_NA,
-					   bif->hw_if_index);
-		break;
-	      }
-	  }
-	}
+  if (switching_active)
+    vlib_process_signal_event (bm->vlib_main, bond_process_node.index,
+			       BOND_SEND_GARP_NA, bif->hw_if_index);
+  clib_spinlock_unlock_if_init (&bif->lockp);
+}
 
-      /* No local numa node is found in the active slave set. Use the first slave */
-      if ((bif->is_local_numa == 0) && (vec_len (bif->active_slaves) >= 1))
+/*
+ * return 1 if s2 is preferred.
+ * return -1 if s1 is preferred.
+ */
+static int
+bond_slave_sort (void *a1, void *a2)
+{
+  u32 *s1 = a1;
+  u32 *s2 = a2;
+  slave_if_t *sif1 = bond_get_slave_by_sw_if_index (*s1);
+  slave_if_t *sif2 = bond_get_slave_by_sw_if_index (*s2);
+  bond_if_t *bif;
+
+  ALWAYS_ASSERT (sif1);
+  ALWAYS_ASSERT (sif2);
+  /*
+   * sort entries according to preference rules:
+   * 1. biggest weight
+   * 2. numa-node
+   * 3. current active slave (to prevent churning)
+   * 4. lowest sw_if_index (for deterministic behavior)
+   *
+   */
+  if (sif2->weight > sif1->weight)
+    return 1;
+  if (sif2->weight < sif1->weight)
+    return -1;
+  else
+    {
+      if (sif2->is_local_numa > sif1->is_local_numa)
+	return 1;
+      if (sif2->is_local_numa < sif1->is_local_numa)
+	return -1;
+      else
 	{
-	  p = *vec_elt_at_index (bif->active_slaves, 0);
-	  bif->sw_if_index_working = p;
-	  vlib_process_signal_event (bm->vlib_main, bond_process_node.index,
-				     BOND_SEND_GARP_NA, bif->hw_if_index);
+	  bif = bond_get_master_by_dev_instance (sif1->bif_dev_instance);
+	  /* Favor the current active slave to avoid churning */
+	  if (bif->active_slaves[0] == sif2->sw_if_index)
+	    return 1;
+	  if (bif->active_slaves[0] == sif1->sw_if_index)
+	    return -1;
+	  /* go for the tiebreaker as the last resort */
+	  if (sif1->sw_if_index > sif2->sw_if_index)
+	    return 1;
+	  if (sif1->sw_if_index < sif2->sw_if_index)
+	    return -1;
+	  else
+	    ASSERT (0);
 	}
     }
-  clib_spinlock_unlock_if_init (&bif->lockp);
+  return 0;
+}
 
-  if (bif->mode == BOND_MODE_LACP)
-    stat_segment_set_state_counter (bm->stats[bif->sw_if_index]
-				    [sif->sw_if_index], sif->actor.state);
+static void
+bond_sort_slaves (bond_if_t * bif)
+{
+  bond_main_t *bm = &bond_main;
+  u32 old_active = bif->active_slaves[0];
+
+  vec_sort_with_function (bif->active_slaves, bond_slave_sort);
+  if (old_active != bif->active_slaves[0])
+    vlib_process_signal_event (bm->vlib_main, bond_process_node.index,
+			       BOND_SEND_GARP_NA, bif->hw_if_index);
 }
 
 void
@@ -120,55 +149,28 @@ bond_enable_collecting_distributing (vlib_main_t * vm, slave_if_t * sif)
       goto done;
   }
 
-  if ((sif->lacp_enabled && bif->numa_only)
-      && (vm->numa_node == hw->numa_node))
+  if (sif->lacp_enabled && bif->numa_only && (vm->numa_node == hw->numa_node))
     {
       vec_insert_elts (bif->active_slaves, &sif->sw_if_index, 1,
 		       bif->n_numa_slaves);
       bif->n_numa_slaves++;
     }
   else
+    vec_add1 (bif->active_slaves, sif->sw_if_index);
+
+  sif->is_local_numa = (vm->numa_node == hw->numa_node) ? 1 : 0;
+  if (bif->mode == BOND_MODE_ACTIVE_BACKUP)
     {
-      vec_add1 (bif->active_slaves, sif->sw_if_index);
+      if (vec_len (bif->active_slaves) == 1)
+	/* First slave becomes active? */
+	vlib_process_signal_event (bm->vlib_main, bond_process_node.index,
+				   BOND_SEND_GARP_NA, bif->hw_if_index);
+      else
+	bond_sort_slaves (bif);
     }
 
-  /* First slave becomes active? */
-  if ((vec_len (bif->active_slaves) == 1) &&
-      (bif->mode == BOND_MODE_ACTIVE_BACKUP))
-    {
-      bif->sw_if_index_working = sif->sw_if_index;
-      bif->is_local_numa = (vm->numa_node == hw->numa_node) ? 1 : 0;
-      vlib_process_signal_event (bm->vlib_main, bond_process_node.index,
-				 BOND_SEND_GARP_NA, bif->hw_if_index);
-    }
-  else if ((vec_len (bif->active_slaves) > 1)
-	   && (bif->mode == BOND_MODE_ACTIVE_BACKUP)
-	   && bif->is_local_numa == 0)
-    {
-      if (vm->numa_node == hw->numa_node)
-	{
-	  vec_foreach_index (i, bif->active_slaves)
-	  {
-	    p = *vec_elt_at_index (bif->active_slaves, 0);
-	    if (p == sif->sw_if_index)
-	      break;
-
-	    vec_del1 (bif->active_slaves, 0);
-	    vec_add1 (bif->active_slaves, p);
-	  }
-	  bif->sw_if_index_working = sif->sw_if_index;
-	  bif->is_local_numa = 1;
-	  vlib_process_signal_event (bm->vlib_main,
-				     bond_process_node.index,
-				     BOND_SEND_GARP_NA, bif->hw_if_index);
-	}
-    }
 done:
   clib_spinlock_unlock_if_init (&bif->lockp);
-
-  if (bif->mode == BOND_MODE_LACP)
-    stat_segment_set_state_counter (bm->stats[bif->sw_if_index]
-				    [sif->sw_if_index], sif->actor.state);
 }
 
 int
@@ -242,11 +244,38 @@ bond_dump_slave_ifs (slave_interface_details_t ** out_slaveifs,
 	slaveif->sw_if_index = sif->sw_if_index;
 	slaveif->is_passive = sif->is_passive;
 	slaveif->is_long_timeout = sif->is_long_timeout;
+	slaveif->is_local_numa = sif->is_local_numa;
+	slaveif->weight = sif->weight;
       }
   }
   *out_slaveifs = r_slaveifs;
 
   return 0;
+}
+
+/*
+ * Manage secondary mac addresses when attaching/detaching a slave.
+ * If adding, copies any secondary addresses from master to slave
+ * If deleting, deletes the master's secondary addresses from the slave
+ *
+ */
+static void
+bond_slave_add_del_mac_addrs (bond_if_t * bif, u32 sif_sw_if_index, u8 is_add)
+{
+  vnet_main_t *vnm = vnet_get_main ();
+  ethernet_interface_t *b_ei;
+  mac_address_t *sec_mac;
+  vnet_hw_interface_t *s_hwif;
+
+  b_ei = ethernet_get_interface (&ethernet_main, bif->hw_if_index);
+  if (!b_ei || !b_ei->secondary_addrs)
+    return;
+
+  s_hwif = vnet_get_sup_hw_interface (vnm, sif_sw_if_index);
+
+  vec_foreach (sec_mac, b_ei->secondary_addrs)
+    vnet_hw_interface_add_del_mac_address (vnm, s_hwif->hw_if_index,
+					   sec_mac->bytes, is_add);
 }
 
 static void
@@ -284,12 +313,20 @@ bond_delete_neighbor (vlib_main_t * vm, bond_if_t * bif, slave_if_t * sif)
   vnet_hw_interface_change_mac_address (vnm, sif_hw->hw_if_index,
 					sif->persistent_hw_address);
 
+  /* delete the bond's secondary/virtual mac addrs from the slave */
+  bond_slave_add_del_mac_addrs (bif, sif->sw_if_index, 0 /* is_add */ );
+
+
   if ((bif->mode == BOND_MODE_LACP) && bm->lacp_enable_disable)
     (*bm->lacp_enable_disable) (vm, bif, sif, 0);
 
   if (bif->mode == BOND_MODE_LACP)
-    stat_segment_deregister_state_counter
-      (bm->stats[bif->sw_if_index][sif->sw_if_index]);
+    {
+      stat_segment_deregister_state_counter
+	(bm->stats[bif->sw_if_index][sif->sw_if_index].actor_state);
+      stat_segment_deregister_state_counter
+	(bm->stats[bif->sw_if_index][sif->sw_if_index].partner_state);
+    }
 
   pool_put (bm->neighbors, sif);
 }
@@ -421,8 +458,14 @@ bond_create_if (vlib_main_t * vm, bond_create_if_args_t * args)
   bif->numa_only = args->numa_only;
 
   hw = vnet_get_hw_interface (vnm, bif->hw_if_index);
-  hw->flags |= (VNET_HW_INTERFACE_FLAG_SUPPORTS_GSO |
-		VNET_HW_INTERFACE_FLAG_SUPPORTS_TX_L4_CKSUM_OFFLOAD);
+  /*
+   * Add GSO and Checksum offload flags if GSO is enabled on Bond
+   */
+  if (args->gso)
+    {
+      hw->flags |= (VNET_HW_INTERFACE_FLAG_SUPPORTS_GSO |
+		    VNET_HW_INTERFACE_FLAG_SUPPORTS_TX_L4_CKSUM_OFFLOAD);
+    }
   if (vlib_get_thread_main ()->n_vlib_mains > 1)
     clib_spinlock_init (&bif->lockp);
 
@@ -602,7 +645,19 @@ bond_enslave (vlib_main_t * vm, bond_enslave_args_t * args)
       vec_validate (bm->stats[bif->sw_if_index], args->slave);
 
       args->error = stat_segment_register_state_counter
-	(name, &bm->stats[bif->sw_if_index][args->slave]);
+	(name, &bm->stats[bif->sw_if_index][args->slave].actor_state);
+      if (args->error != 0)
+	{
+	  args->rv = VNET_API_ERROR_INVALID_INTERFACE;
+	  vec_free (name);
+	  return;
+	}
+
+      vec_reset_length (name);
+      name = format (0, "/if/lacp/%u/%u/partner-state%c", bif->sw_if_index,
+		     args->slave, 0);
+      args->error = stat_segment_register_state_counter
+	(name, &bm->stats[bif->sw_if_index][args->slave].partner_state);
       vec_free (name);
       if (args->error != 0)
 	{
@@ -667,6 +722,9 @@ bond_enslave (vlib_main_t * vm, bond_enslave_args_t * args)
 						bif->hw_address);
 	}
     }
+
+  /* if there are secondary/virtual mac addrs, propagate to the slave */
+  bond_slave_add_del_mac_addrs (bif, sif->sw_if_index, 1 /* is_add */ );
 
   if (bif_hw->l2_if_count)
     {
@@ -875,6 +933,14 @@ show_bond_details (vlib_main_t * vm)
       {
         vlib_cli_output (vm, "    %U", format_vnet_sw_if_index_name,
 			 vnet_get_main (), *sw_if_index);
+	if (bif->mode == BOND_MODE_ACTIVE_BACKUP)
+	  {
+	    slave_if_t *sif = bond_get_slave_by_sw_if_index (*sw_if_index);
+	    if (sif)
+	      vlib_cli_output (vm, "      weight: %u, is_local_numa: %u, "
+			       "sw_if_index: %u", sif->weight,
+			       sif->is_local_numa, sif->sw_if_index);
+	  }
       }
     vlib_cli_output (vm, "  number of slaves: %d", vec_len (bif->slaves));
     vec_foreach (sw_if_index, bif->slaves)
@@ -920,6 +986,113 @@ VLIB_CLI_COMMAND (show_bond_command, static) = {
   .path = "show bond",
   .short_help = "show bond [details]",
   .function = show_bond_fn,
+};
+/* *INDENT-ON* */
+
+void
+bond_set_intf_weight (vlib_main_t * vm, bond_set_intf_weight_args_t * args)
+{
+  slave_if_t *sif;
+  bond_if_t *bif;
+  vnet_main_t *vnm;
+  u32 old_weight;
+
+  sif = bond_get_slave_by_sw_if_index (args->sw_if_index);
+  if (!sif)
+    {
+      args->rv = VNET_API_ERROR_INVALID_INTERFACE;
+      args->error = clib_error_return (0, "Interface not enslaved");
+      return;
+    }
+  bif = bond_get_master_by_dev_instance (sif->bif_dev_instance);
+  if (!bif)
+    {
+      args->rv = VNET_API_ERROR_INVALID_INTERFACE;
+      args->error = clib_error_return (0, "bond interface not found");
+      return;
+    }
+  if (bif->mode != BOND_MODE_ACTIVE_BACKUP)
+    {
+      args->rv = VNET_API_ERROR_INVALID_ARGUMENT;
+      args->error =
+	clib_error_return (0, "Weight valid for active-backup only");
+      return;
+    }
+
+  old_weight = sif->weight;
+  sif->weight = args->weight;
+  vnm = vnet_get_main ();
+  /*
+   * No need to sort the list if the affected slave is not up (not in active
+   * slave set), active slave count is 1, or the current slave is already the
+   * primary slave and new weight > old weight.
+   */
+  if (!vnet_sw_interface_is_up (vnm, sif->sw_if_index) ||
+      (vec_len (bif->active_slaves) == 1) ||
+      ((bif->active_slaves[0] == sif->sw_if_index) &&
+       (sif->weight >= old_weight)))
+    return;
+
+  bond_sort_slaves (bif);
+}
+
+static clib_error_t *
+bond_set_intf_cmd (vlib_main_t * vm, unformat_input_t * input,
+		   vlib_cli_command_t * cmd)
+{
+  bond_set_intf_weight_args_t args = { 0 };
+  u32 sw_if_index = (u32) ~ 0;
+  unformat_input_t _line_input, *line_input = &_line_input;
+  vnet_main_t *vnm = vnet_get_main ();
+  u8 weight_enter = 0;
+  u32 weight = 0;
+
+  /* Get a line of input. */
+  if (!unformat_user (input, unformat_line_input, line_input))
+    return clib_error_return (0, "Missing required arguments.");
+
+  while (unformat_check_input (line_input) != UNFORMAT_END_OF_INPUT)
+    {
+      if (unformat (line_input, "sw_if_index %d", &sw_if_index))
+	;
+      else if (unformat (line_input, "%U", unformat_vnet_sw_interface, vnm,
+			 &sw_if_index))
+	;
+      else if (unformat (line_input, "weight %u", &weight))
+	weight_enter = 1;
+      else
+	{
+	  clib_error_return (0, "unknown input `%U'", format_unformat_error,
+			     input);
+	  break;
+	}
+    }
+
+  unformat_free (line_input);
+  if (sw_if_index == (u32) ~ 0)
+    {
+      args.rv = VNET_API_ERROR_INVALID_INTERFACE;
+      clib_error_return (0, "Interface name is invalid!");
+    }
+  if (weight_enter == 0)
+    {
+      args.rv = VNET_API_ERROR_INVALID_ARGUMENT;
+      clib_error_return (0, "weight missing");
+    }
+
+  args.sw_if_index = sw_if_index;
+  args.weight = weight;
+  bond_set_intf_weight (vm, &args);
+
+  return args.error;
+}
+
+/* *INDENT-OFF* */
+VLIB_CLI_COMMAND(set_interface_bond_cmd, static) = {
+  .path = "set interface bond",
+  .short_help = "set interface bond <interface> | sw_if_index <idx>"
+                " weight <value>",
+  .function = bond_set_intf_cmd,
 };
 /* *INDENT-ON* */
 

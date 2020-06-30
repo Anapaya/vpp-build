@@ -83,7 +83,7 @@ class VppTransport(object):
         self.connected = True
         if not pfx:
             pfx = ffi.NULL
-        return vpp_api.vac_connect(name, pfx, msg_handler, rx_qlen)
+        return vpp_api.vac_connect(name.encode('ascii'), pfx, msg_handler, rx_qlen)
 
     def disconnect(self):
         self.connected = False
@@ -99,7 +99,7 @@ class VppTransport(object):
         return vac_callback_sync if not do_async else vac_callback_async
 
     def get_msg_index(self, name):
-        return vpp_api.vac_get_msg_index(name)
+        return vpp_api.vac_get_msg_index(name.encode('ascii'))
 
     def msg_table_max_index(self):
         return vpp_api.vac_msg_table_max_index()
@@ -116,12 +116,14 @@ class VppTransport(object):
             raise VppTransportShmemIOError(1, 'Not connected')
         return vpp_api.vac_write(bytes(buf), len(buf))
 
-    def read(self):
+    def read(self, timeout=None):
         if not self.connected:
             raise VppTransportShmemIOError(1, 'Not connected')
+        if timeout is None:
+            timeout = self.read_timeout
         mem = ffi.new("char **")
         size = ffi.new("int *")
-        rv = vpp_api.vac_read(mem, size, self.read_timeout)
+        rv = vpp_api.vac_read(mem, size, timeout)
         if rv:
             strerror = 'vac_read failed.  It is likely that VPP died.'
             raise VppTransportShmemIOError(rv, strerror)

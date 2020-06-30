@@ -100,7 +100,7 @@ static void
   vl_api_af_packet_delete_reply_t *rmp;
   int rv = 0;
 
-  rv = af_packet_set_l4_cksum_offload (vm, mp->sw_if_index, mp->set);
+  rv = af_packet_set_l4_cksum_offload (vm, ntohl (mp->sw_if_index), mp->set);
   REPLY_MACRO (VL_API_AF_PACKET_SET_L4_CKSUM_OFFLOAD_REPLY);
 }
 
@@ -170,7 +170,7 @@ setup_message_id_table (api_main_t * am)
 static clib_error_t *
 af_packet_api_hookup (vlib_main_t * vm)
 {
-  api_main_t *am = &api_main;
+  api_main_t *am = vlibapi_get_main ();
 
 #define _(N,n)                                                  \
     vl_msg_api_set_handlers(VL_API_##N, #n,                     \

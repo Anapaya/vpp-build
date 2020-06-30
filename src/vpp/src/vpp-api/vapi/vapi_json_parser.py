@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 import json
 
@@ -29,6 +29,10 @@ class Field(object):
     def __str__(self):
         if self.len is None:
             return "Field(name: %s, type: %s)" % (self.name, self.type)
+        elif type(self.len) == dict:
+            return "Field(name: %s, type: %s, length: %s)" % (self.name,
+                                                              self.type,
+                                                              self.len)
         elif self.len > 0:
             return "Field(name: %s, type: %s, length: %s)" % (self.name,
                                                               self.type,
@@ -395,7 +399,7 @@ class JsonParser(object):
                     self.types[type_.name] = type_
                     self.types_by_json[path].append(type_)
                     self.logger.debug("Parsed type: %s" % type_)
-                for name, body in j['aliases'].iteritems():
+                for name, body in j['aliases'].items():
                     if name in self.aliases:
                         progress = progress + 1
                         continue

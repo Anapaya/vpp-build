@@ -20,7 +20,15 @@
 #define foreach_x86_cpu_uarch \
  _(0x06, 0x9e, "Kaby Lake", "Kaby Lake DT/H/S/X") \
  _(0x06, 0x8e, "Kaby Lake", "Kaby Lake Y/U") \
+ _(0x06, 0x8c, "Tiger Lake", "Tiger Lake U") \
+ _(0x06, 0x86, "Tremont", "Elkhart Lake") \
  _(0x06, 0x85, "Knights Mill", "Knights Mill") \
+ _(0x06, 0x7e, "Ice Lake", "Ice Lake U") \
+ _(0x06, 0x7d, "Ice Lake", "Ice Lake Y") \
+ _(0x06, 0x7a, "Goldmont Plus", "Gemini Lake") \
+ _(0x06, 0x6c, "Ice Lake", "Ice Lake SP") \
+ _(0x06, 0x6a, "Ice Lake", "Ice Lake DE") \
+ _(0x06, 0x66, "Cannon Lake", "Cannon Lake U") \
  _(0x06, 0x5f, "Goldmont", "Denverton") \
  _(0x06, 0x5e, "Skylake", "Skylake DT/H/S") \
  _(0x06, 0x5c, "Goldmont", "Apollo Lake") \
@@ -63,6 +71,10 @@
  _(0x41, 0xd07, "ARM", "Cortex-A57", 0) \
  _(0x41, 0xd08, "ARM", "Cortex-A72", 0) \
  _(0x41, 0xd09, "ARM", "Cortex-A73", 0) \
+ _(0x41, 0xd0a, "ARM", "Cortex-A75", 0) \
+ _(0x41, 0xd0b, "ARM", "Cortex-A76", 0) \
+ _(0x41, 0xd0c, "ARM", "Neoverse-N1", 0) \
+ _(0x41, 0xd4a, "ARM", "Neoverse-E1", 0) \
  _(0x43, 0x0a1, "Marvell", "THUNDERX CN88XX", 0) \
  _(0x43, 0x0a2, "Marvell", "OCTEON TX CN81XX", 0) \
  _(0x43, 0x0a3, "Marvell", "OCTEON TX CN83XX", 0) \
@@ -183,12 +195,10 @@ format_cpu_model_name (u8 * s, va_list * args)
 
 
 static inline char const *
-flag_skip_prefix (char const *flag)
+flag_skip_prefix (char const *flag, const char *pfx, int len)
 {
-  if (memcmp (flag, "x86_", sizeof ("x86_") - 1) == 0)
-    return flag + sizeof ("x86_") - 1;
-  if (memcmp (flag, "aarch64_", sizeof ("aarch64_") - 1) == 0)
-    return flag + sizeof ("aarch64_") - 1;
+  if (0 == strncmp (flag, pfx, len - 1))
+    return flag + len - 1;
   return flag;
 }
 
@@ -198,13 +208,13 @@ format_cpu_flags (u8 * s, va_list * args)
 #if defined(__x86_64__)
 #define _(flag, func, reg, bit) \
   if (clib_cpu_supports_ ## flag()) \
-    s = format (s, "%s ", flag_skip_prefix(#flag));
+    s = format (s, "%s ", flag_skip_prefix(#flag, "x86_", sizeof("x86_")));
   foreach_x86_64_flags return s;
 #undef _
 #elif defined(__aarch64__)
 #define _(flag, bit) \
   if (clib_cpu_supports_ ## flag()) \
-    s = format (s, "%s ", flag_skip_prefix(#flag));
+    s = format (s, "%s ", flag_skip_prefix(#flag, "aarch64_", sizeof("aarch64_")));
   foreach_aarch64_flags return s;
 #undef _
 #else /* ! ! __x86_64__ && ! __aarch64__ */

@@ -11,15 +11,15 @@ from pyverbs.addr cimport GlobalRoute
 from pyverbs.device cimport Context
 from pyverbs.cq cimport CQ, CQEX
 cimport pyverbs.libibverbs as v
+from pyverbs.xrcd cimport XRCD
+from pyverbs.srq cimport SRQ
 from pyverbs.pd cimport PD
+from libc.string cimport memcpy
 
-
-cdef extern from 'string.h':
-    void *memcpy(void *dest, const void *src, size_t n);
 
 cdef class QPCap(PyverbsObject):
-    def __cinit__(self, max_send_wr=1, max_recv_wr=10, max_send_sge=1,
-                      max_recv_sge=1, max_inline_data=0):
+    def __init__(self, max_send_wr=1, max_recv_wr=10, max_send_sge=1,
+                 max_recv_sge=1, max_inline_data=0):
         """
         Initializes a QPCap object with user-provided or default values.
         :param max_send_wr: max number of outstanding WRs in the SQ
@@ -32,6 +32,7 @@ cdef class QPCap(PyverbsObject):
                                 inline to the SQ, otherwise 0
         :return:
         """
+        super().__init__()
         self.cap.max_send_wr = max_send_wr
         self.cap.max_recv_wr = max_recv_wr
         self.cap.max_send_sge = max_send_sge
@@ -83,9 +84,9 @@ cdef class QPCap(PyverbsObject):
 
 
 cdef class QPInitAttr(PyverbsObject):
-    def __cinit__(self, qp_type=e.IBV_QPT_UD, qp_context=None,
-                  PyverbsObject scq=None, PyverbsObject rcq=None,
-                  object srq=None, QPCap cap=None, sq_sig_all=1):
+    def __init__(self, qp_type=e.IBV_QPT_UD, qp_context=None,
+                 PyverbsObject scq=None, PyverbsObject rcq=None,
+                 SRQ srq=None, QPCap cap=None, sq_sig_all=1):
         """
         Initializes a QpInitAttr object representing ibv_qp_init_attr struct.
         Note that SRQ object is not yet supported in pyverbs so can't be passed
@@ -94,19 +95,20 @@ cdef class QPInitAttr(PyverbsObject):
         :param qp_context: Associated QP context
         :param scq: Send CQ to be used for this QP
         :param rcq: Receive CQ to be used for this QP
-        :param srq: Not yet supported
+        :param srq: Shared receive queue to be used as RQ in QP
         :param cap: A QPCap object
         :param sq_sig_all: If set, each send WR will generate a completion
                            entry
         :return: A QpInitAttr object
         """
+        super().__init__()
         _copy_caps(cap, self)
         self.attr.qp_context = <void*>qp_context
         if scq is not None:
             if type(scq) is CQ:
-                self.attr.send_cq = (<CQ>rcq).cq
+                self.attr.send_cq = (<CQ>scq).cq
             elif type(scq) is CQEX:
-                self.attr.send_cq = (<CQEX>rcq).ibv_cq
+                self.attr.send_cq = (<CQEX>scq).ibv_cq
             else:
                 raise PyverbsUserError('Expected CQ/CQEX, got {t}'.\
                                        format(t=type(scq)))
@@ -121,10 +123,10 @@ cdef class QPInitAttr(PyverbsObject):
                 raise PyverbsUserError('Expected CQ/CQEX, got {t}'.\
                                        format(t=type(rcq)))
         self.rcq = rcq
-
-        self.attr.srq = NULL  # Until SRQ support is added
         self.attr.qp_type = qp_type
         self.attr.sq_sig_all = sq_sig_all
+        self.srq = srq
+        self.attr.srq = srq.srq if srq else NULL
 
     @property
     def send_cq(self):
@@ -136,6 +138,14 @@ cdef class QPInitAttr(PyverbsObject):
         elif type(val) is CQEX:
             self.attr.send_cq = (<CQEX>val).ibv_cq
         self.scq = val
+
+    @property
+    def srq(self):
+        return self.srq
+    @srq.setter
+    def srq(self, SRQ val):
+        self.attr.srq = <v.ibv_srq*>val.srq
+        self.srq = val
 
     @property
     def recv_cq(self):
@@ -173,6 +183,41 @@ cdef class QPInitAttr(PyverbsObject):
     def sq_sig_all(self, val):
         self.attr.sq_sig_all = val
 
+    @property
+    def max_send_wr(self):
+        return self.attr.cap.max_send_wr
+    @max_send_wr.setter
+    def max_send_wr(self, val):
+        self.attr.cap.max_send_wr = val
+
+    @property
+    def max_recv_wr(self):
+        return self.attr.cap.max_recv_wr
+    @max_recv_wr.setter
+    def max_recv_wr(self, val):
+        self.attr.cap.max_recv_wr = val
+
+    @property
+    def max_send_sge(self):
+        return self.attr.cap.max_send_sge
+    @max_send_sge.setter
+    def max_send_sge(self, val):
+        self.attr.cap.max_send_sge = val
+
+    @property
+    def max_recv_sge(self):
+        return self.attr.cap.max_recv_sge
+    @max_recv_sge.setter
+    def max_recv_sge(self, val):
+        self.attr.cap.max_recv_sge = val
+
+    @property
+    def max_inline_data(self):
+        return self.attr.cap.max_inline_data
+    @max_inline_data.setter
+    def max_inline_data(self, val):
+        self.attr.cap.max_inline_data = val
+
     def __str__(self):
         print_format = '{:20}: {:<20}\n'
         ident_format = '    {:20}: {:<20}\n'
@@ -190,26 +235,26 @@ cdef class QPInitAttr(PyverbsObject):
 
 
 cdef class QPInitAttrEx(PyverbsObject):
-    def __cinit__(self, qp_type=e.IBV_QPT_UD, qp_context=None,
-                  PyverbsObject scq=None, PyverbsObject rcq=None,
-                  object srq=None, QPCap cap=None, sq_sig_all=0, comp_mask=0,
-                  PD pd=None, object xrcd=None, create_flags=0,
-                  max_tso_header=0, source_qpn=0, object hash_conf=None,
-                  object ind_table=None):
+    def __init__(self, qp_type=e.IBV_QPT_UD, qp_context=None,
+                 PyverbsObject scq=None, PyverbsObject rcq=None,
+                 SRQ srq=None, QPCap cap=None, sq_sig_all=0, comp_mask=0,
+                 PD pd=None, XRCD xrcd=None, create_flags=0,
+                 max_tso_header=0, source_qpn=0, object hash_conf=None,
+                 object ind_table=None):
         """
         Initialize a QPInitAttrEx object with user-defined or default values.
         :param qp_type: QP type to be created
         :param qp_context: Associated user context
         :param scq: Send CQ to be used for this QP
         :param rcq: Recv CQ to be used for this QP
-        :param srq: Not yet supported
+        :param srq: Shared receive queue to be used as RQ in QP
         :param cap: A QPCap object
         :param sq_sig_all: If set, each send WR will generate a completion
                            entry
         :param comp_mask: bit mask to determine which of the following fields
                           are valid
         :param pd: A PD object to be associated with this QP
-        :param xrcd: Not yet supported
+        :param xrcd: XRC domain to be used for XRC QPs
         :param create_flags: Creation flags for this QP
         :param max_tso_header: Maximum TSO header size
         :param source_qpn: Source QP number (requires IBV_QP_CREATE_SOURCE_QPN
@@ -218,12 +263,13 @@ cdef class QPInitAttrEx(PyverbsObject):
         :param ind_table: Not yet supported
         :return: An initialized QPInitAttrEx object
         """
+        super().__init__()
         _copy_caps(cap, self)
         if scq is not None:
             if type(scq) is CQ:
-                self.attr.send_cq = (<CQ>rcq).cq
+                self.attr.send_cq = (<CQ>scq).cq
             elif type(scq) is CQEX:
-                self.attr.send_cq = (<CQEX>rcq).ibv_cq
+                self.attr.send_cq = (<CQEX>scq).ibv_cq
             else:
                 raise PyverbsUserError('Expected CQ/CQEX, got {t}'.\
                                        format(t=type(scq)))
@@ -239,18 +285,20 @@ cdef class QPInitAttrEx(PyverbsObject):
                                        format(t=type(rcq)))
         self.rcq = rcq
 
-        self.attr.srq = NULL  # Until SRQ support is added
-        self.attr.xrcd = NULL  # Until XRCD support is added
+        self.srq = srq
+        self.attr.srq = srq.srq if srq else NULL
+        self.xrcd = xrcd
+        self.attr.xrcd = xrcd.xrcd if xrcd else NULL
         self.attr.rwq_ind_tbl = NULL  # Until RSS support is added
         self.attr.qp_type = qp_type
         self.attr.sq_sig_all = sq_sig_all
-        unsupp_flags = e.IBV_QP_INIT_ATTR_XRCD | e.IBV_QP_INIT_ATTR_IND_TABLE |\
-                       e.IBV_QP_INIT_ATTR_RX_HASH
+        unsupp_flags = e.IBV_QP_INIT_ATTR_IND_TABLE | e.IBV_QP_INIT_ATTR_RX_HASH
         if comp_mask & unsupp_flags:
-            raise PyverbsUserError('XRCD and RSS are not yet supported in pyverbs')
+            raise PyverbsUserError('RSS is not yet supported in pyverbs')
         self.attr.comp_mask = comp_mask
         if pd is not None:
-            self.pd = pd
+            self._pd = pd
+            self.attr.pd = pd.pd
         self.attr.create_flags = create_flags
         self.attr.max_tso_header = max_tso_header
         self.attr.source_qpn = source_qpn
@@ -311,11 +359,27 @@ cdef class QPInitAttrEx(PyverbsObject):
 
     @property
     def pd(self):
-        return self.pd
+        return self._pd
     @pd.setter
     def pd(self, PD val):
         self.attr.pd = <v.ibv_pd*>val.pd
-        self.pd = val
+        self._pd = val
+
+    @property
+    def xrcd(self):
+        return self.xrcd
+    @xrcd.setter
+    def xrcd(self, XRCD val):
+        self.attr.xrcd = <v.ibv_xrcd*>val.xrcd
+        self.xrcd = val
+
+    @property
+    def srq(self):
+        return self.srq
+    @srq.setter
+    def srq(self, SRQ val):
+        self.attr.srq = <v.ibv_srq*>val.srq
+        self.srq = val
 
     @property
     def create_flags(self):
@@ -337,6 +401,41 @@ cdef class QPInitAttrEx(PyverbsObject):
     @source_qpn.setter
     def source_qpn(self, val):
         self.attr.source_qpn = val
+
+    @property
+    def max_send_wr(self):
+        return self.attr.cap.max_send_wr
+    @max_send_wr.setter
+    def max_send_wr(self, val):
+        self.attr.cap.max_send_wr = val
+
+    @property
+    def max_recv_wr(self):
+        return self.attr.cap.max_recv_wr
+    @max_recv_wr.setter
+    def max_recv_wr(self, val):
+        self.attr.cap.max_recv_wr = val
+
+    @property
+    def max_send_sge(self):
+        return self.attr.cap.max_send_sge
+    @max_send_sge.setter
+    def max_send_sge(self, val):
+        self.attr.cap.max_send_sge = val
+
+    @property
+    def max_recv_sge(self):
+        return self.attr.cap.max_recv_sge
+    @max_recv_sge.setter
+    def max_recv_sge(self, val):
+        self.attr.cap.max_recv_sge = val
+
+    @property
+    def max_inline_data(self):
+        return self.attr.cap.max_inline_data
+    @max_inline_data.setter
+    def max_inline_data(self, val):
+        self.attr.cap.max_inline_data = val
 
     def mask_to_str(self, mask):
         comp_masks = {1: 'PD', 2: 'XRCD', 4: 'Create Flags',
@@ -385,8 +484,8 @@ cdef class QPInitAttrEx(PyverbsObject):
 
 
 cdef class QPAttr(PyverbsObject):
-    def __cinit__(self, qp_state=e.IBV_QPS_INIT, cur_qp_state=e.IBV_QPS_RESET,
-                  port_num=1, path_mtu=e.IBV_MTU_1024):
+    def __init__(self, qp_state=e.IBV_QPS_INIT, cur_qp_state=e.IBV_QPS_RESET,
+                 port_num=1, path_mtu=e.IBV_MTU_1024):
         """
         Initializes a QPQttr object which represents ibv_qp_attr structs. It
         can be used to modify a QP.
@@ -395,6 +494,7 @@ cdef class QPAttr(PyverbsObject):
         :param cur_qp_state: Current QP state
         :return: An initialized QpAttr object
         """
+        super().__init__()
         self.attr.qp_state = qp_state
         self.attr.cur_qp_state = cur_qp_state
         self.attr.port_num = port_num
@@ -487,6 +587,7 @@ cdef class QPAttr(PyverbsObject):
         else:
             gr = None
         ah = AHAttr(dlid=self.attr.ah_attr.dlid, sl=self.attr.ah_attr.sl,
+                    port_num=self.attr.ah_attr.port_num,
                     src_path_bits=self.attr.ah_attr.src_path_bits,
                     static_rate=self.attr.ah_attr.static_rate,
                     is_global=self.attr.ah_attr.is_global, gr=gr)
@@ -510,6 +611,7 @@ cdef class QPAttr(PyverbsObject):
         else:
             gr = None
         ah = AHAttr(dlid=self.attr.alt_ah_attr.dlid,
+                    port_num=self.attr.ah_attr.port_num,
                     sl=self.attr.alt_ah_attr.sl,
                     src_path_bits=self.attr.alt_ah_attr.src_path_bits,
                     static_rate=self.attr.alt_ah_attr.static_rate,
@@ -756,8 +858,8 @@ cdef class QPAttr(PyverbsObject):
 
 
 cdef class QP(PyverbsCM):
-    def __cinit__(self, object creator not None, object init_attr not None,
-                  QPAttr qp_attr=None):
+    def __init__(self, object creator not None, object init_attr not None,
+                 QPAttr qp_attr=None):
         """
         Initializes a QP object and performs state transitions according to
         user request.
@@ -781,29 +883,42 @@ cdef class QP(PyverbsCM):
         """
         cdef PD pd
         cdef Context ctx
+        super().__init__()
         self.update_cqs(init_attr)
-        # In order to use cdef'd methods, a proper casting must be done, let's
-        # infer the type.
-        if type(creator) == Context:
-            self._create_qp_ex(creator, init_attr)
-            ctx = <Context>creator
-            self.context = ctx
-            ctx.add_ref(self)
-            if init_attr.pd is not None:
-                pd = <PD>init_attr.pd
-                pd.add_ref(self)
-                self.pd = pd
-        else:
-            self._create_qp(creator, init_attr)
-            pd = <PD>creator
-            self.pd = pd
-            pd.add_ref(self)
-            self.context = None
+        # QP initialization was not done by the provider, we should do it here
         if self.qp == NULL:
-            raise PyverbsRDMAErrno('Failed to create QP')
+            # In order to use cdef'd methods, a proper casting must be done,
+            # let's infer the type.
+            if issubclass(type(creator), Context):
+                self._create_qp_ex(creator, init_attr)
+                if self.qp == NULL:
+                    raise PyverbsRDMAErrno('Failed to create QP')
+                ctx = <Context>creator
+                self.context = ctx
+                ctx.add_ref(self)
+                if init_attr.pd is not None:
+                    pd = <PD>init_attr.pd
+                    pd.add_ref(self)
+                    self.pd = pd
+                if init_attr.xrcd is not None:
+                    xrcd = <XRCD>init_attr.xrcd
+                    xrcd.add_ref(self)
+                    self.xrcd = xrcd
+
+            else:
+                self._create_qp(creator, init_attr)
+                if self.qp == NULL:
+                    raise PyverbsRDMAErrno('Failed to create QP')
+                pd = <PD>creator
+                self.pd = pd
+                pd.add_ref(self)
+                self.context = None
+
         if qp_attr is not None:
             funcs = {e.IBV_QPT_RC: self.to_init, e.IBV_QPT_UC: self.to_init,
                      e.IBV_QPT_UD: self.to_rts,
+                     e.IBV_QPT_XRC_RECV: self.to_init,
+                     e.IBV_QPT_XRC_SEND: self.to_init,
                      e.IBV_QPT_RAW_PACKET: self.to_rts}
             funcs[self.qp.qp_type](qp_attr)
 
@@ -814,18 +929,20 @@ cdef class QP(PyverbsCM):
             if type(init_attr.send_cq) == CQ:
                 cq = <CQ>init_attr.send_cq
                 cq.add_ref(self)
+                self.scq = cq
             else:
                 cqex = <CQEX>init_attr.send_cq
                 cqex.add_ref(self)
-            self.scq = cq
+                self.scq = cqex
         if init_attr.send_cq != init_attr.recv_cq and init_attr.recv_cq is not None:
             if type(init_attr.recv_cq) == CQ:
                 cq = <CQ>init_attr.recv_cq
                 cq.add_ref(self)
+                self.rcq = cq
             else:
                 cqex = <CQEX>init_attr.recv_cq
                 cqex.add_ref(self)
-            self.rcq = cq
+                self.rcq = cqex
 
     def _create_qp(self, PD pd, QPInitAttr attr):
         self.qp = v.ibv_create_qp(pd.pd, &attr.attr)
@@ -865,7 +982,22 @@ cdef class QP(PyverbsCM):
                                e.IBV_QP_QKEY, 'RTR': 0,
                                'RTS': e.IBV_QP_SQ_PSN},
                 e.IBV_QPT_RAW_PACKET: {'INIT': e.IBV_QP_PORT, 'RTR': 0,
-                                       'RTS': 0}}
+                                       'RTS': 0},
+                e.IBV_QPT_XRC_RECV: {'INIT': e.IBV_QP_PKEY_INDEX |\
+                                e.IBV_QP_PORT | e.IBV_QP_ACCESS_FLAGS,
+                                'RTR': e.IBV_QP_AV | e.IBV_QP_PATH_MTU |\
+                                e.IBV_QP_DEST_QPN | e.IBV_QP_RQ_PSN |   \
+                                e.IBV_QP_MAX_DEST_RD_ATOMIC |\
+                                e.IBV_QP_MIN_RNR_TIMER,
+                                'RTS': e.IBV_QP_TIMEOUT | e.IBV_QP_SQ_PSN },
+                e.IBV_QPT_XRC_SEND: {'INIT': e.IBV_QP_PKEY_INDEX |\
+                                e.IBV_QP_PORT | e.IBV_QP_ACCESS_FLAGS,
+                                'RTR': e.IBV_QP_AV | e.IBV_QP_PATH_MTU |\
+                                e.IBV_QP_DEST_QPN | e.IBV_QP_RQ_PSN,
+                                'RTS': e.IBV_QP_TIMEOUT |\
+                                e.IBV_QP_RETRY_CNT | e.IBV_QP_RNR_RETRY |\
+                                e.IBV_QP_SQ_PSN | e.IBV_QP_MAX_QP_RD_ATOMIC}}
+
         return masks[self.qp.qp_type][dst] | e.IBV_QP_STATE
 
     def to_init(self, QPAttr qp_attr):

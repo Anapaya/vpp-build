@@ -140,6 +140,42 @@ vlib_buffer_copy_indices (u32 * dst, u32 * src, u32 n_indices)
     }
 }
 
+always_inline void
+vlib_buffer_copy_indices_from_ring (u32 * dst, u32 * ring, u32 start,
+				    u32 ring_size, u32 n_buffers)
+{
+  ASSERT (n_buffers <= ring_size);
+
+  if (PREDICT_TRUE (start + n_buffers <= ring_size))
+    {
+      vlib_buffer_copy_indices (dst, ring + start, n_buffers);
+    }
+  else
+    {
+      u32 n = ring_size - start;
+      vlib_buffer_copy_indices (dst, ring + start, n);
+      vlib_buffer_copy_indices (dst + n, ring, n_buffers - n);
+    }
+}
+
+always_inline void
+vlib_buffer_copy_indices_to_ring (u32 * ring, u32 * src, u32 start,
+				  u32 ring_size, u32 n_buffers)
+{
+  ASSERT (n_buffers <= ring_size);
+
+  if (PREDICT_TRUE (start + n_buffers <= ring_size))
+    {
+      vlib_buffer_copy_indices (ring + start, src, n_buffers);
+    }
+  else
+    {
+      u32 n = ring_size - start;
+      vlib_buffer_copy_indices (ring + start, src, n);
+      vlib_buffer_copy_indices (ring, src + n, n_buffers - n);
+    }
+}
+
 STATIC_ASSERT_OFFSET_OF (vlib_buffer_t, template_end, 64);
 static_always_inline void
 vlib_buffer_copy_template (vlib_buffer_t * b, vlib_buffer_t * bt)
@@ -474,6 +510,13 @@ vlib_buffer_is_known (vlib_main_t * vm, u32 buffer_index)
 u8 *vlib_validate_buffer (vlib_main_t * vm, u32 buffer_index,
 			  uword follow_chain);
 
+u8 *vlib_validate_buffers (vlib_main_t * vm,
+			   u32 * buffers,
+			   uword next_buffer_stride,
+			   uword n_buffers,
+			   vlib_buffer_known_state_t known_state,
+			   uword follow_buffer_next);
+
 static_always_inline vlib_buffer_pool_t *
 vlib_get_buffer_pool (vlib_main_t * vm, u8 buffer_pool_index)
 {
@@ -491,19 +534,19 @@ vlib_buffer_pool_get (vlib_main_t * vm, u8 buffer_pool_index, u32 * buffers,
   ASSERT (bp->buffers);
 
   clib_spinlock_lock (&bp->lock);
-  len = vec_len (bp->buffers);
+  len = bp->n_avail;
   if (PREDICT_TRUE (n_buffers < len))
     {
       len -= n_buffers;
       vlib_buffer_copy_indices (buffers, bp->buffers + len, n_buffers);
-      _vec_len (bp->buffers) = len;
+      bp->n_avail = len;
       clib_spinlock_unlock (&bp->lock);
       return n_buffers;
     }
   else
     {
       vlib_buffer_copy_indices (buffers, bp->buffers, len);
-      _vec_len (bp->buffers) = 0;
+      bp->n_avail = 0;
       clib_spinlock_unlock (&bp->lock);
       return len;
     }
@@ -528,19 +571,42 @@ vlib_buffer_alloc_from_pool (vlib_main_t * vm, u32 * buffers, u32 n_buffers,
   vlib_buffer_pool_thread_t *bpt;
   u32 *src, *dst, len, n_left;
 
+  /* If buffer allocation fault injection is configured */
+  if (VLIB_BUFFER_ALLOC_FAULT_INJECTOR > 0)
+    {
+      u32 vlib_buffer_alloc_may_fail (vlib_main_t *, u32);
+
+      /* See how many buffers we're willing to allocate */
+      n_buffers = vlib_buffer_alloc_may_fail (vm, n_buffers);
+      if (n_buffers == 0)
+	return (n_buffers);
+    }
+
   bp = vec_elt_at_index (bm->buffer_pools, buffer_pool_index);
   bpt = vec_elt_at_index (bp->threads, vm->thread_index);
 
   dst = buffers;
   n_left = n_buffers;
-  len = vec_len (bpt->cached_buffers);
+  len = bpt->n_cached;
 
   /* per-thread cache contains enough buffers */
   if (len >= n_buffers)
     {
       src = bpt->cached_buffers + len - n_buffers;
       vlib_buffer_copy_indices (dst, src, n_buffers);
-      _vec_len (bpt->cached_buffers) -= n_buffers;
+      bpt->n_cached -= n_buffers;
+
+      if (CLIB_DEBUG > 0)
+	vlib_buffer_validate_alloc_free (vm, buffers, n_buffers,
+					 VLIB_BUFFER_KNOWN_FREE);
+      return n_buffers;
+    }
+
+  /* alloc bigger than cache - take buffers directly from main pool */
+  if (n_buffers >= VLIB_BUFFER_POOL_PER_THREAD_CACHE_SZ)
+    {
+      n_buffers = vlib_buffer_pool_get (vm, buffer_pool_index, buffers,
+					n_buffers);
 
       if (CLIB_DEBUG > 0)
 	vlib_buffer_validate_alloc_free (vm, buffers, n_buffers,
@@ -552,23 +618,22 @@ vlib_buffer_alloc_from_pool (vlib_main_t * vm, u32 * buffers, u32 n_buffers,
   if (len)
     {
       vlib_buffer_copy_indices (dst, bpt->cached_buffers, len);
-      _vec_len (bpt->cached_buffers) = 0;
+      bpt->n_cached = 0;
       dst += len;
       n_left -= len;
     }
 
   len = round_pow2 (n_left, 32);
-  vec_validate_aligned (bpt->cached_buffers, len - 1, CLIB_CACHE_LINE_BYTES);
   len = vlib_buffer_pool_get (vm, buffer_pool_index, bpt->cached_buffers,
 			      len);
-  _vec_len (bpt->cached_buffers) = len;
+  bpt->n_cached = len;
 
   if (len)
     {
       u32 n_copy = clib_min (len, n_left);
       src = bpt->cached_buffers + len - n_copy;
       vlib_buffer_copy_indices (dst, src, n_copy);
-      _vec_len (bpt->cached_buffers) -= n_copy;
+      bpt->n_cached -= n_copy;
       n_left -= n_copy;
     }
 
@@ -681,26 +746,33 @@ vlib_buffer_pool_put (vlib_main_t * vm, u8 buffer_pool_index,
 		      u32 * buffers, u32 n_buffers)
 {
   vlib_buffer_pool_t *bp = vlib_get_buffer_pool (vm, buffer_pool_index);
-  vlib_buffer_pool_thread_t *bpt =
-    vec_elt_at_index (bp->threads, vm->thread_index);
+  vlib_buffer_pool_thread_t *bpt = vec_elt_at_index (bp->threads,
+						     vm->thread_index);
+  u32 n_cached, n_empty;
 
   if (CLIB_DEBUG > 0)
     vlib_buffer_validate_alloc_free (vm, buffers, n_buffers,
 				     VLIB_BUFFER_KNOWN_ALLOCATED);
 
-  vec_add_aligned (bpt->cached_buffers, buffers, n_buffers,
-		   CLIB_CACHE_LINE_BYTES);
-
-  if (vec_len (bpt->cached_buffers) > 4 * VLIB_FRAME_SIZE)
+  n_cached = bpt->n_cached;
+  n_empty = VLIB_BUFFER_POOL_PER_THREAD_CACHE_SZ - n_cached;
+  if (n_buffers <= n_empty)
     {
-      clib_spinlock_lock (&bp->lock);
-      /* keep last stored buffers, as they are more likely hot in the cache */
-      vec_add_aligned (bp->buffers, bpt->cached_buffers, VLIB_FRAME_SIZE,
-		       CLIB_CACHE_LINE_BYTES);
-      vec_delete (bpt->cached_buffers, VLIB_FRAME_SIZE, 0);
-      bpt->n_alloc -= VLIB_FRAME_SIZE;
-      clib_spinlock_unlock (&bp->lock);
+      vlib_buffer_copy_indices (bpt->cached_buffers + n_cached,
+				buffers, n_buffers);
+      bpt->n_cached = n_cached + n_buffers;
+      return;
     }
+
+  vlib_buffer_copy_indices (bpt->cached_buffers + n_cached,
+			    buffers + n_buffers - n_empty, n_empty);
+  bpt->n_cached = VLIB_BUFFER_POOL_PER_THREAD_CACHE_SZ;
+
+  clib_spinlock_lock (&bp->lock);
+  vlib_buffer_copy_indices (bp->buffers + bp->n_avail, buffers,
+			    n_buffers - n_empty);
+  bp->n_avail += n_buffers - n_empty;
+  clib_spinlock_unlock (&bp->lock);
 }
 
 static_always_inline void

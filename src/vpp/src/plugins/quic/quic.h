@@ -24,6 +24,9 @@
 
 #include <quicly.h>
 
+#include <vnet/crypto/crypto.h>
+#include <vppinfra/lock.h>
+
 /* QUIC log levels
  * 1 - errors
  * 2 - connection/stream events
@@ -40,6 +43,14 @@
 #define QUIC_INT_MAX  0x3FFFFFFFFFFFFFFF
 #define QUIC_DEFAULT_FIFO_SIZE (64 << 10)
 #define QUIC_SEND_PACKET_VEC_SIZE 16
+#define QUIC_IV_LEN 17
+
+#define QUIC_MAX_COALESCED_PACKET 4
+
+#define QUIC_SEND_MAX_BATCH_PACKETS 16
+#define QUIC_RCV_MAX_BATCH_PACKETS 16
+
+#define QUIC_DEFAULT_CONN_TIMEOUT (30 * 1000)	/* 30 seconds */
 
 /* Taken from quicly.c */
 #define QUICLY_QUIC_BIT 0x40
@@ -57,6 +68,10 @@
 #define QUIC_APP_ACCEPT_NOTIFY_ERROR QUICLY_ERROR_FROM_APPLICATION_ERROR_CODE(0x2)
 #define QUIC_APP_CONNECT_NOTIFY_ERROR QUICLY_ERROR_FROM_APPLICATION_ERROR_CODE(0x3)
 
+#define QUIC_DECRYPT_PACKET_OK 0
+#define QUIC_DECRYPT_PACKET_NOTOFFLOADED 1
+#define QUIC_DECRYPT_PACKET_ERROR 2
+
 #if QUIC_DEBUG
 #define QUIC_DBG(_lvl, _fmt, _args...)   \
   if (_lvl <= QUIC_DEBUG)                \
@@ -64,6 +79,23 @@
 #else
 #define QUIC_DBG(_lvl, _fmt, _args...)
 #endif
+
+#if CLIB_ASSERT_ENABLE
+#define QUIC_ASSERT(truth) ASSERT (truth)
+#else
+#define QUIC_ASSERT(truth)                        \
+  do {                                            \
+    if (PREDICT_FALSE (! (truth)))                \
+      QUIC_ERR ("ASSERT(%s) failed", # truth);    \
+  } while (0)
+#endif
+
+#define QUIC_ERR(_fmt, _args...)                \
+  do {                                          \
+    clib_warning ("QUIC-ERR: " _fmt, ##_args);  \
+  } while (0)
+
+
 
 extern vlib_node_registration_t quic_input_node;
 
@@ -86,6 +118,15 @@ typedef enum quic_ctx_conn_state_
   QUIC_CONN_STATE_ACTIVE_CLOSING,
 } quic_ctx_conn_state_t;
 
+typedef enum quic_packet_type_
+{
+  QUIC_PACKET_TYPE_NONE,
+  QUIC_PACKET_TYPE_RECEIVE,
+  QUIC_PACKET_TYPE_MIGRATE,
+  QUIC_PACKET_TYPE_ACCEPT,
+  QUIC_PACKET_TYPE_RESET,
+  QUIC_PACKET_TYPE_DROP,
+} quic_packet_type_t;
 
 typedef enum quic_ctx_flags_
 {
@@ -113,6 +154,7 @@ typedef struct quic_ctx_
     struct
     {	      /** STREAM ctx case */
       quicly_stream_t *stream;
+      u64 bytes_written;
       u32 quic_connection_ctx_id;
       u8 _sctx_end_marker;	/* Leave this at the end */
     };
@@ -121,7 +163,18 @@ typedef struct quic_ctx_
   u32 timer_handle;
   u32 parent_app_wrk_id;
   u32 parent_app_id;
+  u32 ckpair_index;
+  u32 crypto_engine;
+  u32 crypto_context_index;
   u8 flags;
+
+  struct
+  {
+    ptls_cipher_context_t *hp_ctx;
+    ptls_aead_context_t *aead_ctx;
+  } ingress_keys;
+  int key_phase_ingress;
+
 } quic_ctx_t;
 
 /* Make sure our custom fields don't overlap with the fields we use in
@@ -133,12 +186,6 @@ STATIC_ASSERT (offsetof (quic_ctx_t, _qctx_end_marker) <=
 STATIC_ASSERT (offsetof (quic_ctx_t, _sctx_end_marker) <=
 	       TRANSPORT_CONN_ID_LEN,
 	       "connection data must be less than TRANSPORT_CONN_ID_LEN bytes");
-
-typedef enum quic_crypto_engine_
-{
-  CRYPTO_ENGINE_VPP,
-  CRYPTO_ENGINE_PICOTLS,
-} quic_crypto_engine_t;
 
 /* single-entry session cache */
 typedef struct quic_session_cache_
@@ -152,38 +199,86 @@ typedef struct quic_stream_data_
 {
   u32 ctx_id;
   u32 thread_index;
-  u32 app_rx_data_len;		/* bytes received, to be read by external app */
+  u32 app_rx_data_len;		/**< bytes received, to be read by external app */
+  u32 app_tx_data_len;		/**< bytes sent */
 } quic_stream_data_t;
+
+typedef struct quic_crypto_context_data_
+{
+  quicly_context_t quicly_ctx;
+  char cid_key[QUIC_IV_LEN];
+  ptls_context_t ptls_ctx;
+} quic_crypto_context_data_t;
+
+typedef struct quic_encrypt_cb_ctx_
+{
+  quicly_datagram_t *packet;
+  struct quic_finalize_send_packet_cb_ctx_
+  {
+    size_t payload_from;
+    size_t first_byte_at;
+    ptls_cipher_context_t *hp;
+  } snd_ctx[QUIC_MAX_COALESCED_PACKET];
+  size_t snd_ctx_count;
+} quic_encrypt_cb_ctx;
+
+typedef struct quic_crypto_batch_ctx_
+{
+  vnet_crypto_op_t aead_crypto_tx_packets_ops[QUIC_SEND_MAX_BATCH_PACKETS],
+    aead_crypto_rx_packets_ops[QUIC_RCV_MAX_BATCH_PACKETS];
+  size_t nb_tx_packets, nb_rx_packets;
+} quic_crypto_batch_ctx_t;
 
 typedef struct quic_worker_ctx_
 {
   CLIB_CACHE_LINE_ALIGN_MARK (cacheline0);
   int64_t time_now;				   /**< worker time */
   tw_timer_wheel_1t_3w_1024sl_ov_t timer_wheel;	   /**< worker timer wheel */
-  u32 *opening_ctx_pool;
+  quicly_cid_plaintext_t next_cid;
+  crypto_context_t *crypto_ctx_pool;		/**< per thread pool of crypto contexes */
+  clib_bihash_24_8_t crypto_context_hash;	/**< per thread [params:crypto_ctx_index] hash */
+  quic_crypto_batch_ctx_t crypto_context_batch;
 } quic_worker_ctx_t;
+
+typedef struct quic_rx_packet_ctx_
+{
+  quicly_decoded_packet_t packet;
+  u8 data[QUIC_MAX_PACKET_SIZE];
+  u32 ctx_index;
+  u32 thread_index;
+  union
+  {
+    struct sockaddr sa;
+    struct sockaddr_in6 sa6;
+  };
+  socklen_t salen;
+  u8 ptype;
+  session_dgram_hdr_t ph;
+} quic_rx_packet_ctx_t;
 
 typedef struct quic_main_
 {
   u32 app_index;
   quic_ctx_t **ctx_pool;
   quic_worker_ctx_t *wrk_ctx;
-  clib_bihash_16_8_t connection_hash;	/* quic connection id -> conn handle */
+  clib_bihash_16_8_t connection_hash;	/**< quic connection id -> conn handle */
   f64 tstamp_ticks_per_clock;
 
-  ptls_cipher_suite_t ***quic_ciphers;	/* available ciphers by crypto engine */
-  u8 default_cipher;
+  ptls_cipher_suite_t ***quic_ciphers;	/**< available ciphers by crypto engine */
+  uword *available_crypto_engines;	/**< Bitmap for registered engines */
+  u8 default_crypto_engine;		/**< Used if you do connect with CRYPTO_ENGINE_NONE (0) */
+  u64 max_packets_per_key;		/**< number of packets that can be sent without a key update */
+
+  ptls_handshake_properties_t hs_properties;
   quic_session_cache_t session_cache;
 
-  /*
-   * Config
-   */
-  quicly_context_t quicly_ctx;
-  ptls_handshake_properties_t hs_properties;
-  quicly_cid_plaintext_t next_cid;
+  u32 udp_fifo_size;
+  u32 udp_fifo_prealloc;
+  u32 connection_timeout;
 
-  u64 udp_fifo_size;
-  u64 udp_fifo_prealloc;
+  u8 vnet_crypto_enabled;
+
+  clib_rwlock_t crypto_keys_quic_rw_lock;
 } quic_main_t;
 
 #endif /* __included_quic_h__ */

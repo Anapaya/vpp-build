@@ -1,5 +1,5 @@
 /*
- * VLIB API definitions 2020-06-13 05:56:04
+ * VLIB API definitions 2020-06-30 12:39:07
  * Input file: sr_mpls.api
  * Automatically generated: please edit the input file NOT this file!
  */
@@ -16,6 +16,12 @@
 #endif
 
 #define VL_API_PACKED(x) x __attribute__ ((packed))
+/* Imported API files */
+#ifndef vl_api_version
+#include <vnet/interface_types.api.h>
+#include <vnet/ip/ip_types.api.h>
+#include <vnet/srv6/sr_types.api.h>
+#endif
 
 /****** Message ID / handler enum ******/
 
@@ -49,146 +55,34 @@ vl_msg_name(vl_api_sr_mpls_policy_assign_endpoint_color_reply_t, 1)
 
 #ifdef vl_msg_name_crc_list
 #define foreach_vl_msg_name_crc_sr_mpls \
-_(VL_API_SR_MPLS_POLICY_ADD, sr_mpls_policy_add, 6f5b21cc) \
+_(VL_API_SR_MPLS_POLICY_ADD, sr_mpls_policy_add, a1a70c70) \
 _(VL_API_SR_MPLS_POLICY_ADD_REPLY, sr_mpls_policy_add_reply, e8d4e804) \
-_(VL_API_SR_MPLS_POLICY_MOD, sr_mpls_policy_mod, 09d338ac) \
+_(VL_API_SR_MPLS_POLICY_MOD, sr_mpls_policy_mod, 88482c17) \
 _(VL_API_SR_MPLS_POLICY_MOD_REPLY, sr_mpls_policy_mod_reply, e8d4e804) \
 _(VL_API_SR_MPLS_POLICY_DEL, sr_mpls_policy_del, e29d34fa) \
 _(VL_API_SR_MPLS_POLICY_DEL_REPLY, sr_mpls_policy_del_reply, e8d4e804) \
-_(VL_API_SR_MPLS_STEERING_ADD_DEL, sr_mpls_steering_add_del, 1591f94a) \
+_(VL_API_SR_MPLS_STEERING_ADD_DEL, sr_mpls_steering_add_del, 7d1b0a0b) \
 _(VL_API_SR_MPLS_STEERING_ADD_DEL_REPLY, sr_mpls_steering_add_del_reply, e8d4e804) \
-_(VL_API_SR_MPLS_POLICY_ASSIGN_ENDPOINT_COLOR, sr_mpls_policy_assign_endpoint_color, 6c82a6da) \
+_(VL_API_SR_MPLS_POLICY_ASSIGN_ENDPOINT_COLOR, sr_mpls_policy_assign_endpoint_color, 5e1c5c13) \
 _(VL_API_SR_MPLS_POLICY_ASSIGN_ENDPOINT_COLOR_REPLY, sr_mpls_policy_assign_endpoint_color_reply, e8d4e804) 
 #endif
-
 /****** Typedefs ******/
 
 #ifdef vl_typedefs
-#ifndef included_sr_mpls_api
-#define included_sr_mpls_api
-#ifndef _vl_api_defined_sr_mpls_policy_add
-#define _vl_api_defined_sr_mpls_policy_add
-typedef VL_API_PACKED(struct _vl_api_sr_mpls_policy_add {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u32 bsid;
-    u32 weight;
-    u8 type;
-    u8 n_segments;
-    u32 segments[0];
-}) vl_api_sr_mpls_policy_add_t;
+#include "sr_mpls.api_types.h"
 #endif
-
-#ifndef _vl_api_defined_sr_mpls_policy_add_reply
-#define _vl_api_defined_sr_mpls_policy_add_reply
-typedef VL_API_PACKED(struct _vl_api_sr_mpls_policy_add_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_sr_mpls_policy_add_reply_t;
-#endif
-
-#ifndef _vl_api_defined_sr_mpls_policy_mod
-#define _vl_api_defined_sr_mpls_policy_mod
-typedef VL_API_PACKED(struct _vl_api_sr_mpls_policy_mod {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u32 bsid;
-    u8 operation;
-    u32 sl_index;
-    u32 weight;
-    u8 n_segments;
-    u32 segments[0];
-}) vl_api_sr_mpls_policy_mod_t;
-#endif
-
-#ifndef _vl_api_defined_sr_mpls_policy_mod_reply
-#define _vl_api_defined_sr_mpls_policy_mod_reply
-typedef VL_API_PACKED(struct _vl_api_sr_mpls_policy_mod_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_sr_mpls_policy_mod_reply_t;
-#endif
-
-#ifndef _vl_api_defined_sr_mpls_policy_del
-#define _vl_api_defined_sr_mpls_policy_del
-typedef VL_API_PACKED(struct _vl_api_sr_mpls_policy_del {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u32 bsid;
-}) vl_api_sr_mpls_policy_del_t;
-#endif
-
-#ifndef _vl_api_defined_sr_mpls_policy_del_reply
-#define _vl_api_defined_sr_mpls_policy_del_reply
-typedef VL_API_PACKED(struct _vl_api_sr_mpls_policy_del_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_sr_mpls_policy_del_reply_t;
-#endif
-
-#ifndef _vl_api_defined_sr_mpls_steering_add_del
-#define _vl_api_defined_sr_mpls_steering_add_del
-typedef VL_API_PACKED(struct _vl_api_sr_mpls_steering_add_del {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u8 is_del;
-    u32 bsid;
-    u32 table_id;
-    u8 prefix_addr[16];
-    u32 mask_width;
-    u8 traffic_type;
-    u8 next_hop[16];
-    u8 nh_type;
-    u32 color;
-    u8 co_bits;
-    u32 vpn_label;
-}) vl_api_sr_mpls_steering_add_del_t;
-#endif
-
-#ifndef _vl_api_defined_sr_mpls_steering_add_del_reply
-#define _vl_api_defined_sr_mpls_steering_add_del_reply
-typedef VL_API_PACKED(struct _vl_api_sr_mpls_steering_add_del_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_sr_mpls_steering_add_del_reply_t;
-#endif
-
-#ifndef _vl_api_defined_sr_mpls_policy_assign_endpoint_color
-#define _vl_api_defined_sr_mpls_policy_assign_endpoint_color
-typedef VL_API_PACKED(struct _vl_api_sr_mpls_policy_assign_endpoint_color {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u32 bsid;
-    u8 endpoint[16];
-    u8 endpoint_type;
-    u32 color;
-}) vl_api_sr_mpls_policy_assign_endpoint_color_t;
-#endif
-
-#ifndef _vl_api_defined_sr_mpls_policy_assign_endpoint_color_reply
-#define _vl_api_defined_sr_mpls_policy_assign_endpoint_color_reply
-typedef VL_API_PACKED(struct _vl_api_sr_mpls_policy_assign_endpoint_color_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_sr_mpls_policy_assign_endpoint_color_reply_t;
-#endif
-
-
-#endif
-#endif
-
 /****** Print functions *****/
 #ifdef vl_printfun
+#ifndef included_sr_mpls_printfun_types
+#define included_sr_mpls_printfun_types
+
+
+#endif
+#endif /* vl_printfun_types */
+/****** Print functions *****/
+#ifdef vl_printfun
+#ifndef included_sr_mpls_printfun
+#define included_sr_mpls_printfun
 
 #ifdef LP64
 #define _uword_fmt "%lld"
@@ -198,163 +92,179 @@ typedef VL_API_PACKED(struct _vl_api_sr_mpls_policy_assign_endpoint_color_reply 
 #define _uword_cast long
 #endif
 
-#ifndef _vl_api_defined_sr_mpls_policy_add_t_print
-#define _vl_api_defined_sr_mpls_policy_add_t_print
-static inline void *vl_api_sr_mpls_policy_add_t_print (vl_api_sr_mpls_policy_add_t *a,void *handle)
+static inline void *vl_api_sr_mpls_policy_add_t_print (vl_api_sr_mpls_policy_add_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_sr_mpls_policy_add_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "bsid: %u\n", a->bsid);
-    vl_print(handle, "weight: %u\n", a->weight);
-    vl_print(handle, "type: %u\n", a->type);
-    vl_print(handle, "n_segments: %u\n", a->n_segments);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_sr_mpls_policy_add_t: */
+    s = format(s, "vl_api_sr_mpls_policy_add_t:");
+    s = format(s, "\n%Ubsid: %u", format_white_space, indent, a->bsid);
+    s = format(s, "\n%Uweight: %u", format_white_space, indent, a->weight);
+    s = format(s, "\n%Uis_spray: %u", format_white_space, indent, a->is_spray);
+    s = format(s, "\n%Un_segments: %u", format_white_space, indent, a->n_segments);
+    for (i = 0; i < a->n_segments; i++) {
+        s = format(s, "\n%Usegments: %u",
+                   format_white_space, indent, a->segments[i]);
+    }
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_sr_mpls_policy_add_reply_t_print
-#define _vl_api_defined_sr_mpls_policy_add_reply_t_print
-static inline void *vl_api_sr_mpls_policy_add_reply_t_print (vl_api_sr_mpls_policy_add_reply_t *a,void *handle)
+static inline void *vl_api_sr_mpls_policy_add_reply_t_print (vl_api_sr_mpls_policy_add_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_sr_mpls_policy_add_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_sr_mpls_policy_add_reply_t: */
+    s = format(s, "vl_api_sr_mpls_policy_add_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_sr_mpls_policy_mod_t_print
-#define _vl_api_defined_sr_mpls_policy_mod_t_print
-static inline void *vl_api_sr_mpls_policy_mod_t_print (vl_api_sr_mpls_policy_mod_t *a,void *handle)
+static inline void *vl_api_sr_mpls_policy_mod_t_print (vl_api_sr_mpls_policy_mod_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_sr_mpls_policy_mod_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "bsid: %u\n", a->bsid);
-    vl_print(handle, "operation: %u\n", a->operation);
-    vl_print(handle, "sl_index: %u\n", a->sl_index);
-    vl_print(handle, "weight: %u\n", a->weight);
-    vl_print(handle, "n_segments: %u\n", a->n_segments);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_sr_mpls_policy_mod_t: */
+    s = format(s, "vl_api_sr_mpls_policy_mod_t:");
+    s = format(s, "\n%Ubsid: %u", format_white_space, indent, a->bsid);
+    s = format(s, "\n%Uoperation: %U", format_white_space, indent, format_vl_api_sr_policy_op_t, &a->operation, indent);
+    s = format(s, "\n%Usl_index: %u", format_white_space, indent, a->sl_index);
+    s = format(s, "\n%Uweight: %u", format_white_space, indent, a->weight);
+    s = format(s, "\n%Un_segments: %u", format_white_space, indent, a->n_segments);
+    for (i = 0; i < a->n_segments; i++) {
+        s = format(s, "\n%Usegments: %u",
+                   format_white_space, indent, a->segments[i]);
+    }
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_sr_mpls_policy_mod_reply_t_print
-#define _vl_api_defined_sr_mpls_policy_mod_reply_t_print
-static inline void *vl_api_sr_mpls_policy_mod_reply_t_print (vl_api_sr_mpls_policy_mod_reply_t *a,void *handle)
+static inline void *vl_api_sr_mpls_policy_mod_reply_t_print (vl_api_sr_mpls_policy_mod_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_sr_mpls_policy_mod_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_sr_mpls_policy_mod_reply_t: */
+    s = format(s, "vl_api_sr_mpls_policy_mod_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_sr_mpls_policy_del_t_print
-#define _vl_api_defined_sr_mpls_policy_del_t_print
-static inline void *vl_api_sr_mpls_policy_del_t_print (vl_api_sr_mpls_policy_del_t *a,void *handle)
+static inline void *vl_api_sr_mpls_policy_del_t_print (vl_api_sr_mpls_policy_del_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_sr_mpls_policy_del_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "bsid: %u\n", a->bsid);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_sr_mpls_policy_del_t: */
+    s = format(s, "vl_api_sr_mpls_policy_del_t:");
+    s = format(s, "\n%Ubsid: %u", format_white_space, indent, a->bsid);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_sr_mpls_policy_del_reply_t_print
-#define _vl_api_defined_sr_mpls_policy_del_reply_t_print
-static inline void *vl_api_sr_mpls_policy_del_reply_t_print (vl_api_sr_mpls_policy_del_reply_t *a,void *handle)
+static inline void *vl_api_sr_mpls_policy_del_reply_t_print (vl_api_sr_mpls_policy_del_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_sr_mpls_policy_del_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_sr_mpls_policy_del_reply_t: */
+    s = format(s, "vl_api_sr_mpls_policy_del_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_sr_mpls_steering_add_del_t_print
-#define _vl_api_defined_sr_mpls_steering_add_del_t_print
-static inline void *vl_api_sr_mpls_steering_add_del_t_print (vl_api_sr_mpls_steering_add_del_t *a,void *handle)
+static inline void *vl_api_sr_mpls_steering_add_del_t_print (vl_api_sr_mpls_steering_add_del_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_sr_mpls_steering_add_del_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "is_del: %u\n", a->is_del);
-    vl_print(handle, "bsid: %u\n", a->bsid);
-    vl_print(handle, "table_id: %u\n", a->table_id);
-    vl_print(handle, "mask_width: %u\n", a->mask_width);
-    vl_print(handle, "traffic_type: %u\n", a->traffic_type);
-    vl_print(handle, "nh_type: %u\n", a->nh_type);
-    vl_print(handle, "color: %u\n", a->color);
-    vl_print(handle, "co_bits: %u\n", a->co_bits);
-    vl_print(handle, "vpn_label: %u\n", a->vpn_label);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_sr_mpls_steering_add_del_t: */
+    s = format(s, "vl_api_sr_mpls_steering_add_del_t:");
+    s = format(s, "\n%Uis_del: %u", format_white_space, indent, a->is_del);
+    s = format(s, "\n%Ubsid: %u", format_white_space, indent, a->bsid);
+    s = format(s, "\n%Utable_id: %u", format_white_space, indent, a->table_id);
+    s = format(s, "\n%Uprefix: %U", format_white_space, indent, format_vl_api_prefix_t, &a->prefix, indent);
+    s = format(s, "\n%Umask_width: %u", format_white_space, indent, a->mask_width);
+    s = format(s, "\n%Unext_hop: %U", format_white_space, indent, format_vl_api_address_t, &a->next_hop, indent);
+    s = format(s, "\n%Ucolor: %u", format_white_space, indent, a->color);
+    s = format(s, "\n%Uco_bits: %u", format_white_space, indent, a->co_bits);
+    s = format(s, "\n%Uvpn_label: %u", format_white_space, indent, a->vpn_label);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_sr_mpls_steering_add_del_reply_t_print
-#define _vl_api_defined_sr_mpls_steering_add_del_reply_t_print
-static inline void *vl_api_sr_mpls_steering_add_del_reply_t_print (vl_api_sr_mpls_steering_add_del_reply_t *a,void *handle)
+static inline void *vl_api_sr_mpls_steering_add_del_reply_t_print (vl_api_sr_mpls_steering_add_del_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_sr_mpls_steering_add_del_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_sr_mpls_steering_add_del_reply_t: */
+    s = format(s, "vl_api_sr_mpls_steering_add_del_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_sr_mpls_policy_assign_endpoint_color_t_print
-#define _vl_api_defined_sr_mpls_policy_assign_endpoint_color_t_print
-static inline void *vl_api_sr_mpls_policy_assign_endpoint_color_t_print (vl_api_sr_mpls_policy_assign_endpoint_color_t *a,void *handle)
+static inline void *vl_api_sr_mpls_policy_assign_endpoint_color_t_print (vl_api_sr_mpls_policy_assign_endpoint_color_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_sr_mpls_policy_assign_endpoint_color_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "bsid: %u\n", a->bsid);
-    vl_print(handle, "endpoint_type: %u\n", a->endpoint_type);
-    vl_print(handle, "color: %u\n", a->color);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_sr_mpls_policy_assign_endpoint_color_t: */
+    s = format(s, "vl_api_sr_mpls_policy_assign_endpoint_color_t:");
+    s = format(s, "\n%Ubsid: %u", format_white_space, indent, a->bsid);
+    s = format(s, "\n%Uendpoint: %U", format_white_space, indent, format_vl_api_address_t, &a->endpoint, indent);
+    s = format(s, "\n%Ucolor: %u", format_white_space, indent, a->color);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_sr_mpls_policy_assign_endpoint_color_reply_t_print
-#define _vl_api_defined_sr_mpls_policy_assign_endpoint_color_reply_t_print
-static inline void *vl_api_sr_mpls_policy_assign_endpoint_color_reply_t_print (vl_api_sr_mpls_policy_assign_endpoint_color_reply_t *a,void *handle)
+static inline void *vl_api_sr_mpls_policy_assign_endpoint_color_reply_t_print (vl_api_sr_mpls_policy_assign_endpoint_color_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_sr_mpls_policy_assign_endpoint_color_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_sr_mpls_policy_assign_endpoint_color_reply_t: */
+    s = format(s, "vl_api_sr_mpls_policy_assign_endpoint_color_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
+
 #endif
-
-
 #endif /* vl_printfun */
 
 /****** Endian swap functions *****/
 #ifdef vl_endianfun
+#ifndef included_sr_mpls_endianfun
+#define included_sr_mpls_endianfun
 
 #undef clib_net_to_host_uword
 #ifdef LP64
@@ -363,153 +273,130 @@ static inline void *vl_api_sr_mpls_policy_assign_endpoint_color_reply_t_print (v
 #define clib_net_to_host_uword clib_net_to_host_u32
 #endif
 
-#ifndef _vl_api_defined_sr_mpls_policy_add_t_endian
-#define _vl_api_defined_sr_mpls_policy_add_t_endian
 static inline void vl_api_sr_mpls_policy_add_t_endian (vl_api_sr_mpls_policy_add_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
     a->bsid = clib_net_to_host_u32(a->bsid);
     a->weight = clib_net_to_host_u32(a->weight);
-    /* a->type = a->type (no-op) */
+    /* a->is_spray = a->is_spray (no-op) */
     /* a->n_segments = a->n_segments (no-op) */
+    for (i = 0; i < a->n_segments; i++) {
+        a->segments[i] = clib_net_to_host_u32(a->segments[i]);
+    }
 }
 
-#endif
-
-#ifndef _vl_api_defined_sr_mpls_policy_add_reply_t_endian
-#define _vl_api_defined_sr_mpls_policy_add_reply_t_endian
 static inline void vl_api_sr_mpls_policy_add_reply_t_endian (vl_api_sr_mpls_policy_add_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
-#endif
-
-#ifndef _vl_api_defined_sr_mpls_policy_mod_t_endian
-#define _vl_api_defined_sr_mpls_policy_mod_t_endian
 static inline void vl_api_sr_mpls_policy_mod_t_endian (vl_api_sr_mpls_policy_mod_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
     a->bsid = clib_net_to_host_u32(a->bsid);
-    /* a->operation = a->operation (no-op) */
+    vl_api_sr_policy_op_t_endian(&a->operation);
     a->sl_index = clib_net_to_host_u32(a->sl_index);
     a->weight = clib_net_to_host_u32(a->weight);
     /* a->n_segments = a->n_segments (no-op) */
+    for (i = 0; i < a->n_segments; i++) {
+        a->segments[i] = clib_net_to_host_u32(a->segments[i]);
+    }
 }
 
-#endif
-
-#ifndef _vl_api_defined_sr_mpls_policy_mod_reply_t_endian
-#define _vl_api_defined_sr_mpls_policy_mod_reply_t_endian
 static inline void vl_api_sr_mpls_policy_mod_reply_t_endian (vl_api_sr_mpls_policy_mod_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
-#endif
-
-#ifndef _vl_api_defined_sr_mpls_policy_del_t_endian
-#define _vl_api_defined_sr_mpls_policy_del_t_endian
 static inline void vl_api_sr_mpls_policy_del_t_endian (vl_api_sr_mpls_policy_del_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
     a->bsid = clib_net_to_host_u32(a->bsid);
 }
 
-#endif
-
-#ifndef _vl_api_defined_sr_mpls_policy_del_reply_t_endian
-#define _vl_api_defined_sr_mpls_policy_del_reply_t_endian
 static inline void vl_api_sr_mpls_policy_del_reply_t_endian (vl_api_sr_mpls_policy_del_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
-#endif
-
-#ifndef _vl_api_defined_sr_mpls_steering_add_del_t_endian
-#define _vl_api_defined_sr_mpls_steering_add_del_t_endian
 static inline void vl_api_sr_mpls_steering_add_del_t_endian (vl_api_sr_mpls_steering_add_del_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
     /* a->is_del = a->is_del (no-op) */
     a->bsid = clib_net_to_host_u32(a->bsid);
     a->table_id = clib_net_to_host_u32(a->table_id);
+    vl_api_prefix_t_endian(&a->prefix);
     a->mask_width = clib_net_to_host_u32(a->mask_width);
-    /* a->traffic_type = a->traffic_type (no-op) */
-    /* a->nh_type = a->nh_type (no-op) */
+    vl_api_address_t_endian(&a->next_hop);
     a->color = clib_net_to_host_u32(a->color);
     /* a->co_bits = a->co_bits (no-op) */
     a->vpn_label = clib_net_to_host_u32(a->vpn_label);
 }
 
-#endif
-
-#ifndef _vl_api_defined_sr_mpls_steering_add_del_reply_t_endian
-#define _vl_api_defined_sr_mpls_steering_add_del_reply_t_endian
 static inline void vl_api_sr_mpls_steering_add_del_reply_t_endian (vl_api_sr_mpls_steering_add_del_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
-#endif
-
-#ifndef _vl_api_defined_sr_mpls_policy_assign_endpoint_color_t_endian
-#define _vl_api_defined_sr_mpls_policy_assign_endpoint_color_t_endian
 static inline void vl_api_sr_mpls_policy_assign_endpoint_color_t_endian (vl_api_sr_mpls_policy_assign_endpoint_color_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
     a->bsid = clib_net_to_host_u32(a->bsid);
-    /* a->endpoint_type = a->endpoint_type (no-op) */
+    vl_api_address_t_endian(&a->endpoint);
     a->color = clib_net_to_host_u32(a->color);
 }
 
-#endif
-
-#ifndef _vl_api_defined_sr_mpls_policy_assign_endpoint_color_reply_t_endian
-#define _vl_api_defined_sr_mpls_policy_assign_endpoint_color_reply_t_endian
 static inline void vl_api_sr_mpls_policy_assign_endpoint_color_reply_t_endian (vl_api_sr_mpls_policy_assign_endpoint_color_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
+
 #endif
-
-
 #endif /* vl_endianfun */
 
 /****** Version tuple *****/
 
 #ifdef vl_api_version_tuple
 
-vl_api_version_tuple(sr_mpls.api, 1, 0, 0)
+vl_api_version_tuple(sr_mpls.api, 3, 0, 0)
 
 #endif /* vl_api_version_tuple */
 
 /****** API CRC (whole file) *****/
 
 #ifdef vl_api_version
-vl_api_version(sr_mpls.api, 0x93240385)
+vl_api_version(sr_mpls.api, 0xd1279a74)
 
 #endif
 

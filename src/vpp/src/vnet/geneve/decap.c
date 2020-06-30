@@ -213,7 +213,7 @@ geneve_input (vlib_main_t * vm,
 	  if (is_ip4)
 	    {
 	      key4_0.remote = ip4_0->src_address.as_u32;
-	      key4_0.vni = vnet_get_geneve_vni_bigendian (geneve0);
+	      key4_0.vni = vnet_get_geneve_vni_network_order (geneve0);
 
 	      /* Make sure GENEVE tunnel exist according to packet SIP and VNI */
 	      if (PREDICT_FALSE (key4_0.as_u64 != last_key4.as_u64))
@@ -248,7 +248,7 @@ geneve_input (vlib_main_t * vm,
 		  (ip4_address_is_multicast (&ip4_0->dst_address)))
 		{
 		  key4_0.remote = ip4_0->dst_address.as_u32;
-		  key4_0.vni = vnet_get_geneve_vni_bigendian (geneve0);
+		  key4_0.vni = vnet_get_geneve_vni_network_order (geneve0);
 		  /* Make sure mcast GENEVE tunnel exist by packet DIP and VNI */
 		  p0 = hash_get (vxm->geneve4_tunnel_by_key, key4_0.as_u64);
 		  if (PREDICT_TRUE (p0 != NULL))
@@ -266,7 +266,7 @@ geneve_input (vlib_main_t * vm,
 	    {
 	      key6_0.remote.as_u64[0] = ip6_0->src_address.as_u64[0];
 	      key6_0.remote.as_u64[1] = ip6_0->src_address.as_u64[1];
-	      key6_0.vni = vnet_get_geneve_vni_bigendian (geneve0);
+	      key6_0.vni = vnet_get_geneve_vni_network_order (geneve0);
 
 	      /* Make sure GENEVE tunnel exist according to packet SIP and VNI */
 	      if (PREDICT_FALSE
@@ -303,7 +303,7 @@ geneve_input (vlib_main_t * vm,
 		{
 		  key6_0.remote.as_u64[0] = ip6_0->dst_address.as_u64[0];
 		  key6_0.remote.as_u64[1] = ip6_0->dst_address.as_u64[1];
-		  key6_0.vni = vnet_get_geneve_vni_bigendian (geneve0);
+		  key6_0.vni = vnet_get_geneve_vni_network_order (geneve0);
 		  p0 = hash_get_mem (vxm->geneve6_tunnel_by_key, &key6_0);
 		  if (PREDICT_TRUE (p0 != NULL))
 		    {
@@ -380,7 +380,7 @@ geneve_input (vlib_main_t * vm,
 	  if (is_ip4)
 	    {
 	      key4_1.remote = ip4_1->src_address.as_u32;
-	      key4_1.vni = vnet_get_geneve_vni_bigendian (geneve1);
+	      key4_1.vni = vnet_get_geneve_vni_network_order (geneve1);
 
 	      /* Make sure unicast GENEVE tunnel exist by packet SIP and VNI */
 	      if (PREDICT_FALSE (key4_1.as_u64 != last_key4.as_u64))
@@ -415,7 +415,7 @@ geneve_input (vlib_main_t * vm,
 		  (ip4_address_is_multicast (&ip4_1->dst_address)))
 		{
 		  key4_1.remote = ip4_1->dst_address.as_u32;
-		  key4_1.vni = vnet_get_geneve_vni_bigendian (geneve1);
+		  key4_1.vni = vnet_get_geneve_vni_network_order (geneve1);
 		  /* Make sure mcast GENEVE tunnel exist by packet DIP and VNI */
 		  p1 = hash_get (vxm->geneve4_tunnel_by_key, key4_1.as_u64);
 		  if (PREDICT_TRUE (p1 != NULL))
@@ -433,7 +433,7 @@ geneve_input (vlib_main_t * vm,
 	    {
 	      key6_1.remote.as_u64[0] = ip6_1->src_address.as_u64[0];
 	      key6_1.remote.as_u64[1] = ip6_1->src_address.as_u64[1];
-	      key6_1.vni = vnet_get_geneve_vni_bigendian (geneve1);
+	      key6_1.vni = vnet_get_geneve_vni_network_order (geneve1);
 
 	      /* Make sure GENEVE tunnel exist according to packet SIP and VNI */
 	      if (PREDICT_FALSE
@@ -472,7 +472,7 @@ geneve_input (vlib_main_t * vm,
 		{
 		  key6_1.remote.as_u64[0] = ip6_1->dst_address.as_u64[0];
 		  key6_1.remote.as_u64[1] = ip6_1->dst_address.as_u64[1];
-		  key6_1.vni = vnet_get_geneve_vni_bigendian (geneve1);
+		  key6_1.vni = vnet_get_geneve_vni_network_order (geneve1);
 		  p1 = hash_get_mem (vxm->geneve6_tunnel_by_key, &key6_1);
 		  if (PREDICT_TRUE (p1 != NULL))
 		    {
@@ -618,7 +618,7 @@ geneve_input (vlib_main_t * vm,
 	  if (is_ip4)
 	    {
 	      key4_0.remote = ip4_0->src_address.as_u32;
-	      key4_0.vni = vnet_get_geneve_vni_bigendian (geneve0);
+	      key4_0.vni = vnet_get_geneve_vni_network_order (geneve0);
 
 	      /* Make sure unicast GENEVE tunnel exist by packet SIP and VNI */
 	      if (PREDICT_FALSE (key4_0.as_u64 != last_key4.as_u64))
@@ -653,7 +653,7 @@ geneve_input (vlib_main_t * vm,
 		  (ip4_address_is_multicast (&ip4_0->dst_address)))
 		{
 		  key4_0.remote = ip4_0->dst_address.as_u32;
-		  key4_0.vni = vnet_get_geneve_vni_bigendian (geneve0);
+		  key4_0.vni = vnet_get_geneve_vni_network_order (geneve0);
 		  /* Make sure mcast GENEVE tunnel exist by packet DIP and VNI */
 		  p0 = hash_get (vxm->geneve4_tunnel_by_key, key4_0.as_u64);
 		  if (PREDICT_TRUE (p0 != NULL))
@@ -671,7 +671,7 @@ geneve_input (vlib_main_t * vm,
 	    {
 	      key6_0.remote.as_u64[0] = ip6_0->src_address.as_u64[0];
 	      key6_0.remote.as_u64[1] = ip6_0->src_address.as_u64[1];
-	      key6_0.vni = vnet_get_geneve_vni_bigendian (geneve0);
+	      key6_0.vni = vnet_get_geneve_vni_network_order (geneve0);
 
 	      /* Make sure GENEVE tunnel exist according to packet SIP and VNI */
 	      if (PREDICT_FALSE
@@ -708,7 +708,7 @@ geneve_input (vlib_main_t * vm,
 		{
 		  key6_0.remote.as_u64[0] = ip6_0->dst_address.as_u64[0];
 		  key6_0.remote.as_u64[1] = ip6_0->dst_address.as_u64[1];
-		  key6_0.vni = vnet_get_geneve_vni_bigendian (geneve0);
+		  key6_0.vni = vnet_get_geneve_vni_network_order (geneve0);
 		  p0 = hash_get_mem (vxm->geneve6_tunnel_by_key, &key6_0);
 		  if (PREDICT_TRUE (p0 != NULL))
 		    {
@@ -865,8 +865,10 @@ ip_geneve_bypass_inline (vlib_main_t * vm,
   u32 *from, *to_next, n_left_from, n_left_to_next, next_index;
   vlib_node_runtime_t *error_node =
     vlib_node_get_runtime (vm, ip4_input_node.index);
-  ip4_address_t addr4;		/* last IPv4 address matching a local VTEP address */
-  ip6_address_t addr6;		/* last IPv6 address matching a local VTEP address */
+  vtep4_key_t last_vtep4;	/* last IPv4 address / fib index
+				   matching a local VTEP address */
+  vtep6_key_t last_vtep6;	/* last IPv6 address / fib index
+				   matching a local VTEP address */
 
   from = vlib_frame_vector_args (frame);
   n_left_from = frame->n_vectors;
@@ -876,9 +878,9 @@ ip_geneve_bypass_inline (vlib_main_t * vm,
     ip4_forward_next_trace (vm, node, frame, VLIB_TX);
 
   if (is_ip4)
-    addr4.data_u32 = ~0;
+    vtep4_key_init (&last_vtep4);
   else
-    ip6_address_set_zero (&addr6);
+    vtep6_key_init (&last_vtep6);
 
   while (n_left_from > 0)
     {
@@ -962,21 +964,13 @@ ip_geneve_bypass_inline (vlib_main_t * vm,
 	  /* Validate DIP against VTEPs */
 	  if (is_ip4)
 	    {
-	      if (addr4.as_u32 != ip40->dst_address.as_u32)
-		{
-		  if (!hash_get (vxm->vtep4, ip40->dst_address.as_u32))
-		    goto exit0;	/* no local VTEP for GENEVE packet */
-		  addr4 = ip40->dst_address;
-		}
+	      if (!vtep4_check (&vxm->vtep_table, b0, ip40, &last_vtep4))
+		goto exit0;	/* no local VTEP for GENEVE packet */
 	    }
 	  else
 	    {
-	      if (!ip6_address_is_equal (&addr6, &ip60->dst_address))
-		{
-		  if (!hash_get_mem (vxm->vtep6, &ip60->dst_address))
-		    goto exit0;	/* no local VTEP for GENEVE packet */
-		  addr6 = ip60->dst_address;
-		}
+	      if (!vtep6_check (&vxm->vtep_table, b0, ip60, &last_vtep6))
+		goto exit0;	/* no local VTEP for GENEVE packet */
 	    }
 
 	  flags0 = b0->flags;
@@ -1048,21 +1042,13 @@ ip_geneve_bypass_inline (vlib_main_t * vm,
 	  /* Validate DIP against VTEPs */
 	  if (is_ip4)
 	    {
-	      if (addr4.as_u32 != ip41->dst_address.as_u32)
-		{
-		  if (!hash_get (vxm->vtep4, ip41->dst_address.as_u32))
-		    goto exit1;	/* no local VTEP for GENEVE packet */
-		  addr4 = ip41->dst_address;
-		}
+	      if (!vtep4_check (&vxm->vtep_table, b1, ip41, &last_vtep4))
+		goto exit1;	/* no local VTEP for GENEVE packet */
 	    }
 	  else
 	    {
-	      if (!ip6_address_is_equal (&addr6, &ip61->dst_address))
-		{
-		  if (!hash_get_mem (vxm->vtep6, &ip61->dst_address))
-		    goto exit1;	/* no local VTEP for GENEVE packet */
-		  addr6 = ip61->dst_address;
-		}
+	      if (!vtep6_check (&vxm->vtep_table, b1, ip61, &last_vtep6))
+		goto exit1;	/* no local VTEP for GENEVE packet */
 	    }
 
 	  flags1 = b1->flags;
@@ -1170,21 +1156,13 @@ ip_geneve_bypass_inline (vlib_main_t * vm,
 	  /* Validate DIP against VTEPs */
 	  if (is_ip4)
 	    {
-	      if (addr4.as_u32 != ip40->dst_address.as_u32)
-		{
-		  if (!hash_get (vxm->vtep4, ip40->dst_address.as_u32))
-		    goto exit;	/* no local VTEP for GENEVE packet */
-		  addr4 = ip40->dst_address;
-		}
+	      if (!vtep4_check (&vxm->vtep_table, b0, ip40, &last_vtep4))
+		goto exit;	/* no local VTEP for GENEVE packet */
 	    }
 	  else
 	    {
-	      if (!ip6_address_is_equal (&addr6, &ip60->dst_address))
-		{
-		  if (!hash_get_mem (vxm->vtep6, &ip60->dst_address))
-		    goto exit;	/* no local VTEP for GENEVE packet */
-		  addr6 = ip60->dst_address;
-		}
+	      if (!vtep6_check (&vxm->vtep_table, b0, ip60, &last_vtep6))
+		goto exit;	/* no local VTEP for GENEVE packet */
 	    }
 
 	  flags0 = b0->flags;
@@ -1262,24 +1240,17 @@ VLIB_NODE_FN (ip4_geneve_bypass_node) (vlib_main_t * vm,
 /* *INDENT-OFF* */
 VLIB_REGISTER_NODE (ip4_geneve_bypass_node) =
 {
-  .name = "ip4-geneve-bypass",.vector_size =
-    sizeof (u32),.n_next_nodes = IP_GENEVE_BYPASS_N_NEXT,.next_nodes =
+  .name = "ip4-geneve-bypass",
+  .vector_size = sizeof (u32),
+  .n_next_nodes = IP_GENEVE_BYPASS_N_NEXT,.next_nodes =
   {
-  [IP_GENEVE_BYPASS_NEXT_DROP] = "error-drop",
-      [IP_GENEVE_BYPASS_NEXT_GENEVE] = "geneve4-input",}
-,.format_buffer = format_ip4_header,.format_trace =
-    format_ip4_forward_next_trace,};
-
-#ifndef CLIB_MARCH_VARIANT
-/* Dummy init function to get us linked in. */
-     clib_error_t *ip4_geneve_bypass_init (vlib_main_t * vm)
-{
-  return 0;
-}
-
-VLIB_INIT_FUNCTION (ip4_geneve_bypass_init);
+    [IP_GENEVE_BYPASS_NEXT_DROP] = "error-drop",
+    [IP_GENEVE_BYPASS_NEXT_GENEVE] = "geneve4-input",
+  },
+  .format_buffer = format_ip4_header,
+  .format_trace = format_ip4_forward_next_trace,
+};
 /* *INDENT-ON* */
-#endif /* CLIB_MARCH_VARIANT */
 
 VLIB_NODE_FN (ip6_geneve_bypass_node) (vlib_main_t * vm,
 				       vlib_node_runtime_t * node,
@@ -1291,25 +1262,18 @@ VLIB_NODE_FN (ip6_geneve_bypass_node) (vlib_main_t * vm,
 /* *INDENT-OFF* */
 VLIB_REGISTER_NODE (ip6_geneve_bypass_node) =
 {
-  .name = "ip6-geneve-bypass",.vector_size =
-    sizeof (u32),.n_next_nodes = IP_GENEVE_BYPASS_N_NEXT,.next_nodes =
+  .name = "ip6-geneve-bypass",
+  .vector_size = sizeof (u32),
+  .n_next_nodes = IP_GENEVE_BYPASS_N_NEXT,
+  .next_nodes =
   {
-  [IP_GENEVE_BYPASS_NEXT_DROP] = "error-drop",
-      [IP_GENEVE_BYPASS_NEXT_GENEVE] = "geneve6-input",}
-,.format_buffer = format_ip6_header,.format_trace =
-    format_ip6_forward_next_trace,};
+    [IP_GENEVE_BYPASS_NEXT_DROP] = "error-drop",
+    [IP_GENEVE_BYPASS_NEXT_GENEVE] = "geneve6-input",
+  },
+  .format_buffer = format_ip6_header,
+  .format_trace = format_ip6_forward_next_trace,
+};
 /* *INDENT-ON* */
-
-#ifndef CLIB_MARCH_VARIANT
-/* Dummy init function to get us linked in. */
-clib_error_t *
-ip6_geneve_bypass_init (vlib_main_t * vm)
-{
-  return 0;
-}
-
-VLIB_INIT_FUNCTION (ip6_geneve_bypass_init);
-#endif /* CLIB_MARCH_VARIANT */
 
 /*
  * fd.io coding-style-patch-verification: ON

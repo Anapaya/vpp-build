@@ -13,44 +13,44 @@ extern "C" {
 #endif
 #include <vapi/vpe.api.vapi.h>
 
-extern vapi_msg_id_t vapi_msg_id_qos_record_enable_disable;
-extern vapi_msg_id_t vapi_msg_id_qos_store_details;
 extern vapi_msg_id_t vapi_msg_id_qos_store_enable_disable;
-extern vapi_msg_id_t vapi_msg_id_qos_egress_map_details;
-extern vapi_msg_id_t vapi_msg_id_qos_egress_map_delete_reply;
-extern vapi_msg_id_t vapi_msg_id_qos_store_dump;
-extern vapi_msg_id_t vapi_msg_id_qos_record_details;
-extern vapi_msg_id_t vapi_msg_id_qos_mark_details;
 extern vapi_msg_id_t vapi_msg_id_qos_store_enable_disable_reply;
-extern vapi_msg_id_t vapi_msg_id_qos_mark_enable_disable;
-extern vapi_msg_id_t vapi_msg_id_qos_record_dump;
-extern vapi_msg_id_t vapi_msg_id_qos_egress_map_update_reply;
+extern vapi_msg_id_t vapi_msg_id_qos_store_dump;
+extern vapi_msg_id_t vapi_msg_id_qos_store_details;
+extern vapi_msg_id_t vapi_msg_id_qos_record_enable_disable;
 extern vapi_msg_id_t vapi_msg_id_qos_record_enable_disable_reply;
+extern vapi_msg_id_t vapi_msg_id_qos_record_dump;
+extern vapi_msg_id_t vapi_msg_id_qos_record_details;
 extern vapi_msg_id_t vapi_msg_id_qos_egress_map_update;
+extern vapi_msg_id_t vapi_msg_id_qos_egress_map_update_reply;
 extern vapi_msg_id_t vapi_msg_id_qos_egress_map_delete;
-extern vapi_msg_id_t vapi_msg_id_qos_mark_enable_disable_reply;
+extern vapi_msg_id_t vapi_msg_id_qos_egress_map_delete_reply;
 extern vapi_msg_id_t vapi_msg_id_qos_egress_map_dump;
+extern vapi_msg_id_t vapi_msg_id_qos_egress_map_details;
+extern vapi_msg_id_t vapi_msg_id_qos_mark_enable_disable;
+extern vapi_msg_id_t vapi_msg_id_qos_mark_enable_disable_reply;
 extern vapi_msg_id_t vapi_msg_id_qos_mark_dump;
+extern vapi_msg_id_t vapi_msg_id_qos_mark_details;
 
 #define DEFINE_VAPI_MSG_IDS_QOS_API_JSON\
-  vapi_msg_id_t vapi_msg_id_qos_record_enable_disable;\
-  vapi_msg_id_t vapi_msg_id_qos_store_details;\
   vapi_msg_id_t vapi_msg_id_qos_store_enable_disable;\
-  vapi_msg_id_t vapi_msg_id_qos_egress_map_details;\
-  vapi_msg_id_t vapi_msg_id_qos_egress_map_delete_reply;\
-  vapi_msg_id_t vapi_msg_id_qos_store_dump;\
-  vapi_msg_id_t vapi_msg_id_qos_record_details;\
-  vapi_msg_id_t vapi_msg_id_qos_mark_details;\
   vapi_msg_id_t vapi_msg_id_qos_store_enable_disable_reply;\
-  vapi_msg_id_t vapi_msg_id_qos_mark_enable_disable;\
-  vapi_msg_id_t vapi_msg_id_qos_record_dump;\
-  vapi_msg_id_t vapi_msg_id_qos_egress_map_update_reply;\
+  vapi_msg_id_t vapi_msg_id_qos_store_dump;\
+  vapi_msg_id_t vapi_msg_id_qos_store_details;\
+  vapi_msg_id_t vapi_msg_id_qos_record_enable_disable;\
   vapi_msg_id_t vapi_msg_id_qos_record_enable_disable_reply;\
+  vapi_msg_id_t vapi_msg_id_qos_record_dump;\
+  vapi_msg_id_t vapi_msg_id_qos_record_details;\
   vapi_msg_id_t vapi_msg_id_qos_egress_map_update;\
+  vapi_msg_id_t vapi_msg_id_qos_egress_map_update_reply;\
   vapi_msg_id_t vapi_msg_id_qos_egress_map_delete;\
-  vapi_msg_id_t vapi_msg_id_qos_mark_enable_disable_reply;\
+  vapi_msg_id_t vapi_msg_id_qos_egress_map_delete_reply;\
   vapi_msg_id_t vapi_msg_id_qos_egress_map_dump;\
-  vapi_msg_id_t vapi_msg_id_qos_mark_dump;
+  vapi_msg_id_t vapi_msg_id_qos_egress_map_details;\
+  vapi_msg_id_t vapi_msg_id_qos_mark_enable_disable;\
+  vapi_msg_id_t vapi_msg_id_qos_mark_enable_disable_reply;\
+  vapi_msg_id_t vapi_msg_id_qos_mark_dump;\
+  vapi_msg_id_t vapi_msg_id_qos_mark_details;
 
 
 #ifndef defined_vapi_enum_address_family
@@ -58,7 +58,7 @@ extern vapi_msg_id_t vapi_msg_id_qos_mark_dump;
 typedef enum {
   ADDRESS_IP4 = 0,
   ADDRESS_IP6 = 1,
-} vapi_enum_address_family;
+} __attribute__((packed)) vapi_enum_address_family;
 
 #endif
 
@@ -69,7 +69,7 @@ typedef enum {
   IP_API_ECN_ECT0 = 1,
   IP_API_ECN_ECT1 = 2,
   IP_API_ECN_CE = 3,
-} vapi_enum_ip_ecn;
+} __attribute__((packed)) vapi_enum_ip_ecn;
 
 #endif
 
@@ -97,7 +97,7 @@ typedef enum {
   IP_API_DSCP_EF = 46,
   IP_API_DSCP_CS6 = 48,
   IP_API_DSCP_CS7 = 50,
-} vapi_enum_ip_dscp;
+} __attribute__((packed)) vapi_enum_ip_dscp;
 
 #endif
 
@@ -110,13 +110,84 @@ typedef enum {
   IP_API_PROTO_TCP = 6,
   IP_API_PROTO_UDP = 17,
   IP_API_PROTO_GRE = 47,
-  IP_API_PROTO_AH = 50,
-  IP_API_PROTO_ESP = 51,
+  IP_API_PROTO_ESP = 50,
+  IP_API_PROTO_AH = 51,
+  IP_API_PROTO_ICMP6 = 58,
   IP_API_PROTO_EIGRP = 88,
   IP_API_PROTO_OSPF = 89,
   IP_API_PROTO_SCTP = 132,
   IP_API_PROTO_RESERVED = 255,
-} vapi_enum_ip_proto;
+} __attribute__((packed)) vapi_enum_ip_proto;
+
+#endif
+
+#ifndef defined_vapi_enum_if_status_flags
+#define defined_vapi_enum_if_status_flags
+typedef enum {
+  IF_STATUS_API_FLAG_ADMIN_UP = 1,
+  IF_STATUS_API_FLAG_LINK_UP = 2,
+}  vapi_enum_if_status_flags;
+
+#endif
+
+#ifndef defined_vapi_enum_mtu_proto
+#define defined_vapi_enum_mtu_proto
+typedef enum {
+  MTU_PROTO_API_L3 = 0,
+  MTU_PROTO_API_IP4 = 1,
+  MTU_PROTO_API_IP6 = 2,
+  MTU_PROTO_API_MPLS = 3,
+}  vapi_enum_mtu_proto;
+
+#endif
+
+#ifndef defined_vapi_enum_link_duplex
+#define defined_vapi_enum_link_duplex
+typedef enum {
+  LINK_DUPLEX_API_UNKNOWN = 0,
+  LINK_DUPLEX_API_HALF = 1,
+  LINK_DUPLEX_API_FULL = 2,
+}  vapi_enum_link_duplex;
+
+#endif
+
+#ifndef defined_vapi_enum_sub_if_flags
+#define defined_vapi_enum_sub_if_flags
+typedef enum {
+  SUB_IF_API_FLAG_NO_TAGS = 1,
+  SUB_IF_API_FLAG_ONE_TAG = 2,
+  SUB_IF_API_FLAG_TWO_TAGS = 4,
+  SUB_IF_API_FLAG_DOT1AD = 8,
+  SUB_IF_API_FLAG_EXACT_MATCH = 16,
+  SUB_IF_API_FLAG_DEFAULT = 32,
+  SUB_IF_API_FLAG_OUTER_VLAN_ID_ANY = 64,
+  SUB_IF_API_FLAG_INNER_VLAN_ID_ANY = 128,
+  SUB_IF_API_FLAG_MASK_VNET = 254,
+  SUB_IF_API_FLAG_DOT1AH = 256,
+}  vapi_enum_sub_if_flags;
+
+#endif
+
+#ifndef defined_vapi_enum_rx_mode
+#define defined_vapi_enum_rx_mode
+typedef enum {
+  RX_MODE_API_UNKNOWN = 0,
+  RX_MODE_API_POLLING = 1,
+  RX_MODE_API_INTERRUPT = 2,
+  RX_MODE_API_ADAPTIVE = 3,
+  RX_MODE_API_DEFAULT = 4,
+}  vapi_enum_rx_mode;
+
+#endif
+
+#ifndef defined_vapi_enum_if_type
+#define defined_vapi_enum_if_type
+typedef enum {
+  IF_API_TYPE_HARDWARE = 0,
+  IF_API_TYPE_SUB = 1,
+  IF_API_TYPE_P2P = 2,
+  IF_API_TYPE_PIPE = 3,
+}  vapi_enum_if_type;
 
 #endif
 
@@ -127,7 +198,7 @@ typedef enum {
   QOS_API_SOURCE_VLAN = 1,
   QOS_API_SOURCE_MPLS = 2,
   QOS_API_SOURCE_IP = 3,
-} vapi_enum_qos_source;
+} __attribute__((packed)) vapi_enum_qos_source;
 
 #endif
 
@@ -167,43 +238,6 @@ static inline void vapi_type_prefix_matcher_hton(vapi_type_prefix_matcher *msg)
 static inline void vapi_type_prefix_matcher_ntoh(vapi_type_prefix_matcher *msg)
 {
 
-}
-#endif
-
-#ifndef defined_vapi_type_qos_store
-#define defined_vapi_type_qos_store
-typedef struct __attribute__((__packed__)) {
-  u32 sw_if_index;
-  vapi_enum_qos_source input_source;
-  u8 value;
-} vapi_type_qos_store;
-
-static inline void vapi_type_qos_store_hton(vapi_type_qos_store *msg)
-{
-  msg->sw_if_index = htobe32(msg->sw_if_index);
-}
-
-static inline void vapi_type_qos_store_ntoh(vapi_type_qos_store *msg)
-{
-  msg->sw_if_index = be32toh(msg->sw_if_index);
-}
-#endif
-
-#ifndef defined_vapi_type_qos_record
-#define defined_vapi_type_qos_record
-typedef struct __attribute__((__packed__)) {
-  u32 sw_if_index;
-  vapi_enum_qos_source input_source;
-} vapi_type_qos_record;
-
-static inline void vapi_type_qos_record_hton(vapi_type_qos_record *msg)
-{
-  msg->sw_if_index = htobe32(msg->sw_if_index);
-}
-
-static inline void vapi_type_qos_record_ntoh(vapi_type_qos_record *msg)
-{
-  msg->sw_if_index = be32toh(msg->sw_if_index);
 }
 #endif
 
@@ -272,12 +306,12 @@ typedef struct __attribute__((__packed__)) {
 
 static inline void vapi_type_address_hton(vapi_type_address *msg)
 {
-  msg->af = (vapi_enum_address_family)htobe32(msg->af);
+
 }
 
 static inline void vapi_type_address_ntoh(vapi_type_address *msg)
 {
-  msg->af = (vapi_enum_address_family)be32toh(msg->af);
+
 }
 #endif
 
@@ -290,12 +324,12 @@ typedef struct __attribute__((__packed__)) {
 
 static inline void vapi_type_prefix_hton(vapi_type_prefix *msg)
 {
-  vapi_type_address_hton(&msg->address);
+
 }
 
 static inline void vapi_type_prefix_ntoh(vapi_type_prefix *msg)
 {
-  vapi_type_address_ntoh(&msg->address);
+
 }
 #endif
 
@@ -310,13 +344,11 @@ typedef struct __attribute__((__packed__)) {
 
 static inline void vapi_type_mprefix_hton(vapi_type_mprefix *msg)
 {
-  msg->af = (vapi_enum_address_family)htobe32(msg->af);
   msg->grp_address_length = htobe16(msg->grp_address_length);
 }
 
 static inline void vapi_type_mprefix_ntoh(vapi_type_mprefix *msg)
 {
-  msg->af = (vapi_enum_address_family)be32toh(msg->af);
   msg->grp_address_length = be16toh(msg->grp_address_length);
 }
 #endif
@@ -357,9 +389,52 @@ static inline void vapi_type_ip4_prefix_ntoh(vapi_type_ip4_prefix *msg)
 }
 #endif
 
-#ifndef defined_vapi_type_ip6_address_with_prefix
-#define defined_vapi_type_ip6_address_with_prefix
-typedef vapi_type_ip6_prefix vapi_type_ip6_address_with_prefix;
+#ifndef defined_vapi_type_interface_index
+#define defined_vapi_type_interface_index
+typedef u32 vapi_type_interface_index;
+
+#endif
+
+#ifndef defined_vapi_type_qos_store
+#define defined_vapi_type_qos_store
+typedef struct __attribute__((__packed__)) {
+  vapi_type_interface_index sw_if_index;
+  vapi_enum_qos_source input_source;
+  u8 value;
+} vapi_type_qos_store;
+
+static inline void vapi_type_qos_store_hton(vapi_type_qos_store *msg)
+{
+  msg->sw_if_index = htobe32(msg->sw_if_index);
+}
+
+static inline void vapi_type_qos_store_ntoh(vapi_type_qos_store *msg)
+{
+  msg->sw_if_index = be32toh(msg->sw_if_index);
+}
+#endif
+
+#ifndef defined_vapi_type_qos_record
+#define defined_vapi_type_qos_record
+typedef struct __attribute__((__packed__)) {
+  vapi_type_interface_index sw_if_index;
+  vapi_enum_qos_source input_source;
+} vapi_type_qos_record;
+
+static inline void vapi_type_qos_record_hton(vapi_type_qos_record *msg)
+{
+  msg->sw_if_index = htobe32(msg->sw_if_index);
+}
+
+static inline void vapi_type_qos_record_ntoh(vapi_type_qos_record *msg)
+{
+  msg->sw_if_index = be32toh(msg->sw_if_index);
+}
+#endif
+
+#ifndef defined_vapi_type_address_with_prefix
+#define defined_vapi_type_address_with_prefix
+typedef vapi_type_prefix vapi_type_address_with_prefix;
 
 #endif
 
@@ -369,274 +444,10 @@ typedef vapi_type_ip4_prefix vapi_type_ip4_address_with_prefix;
 
 #endif
 
-#ifndef defined_vapi_type_address_with_prefix
-#define defined_vapi_type_address_with_prefix
-typedef vapi_type_prefix vapi_type_address_with_prefix;
+#ifndef defined_vapi_type_ip6_address_with_prefix
+#define defined_vapi_type_ip6_address_with_prefix
+typedef vapi_type_ip6_prefix vapi_type_ip6_address_with_prefix;
 
-#endif
-
-#ifndef defined_vapi_msg_qos_record_enable_disable_reply
-#define defined_vapi_msg_qos_record_enable_disable_reply
-typedef struct __attribute__ ((__packed__)) {
-  i32 retval; 
-} vapi_payload_qos_record_enable_disable_reply;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header1_t header;
-  vapi_payload_qos_record_enable_disable_reply payload;
-} vapi_msg_qos_record_enable_disable_reply;
-
-static inline void vapi_msg_qos_record_enable_disable_reply_payload_hton(vapi_payload_qos_record_enable_disable_reply *payload)
-{
-  payload->retval = htobe32(payload->retval);
-}
-
-static inline void vapi_msg_qos_record_enable_disable_reply_payload_ntoh(vapi_payload_qos_record_enable_disable_reply *payload)
-{
-  payload->retval = be32toh(payload->retval);
-}
-
-static inline void vapi_msg_qos_record_enable_disable_reply_hton(vapi_msg_qos_record_enable_disable_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_qos_record_enable_disable_reply'@%p to big endian", msg);
-  vapi_type_msg_header1_t_hton(&msg->header);
-  vapi_msg_qos_record_enable_disable_reply_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_qos_record_enable_disable_reply_ntoh(vapi_msg_qos_record_enable_disable_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_qos_record_enable_disable_reply'@%p to host byte order", msg);
-  vapi_type_msg_header1_t_ntoh(&msg->header);
-  vapi_msg_qos_record_enable_disable_reply_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_qos_record_enable_disable_reply_msg_size(vapi_msg_qos_record_enable_disable_reply *msg)
-{
-  return sizeof(*msg);
-}
-
-static void __attribute__((constructor)) __vapi_constructor_qos_record_enable_disable_reply()
-{
-  static const char name[] = "qos_record_enable_disable_reply";
-  static const char name_with_crc[] = "qos_record_enable_disable_reply_e8d4e804";
-  static vapi_message_desc_t __vapi_metadata_qos_record_enable_disable_reply = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header1_t, context),
-    offsetof(vapi_msg_qos_record_enable_disable_reply, payload),
-    sizeof(vapi_msg_qos_record_enable_disable_reply),
-    (generic_swap_fn_t)vapi_msg_qos_record_enable_disable_reply_hton,
-    (generic_swap_fn_t)vapi_msg_qos_record_enable_disable_reply_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_qos_record_enable_disable_reply = vapi_register_msg(&__vapi_metadata_qos_record_enable_disable_reply);
-  VAPI_DBG("Assigned msg id %d to qos_record_enable_disable_reply", vapi_msg_id_qos_record_enable_disable_reply);
-}
-
-static inline void vapi_set_vapi_msg_qos_record_enable_disable_reply_event_cb (
-  struct vapi_ctx_s *ctx, 
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_qos_record_enable_disable_reply *payload),
-  void *callback_ctx)
-{
-  vapi_set_event_cb(ctx, vapi_msg_id_qos_record_enable_disable_reply, (vapi_event_cb)callback, callback_ctx);
-};
-#endif
-
-#ifndef defined_vapi_msg_qos_record_enable_disable
-#define defined_vapi_msg_qos_record_enable_disable
-typedef struct __attribute__ ((__packed__)) {
-  u8 enable;
-  vapi_type_qos_record record; 
-} vapi_payload_qos_record_enable_disable;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header2_t header;
-  vapi_payload_qos_record_enable_disable payload;
-} vapi_msg_qos_record_enable_disable;
-
-static inline void vapi_msg_qos_record_enable_disable_payload_hton(vapi_payload_qos_record_enable_disable *payload)
-{
-  vapi_type_qos_record_hton(&payload->record);
-}
-
-static inline void vapi_msg_qos_record_enable_disable_payload_ntoh(vapi_payload_qos_record_enable_disable *payload)
-{
-  vapi_type_qos_record_ntoh(&payload->record);
-}
-
-static inline void vapi_msg_qos_record_enable_disable_hton(vapi_msg_qos_record_enable_disable *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_qos_record_enable_disable'@%p to big endian", msg);
-  vapi_type_msg_header2_t_hton(&msg->header);
-  vapi_msg_qos_record_enable_disable_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_qos_record_enable_disable_ntoh(vapi_msg_qos_record_enable_disable *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_qos_record_enable_disable'@%p to host byte order", msg);
-  vapi_type_msg_header2_t_ntoh(&msg->header);
-  vapi_msg_qos_record_enable_disable_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_qos_record_enable_disable_msg_size(vapi_msg_qos_record_enable_disable *msg)
-{
-  return sizeof(*msg);
-}
-
-static inline vapi_msg_qos_record_enable_disable* vapi_alloc_qos_record_enable_disable(struct vapi_ctx_s *ctx)
-{
-  vapi_msg_qos_record_enable_disable *msg = NULL;
-  const size_t size = sizeof(vapi_msg_qos_record_enable_disable);
-  /* cast here required to play nicely with C++ world ... */
-  msg = (vapi_msg_qos_record_enable_disable*)vapi_msg_alloc(ctx, size);
-  if (!msg) {
-    return NULL;
-  }
-  msg->header.client_index = vapi_get_client_index(ctx);
-  msg->header.context = 0;
-  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_qos_record_enable_disable);
-
-  return msg;
-}
-
-static inline vapi_error_e vapi_qos_record_enable_disable(struct vapi_ctx_s *ctx,
-  vapi_msg_qos_record_enable_disable *msg,
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
-                           void *callback_ctx,
-                           vapi_error_e rv,
-                           bool is_last,
-                           vapi_payload_qos_record_enable_disable_reply *reply),
-  void *callback_ctx)
-{
-  if (!msg || !callback) {
-    return VAPI_EINVAL;
-  }
-  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
-    return VAPI_EAGAIN;
-  }
-  vapi_error_e rv;
-  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
-    return rv;
-  }
-  u32 req_context = vapi_gen_req_context(ctx);
-  msg->header.context = req_context;
-  vapi_msg_qos_record_enable_disable_hton(msg);
-  if (VAPI_OK == (rv = vapi_send (ctx, msg))) {
-    vapi_store_request(ctx, req_context, false, (vapi_cb_t)callback, callback_ctx);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-    if (vapi_is_nonblocking(ctx)) {
-      rv = VAPI_OK;
-    } else {
-      rv = vapi_dispatch(ctx);
-    }
-  } else {
-    vapi_msg_qos_record_enable_disable_ntoh(msg);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-  }
-  return rv;
-}
-
-
-static void __attribute__((constructor)) __vapi_constructor_qos_record_enable_disable()
-{
-  static const char name[] = "qos_record_enable_disable";
-  static const char name_with_crc[] = "qos_record_enable_disable_0e9320b1";
-  static vapi_message_desc_t __vapi_metadata_qos_record_enable_disable = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header2_t, context),
-    offsetof(vapi_msg_qos_record_enable_disable, payload),
-    sizeof(vapi_msg_qos_record_enable_disable),
-    (generic_swap_fn_t)vapi_msg_qos_record_enable_disable_hton,
-    (generic_swap_fn_t)vapi_msg_qos_record_enable_disable_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_qos_record_enable_disable = vapi_register_msg(&__vapi_metadata_qos_record_enable_disable);
-  VAPI_DBG("Assigned msg id %d to qos_record_enable_disable", vapi_msg_id_qos_record_enable_disable);
-}
-#endif
-
-#ifndef defined_vapi_msg_qos_store_details
-#define defined_vapi_msg_qos_store_details
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_qos_store store; 
-} vapi_payload_qos_store_details;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header1_t header;
-  vapi_payload_qos_store_details payload;
-} vapi_msg_qos_store_details;
-
-static inline void vapi_msg_qos_store_details_payload_hton(vapi_payload_qos_store_details *payload)
-{
-  vapi_type_qos_store_hton(&payload->store);
-}
-
-static inline void vapi_msg_qos_store_details_payload_ntoh(vapi_payload_qos_store_details *payload)
-{
-  vapi_type_qos_store_ntoh(&payload->store);
-}
-
-static inline void vapi_msg_qos_store_details_hton(vapi_msg_qos_store_details *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_qos_store_details'@%p to big endian", msg);
-  vapi_type_msg_header1_t_hton(&msg->header);
-  vapi_msg_qos_store_details_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_qos_store_details_ntoh(vapi_msg_qos_store_details *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_qos_store_details'@%p to host byte order", msg);
-  vapi_type_msg_header1_t_ntoh(&msg->header);
-  vapi_msg_qos_store_details_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_qos_store_details_msg_size(vapi_msg_qos_store_details *msg)
-{
-  return sizeof(*msg);
-}
-
-static void __attribute__((constructor)) __vapi_constructor_qos_store_details()
-{
-  static const char name[] = "qos_store_details";
-  static const char name_with_crc[] = "qos_store_details_85db0b5a";
-  static vapi_message_desc_t __vapi_metadata_qos_store_details = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header1_t, context),
-    offsetof(vapi_msg_qos_store_details, payload),
-    sizeof(vapi_msg_qos_store_details),
-    (generic_swap_fn_t)vapi_msg_qos_store_details_hton,
-    (generic_swap_fn_t)vapi_msg_qos_store_details_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_qos_store_details = vapi_register_msg(&__vapi_metadata_qos_store_details);
-  VAPI_DBG("Assigned msg id %d to qos_store_details", vapi_msg_id_qos_store_details);
-}
-
-static inline void vapi_set_vapi_msg_qos_store_details_event_cb (
-  struct vapi_ctx_s *ctx, 
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_qos_store_details *payload),
-  void *callback_ctx)
-{
-  vapi_set_event_cb(ctx, vapi_msg_id_qos_store_details, (vapi_event_cb)callback, callback_ctx);
-};
 #endif
 
 #ifndef defined_vapi_msg_qos_store_enable_disable_reply
@@ -713,7 +524,7 @@ static inline void vapi_set_vapi_msg_qos_store_enable_disable_reply_event_cb (
 #ifndef defined_vapi_msg_qos_store_enable_disable
 #define defined_vapi_msg_qos_store_enable_disable
 typedef struct __attribute__ ((__packed__)) {
-  u8 enable;
+  bool enable;
   vapi_type_qos_store store; 
 } vapi_payload_qos_store_enable_disable;
 
@@ -812,7 +623,7 @@ static inline vapi_error_e vapi_qos_store_enable_disable(struct vapi_ctx_s *ctx,
 static void __attribute__((constructor)) __vapi_constructor_qos_store_enable_disable()
 {
   static const char name[] = "qos_store_enable_disable";
-  static const char name_with_crc[] = "qos_store_enable_disable_371eeb27";
+  static const char name_with_crc[] = "qos_store_enable_disable_3507235e";
   static vapi_message_desc_t __vapi_metadata_qos_store_enable_disable = {
     name,
     sizeof(name) - 1,
@@ -832,145 +643,74 @@ static void __attribute__((constructor)) __vapi_constructor_qos_store_enable_dis
 }
 #endif
 
-#ifndef defined_vapi_msg_qos_egress_map_details
-#define defined_vapi_msg_qos_egress_map_details
+#ifndef defined_vapi_msg_qos_store_details
+#define defined_vapi_msg_qos_store_details
 typedef struct __attribute__ ((__packed__)) {
-  vapi_type_qos_egress_map map; 
-} vapi_payload_qos_egress_map_details;
+  vapi_type_qos_store store; 
+} vapi_payload_qos_store_details;
 
 typedef struct __attribute__ ((__packed__)) {
   vapi_type_msg_header1_t header;
-  vapi_payload_qos_egress_map_details payload;
-} vapi_msg_qos_egress_map_details;
+  vapi_payload_qos_store_details payload;
+} vapi_msg_qos_store_details;
 
-static inline void vapi_msg_qos_egress_map_details_payload_hton(vapi_payload_qos_egress_map_details *payload)
+static inline void vapi_msg_qos_store_details_payload_hton(vapi_payload_qos_store_details *payload)
 {
-  vapi_type_qos_egress_map_hton(&payload->map);
+  vapi_type_qos_store_hton(&payload->store);
 }
 
-static inline void vapi_msg_qos_egress_map_details_payload_ntoh(vapi_payload_qos_egress_map_details *payload)
+static inline void vapi_msg_qos_store_details_payload_ntoh(vapi_payload_qos_store_details *payload)
 {
-  vapi_type_qos_egress_map_ntoh(&payload->map);
+  vapi_type_qos_store_ntoh(&payload->store);
 }
 
-static inline void vapi_msg_qos_egress_map_details_hton(vapi_msg_qos_egress_map_details *msg)
+static inline void vapi_msg_qos_store_details_hton(vapi_msg_qos_store_details *msg)
 {
-  VAPI_DBG("Swapping `vapi_msg_qos_egress_map_details'@%p to big endian", msg);
+  VAPI_DBG("Swapping `vapi_msg_qos_store_details'@%p to big endian", msg);
   vapi_type_msg_header1_t_hton(&msg->header);
-  vapi_msg_qos_egress_map_details_payload_hton(&msg->payload);
+  vapi_msg_qos_store_details_payload_hton(&msg->payload);
 }
 
-static inline void vapi_msg_qos_egress_map_details_ntoh(vapi_msg_qos_egress_map_details *msg)
+static inline void vapi_msg_qos_store_details_ntoh(vapi_msg_qos_store_details *msg)
 {
-  VAPI_DBG("Swapping `vapi_msg_qos_egress_map_details'@%p to host byte order", msg);
+  VAPI_DBG("Swapping `vapi_msg_qos_store_details'@%p to host byte order", msg);
   vapi_type_msg_header1_t_ntoh(&msg->header);
-  vapi_msg_qos_egress_map_details_payload_ntoh(&msg->payload);
+  vapi_msg_qos_store_details_payload_ntoh(&msg->payload);
 }
 
-static inline uword vapi_calc_qos_egress_map_details_msg_size(vapi_msg_qos_egress_map_details *msg)
+static inline uword vapi_calc_qos_store_details_msg_size(vapi_msg_qos_store_details *msg)
 {
   return sizeof(*msg);
 }
 
-static void __attribute__((constructor)) __vapi_constructor_qos_egress_map_details()
+static void __attribute__((constructor)) __vapi_constructor_qos_store_details()
 {
-  static const char name[] = "qos_egress_map_details";
-  static const char name_with_crc[] = "qos_egress_map_details_46c5653c";
-  static vapi_message_desc_t __vapi_metadata_qos_egress_map_details = {
+  static const char name[] = "qos_store_details";
+  static const char name_with_crc[] = "qos_store_details_038a6d48";
+  static vapi_message_desc_t __vapi_metadata_qos_store_details = {
     name,
     sizeof(name) - 1,
     name_with_crc,
     sizeof(name_with_crc) - 1,
     true,
     offsetof(vapi_type_msg_header1_t, context),
-    offsetof(vapi_msg_qos_egress_map_details, payload),
-    sizeof(vapi_msg_qos_egress_map_details),
-    (generic_swap_fn_t)vapi_msg_qos_egress_map_details_hton,
-    (generic_swap_fn_t)vapi_msg_qos_egress_map_details_ntoh,
+    offsetof(vapi_msg_qos_store_details, payload),
+    sizeof(vapi_msg_qos_store_details),
+    (generic_swap_fn_t)vapi_msg_qos_store_details_hton,
+    (generic_swap_fn_t)vapi_msg_qos_store_details_ntoh,
     VAPI_INVALID_MSG_ID,
   };
 
-  vapi_msg_id_qos_egress_map_details = vapi_register_msg(&__vapi_metadata_qos_egress_map_details);
-  VAPI_DBG("Assigned msg id %d to qos_egress_map_details", vapi_msg_id_qos_egress_map_details);
+  vapi_msg_id_qos_store_details = vapi_register_msg(&__vapi_metadata_qos_store_details);
+  VAPI_DBG("Assigned msg id %d to qos_store_details", vapi_msg_id_qos_store_details);
 }
 
-static inline void vapi_set_vapi_msg_qos_egress_map_details_event_cb (
+static inline void vapi_set_vapi_msg_qos_store_details_event_cb (
   struct vapi_ctx_s *ctx, 
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_qos_egress_map_details *payload),
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_qos_store_details *payload),
   void *callback_ctx)
 {
-  vapi_set_event_cb(ctx, vapi_msg_id_qos_egress_map_details, (vapi_event_cb)callback, callback_ctx);
-};
-#endif
-
-#ifndef defined_vapi_msg_qos_egress_map_delete_reply
-#define defined_vapi_msg_qos_egress_map_delete_reply
-typedef struct __attribute__ ((__packed__)) {
-  i32 retval; 
-} vapi_payload_qos_egress_map_delete_reply;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header1_t header;
-  vapi_payload_qos_egress_map_delete_reply payload;
-} vapi_msg_qos_egress_map_delete_reply;
-
-static inline void vapi_msg_qos_egress_map_delete_reply_payload_hton(vapi_payload_qos_egress_map_delete_reply *payload)
-{
-  payload->retval = htobe32(payload->retval);
-}
-
-static inline void vapi_msg_qos_egress_map_delete_reply_payload_ntoh(vapi_payload_qos_egress_map_delete_reply *payload)
-{
-  payload->retval = be32toh(payload->retval);
-}
-
-static inline void vapi_msg_qos_egress_map_delete_reply_hton(vapi_msg_qos_egress_map_delete_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_qos_egress_map_delete_reply'@%p to big endian", msg);
-  vapi_type_msg_header1_t_hton(&msg->header);
-  vapi_msg_qos_egress_map_delete_reply_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_qos_egress_map_delete_reply_ntoh(vapi_msg_qos_egress_map_delete_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_qos_egress_map_delete_reply'@%p to host byte order", msg);
-  vapi_type_msg_header1_t_ntoh(&msg->header);
-  vapi_msg_qos_egress_map_delete_reply_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_qos_egress_map_delete_reply_msg_size(vapi_msg_qos_egress_map_delete_reply *msg)
-{
-  return sizeof(*msg);
-}
-
-static void __attribute__((constructor)) __vapi_constructor_qos_egress_map_delete_reply()
-{
-  static const char name[] = "qos_egress_map_delete_reply";
-  static const char name_with_crc[] = "qos_egress_map_delete_reply_e8d4e804";
-  static vapi_message_desc_t __vapi_metadata_qos_egress_map_delete_reply = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header1_t, context),
-    offsetof(vapi_msg_qos_egress_map_delete_reply, payload),
-    sizeof(vapi_msg_qos_egress_map_delete_reply),
-    (generic_swap_fn_t)vapi_msg_qos_egress_map_delete_reply_hton,
-    (generic_swap_fn_t)vapi_msg_qos_egress_map_delete_reply_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_qos_egress_map_delete_reply = vapi_register_msg(&__vapi_metadata_qos_egress_map_delete_reply);
-  VAPI_DBG("Assigned msg id %d to qos_egress_map_delete_reply", vapi_msg_id_qos_egress_map_delete_reply);
-}
-
-static inline void vapi_set_vapi_msg_qos_egress_map_delete_reply_event_cb (
-  struct vapi_ctx_s *ctx, 
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_qos_egress_map_delete_reply *payload),
-  void *callback_ctx)
-{
-  vapi_set_event_cb(ctx, vapi_msg_id_qos_egress_map_delete_reply, (vapi_event_cb)callback, callback_ctx);
+  vapi_set_event_cb(ctx, vapi_msg_id_qos_store_details, (vapi_event_cb)callback, callback_ctx);
 };
 #endif
 
@@ -1080,6 +820,199 @@ static void __attribute__((constructor)) __vapi_constructor_qos_store_dump()
 }
 #endif
 
+#ifndef defined_vapi_msg_qos_record_enable_disable_reply
+#define defined_vapi_msg_qos_record_enable_disable_reply
+typedef struct __attribute__ ((__packed__)) {
+  i32 retval; 
+} vapi_payload_qos_record_enable_disable_reply;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header1_t header;
+  vapi_payload_qos_record_enable_disable_reply payload;
+} vapi_msg_qos_record_enable_disable_reply;
+
+static inline void vapi_msg_qos_record_enable_disable_reply_payload_hton(vapi_payload_qos_record_enable_disable_reply *payload)
+{
+  payload->retval = htobe32(payload->retval);
+}
+
+static inline void vapi_msg_qos_record_enable_disable_reply_payload_ntoh(vapi_payload_qos_record_enable_disable_reply *payload)
+{
+  payload->retval = be32toh(payload->retval);
+}
+
+static inline void vapi_msg_qos_record_enable_disable_reply_hton(vapi_msg_qos_record_enable_disable_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_qos_record_enable_disable_reply'@%p to big endian", msg);
+  vapi_type_msg_header1_t_hton(&msg->header);
+  vapi_msg_qos_record_enable_disable_reply_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_qos_record_enable_disable_reply_ntoh(vapi_msg_qos_record_enable_disable_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_qos_record_enable_disable_reply'@%p to host byte order", msg);
+  vapi_type_msg_header1_t_ntoh(&msg->header);
+  vapi_msg_qos_record_enable_disable_reply_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_qos_record_enable_disable_reply_msg_size(vapi_msg_qos_record_enable_disable_reply *msg)
+{
+  return sizeof(*msg);
+}
+
+static void __attribute__((constructor)) __vapi_constructor_qos_record_enable_disable_reply()
+{
+  static const char name[] = "qos_record_enable_disable_reply";
+  static const char name_with_crc[] = "qos_record_enable_disable_reply_e8d4e804";
+  static vapi_message_desc_t __vapi_metadata_qos_record_enable_disable_reply = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header1_t, context),
+    offsetof(vapi_msg_qos_record_enable_disable_reply, payload),
+    sizeof(vapi_msg_qos_record_enable_disable_reply),
+    (generic_swap_fn_t)vapi_msg_qos_record_enable_disable_reply_hton,
+    (generic_swap_fn_t)vapi_msg_qos_record_enable_disable_reply_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_qos_record_enable_disable_reply = vapi_register_msg(&__vapi_metadata_qos_record_enable_disable_reply);
+  VAPI_DBG("Assigned msg id %d to qos_record_enable_disable_reply", vapi_msg_id_qos_record_enable_disable_reply);
+}
+
+static inline void vapi_set_vapi_msg_qos_record_enable_disable_reply_event_cb (
+  struct vapi_ctx_s *ctx, 
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_qos_record_enable_disable_reply *payload),
+  void *callback_ctx)
+{
+  vapi_set_event_cb(ctx, vapi_msg_id_qos_record_enable_disable_reply, (vapi_event_cb)callback, callback_ctx);
+};
+#endif
+
+#ifndef defined_vapi_msg_qos_record_enable_disable
+#define defined_vapi_msg_qos_record_enable_disable
+typedef struct __attribute__ ((__packed__)) {
+  bool enable;
+  vapi_type_qos_record record; 
+} vapi_payload_qos_record_enable_disable;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header2_t header;
+  vapi_payload_qos_record_enable_disable payload;
+} vapi_msg_qos_record_enable_disable;
+
+static inline void vapi_msg_qos_record_enable_disable_payload_hton(vapi_payload_qos_record_enable_disable *payload)
+{
+  vapi_type_qos_record_hton(&payload->record);
+}
+
+static inline void vapi_msg_qos_record_enable_disable_payload_ntoh(vapi_payload_qos_record_enable_disable *payload)
+{
+  vapi_type_qos_record_ntoh(&payload->record);
+}
+
+static inline void vapi_msg_qos_record_enable_disable_hton(vapi_msg_qos_record_enable_disable *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_qos_record_enable_disable'@%p to big endian", msg);
+  vapi_type_msg_header2_t_hton(&msg->header);
+  vapi_msg_qos_record_enable_disable_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_qos_record_enable_disable_ntoh(vapi_msg_qos_record_enable_disable *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_qos_record_enable_disable'@%p to host byte order", msg);
+  vapi_type_msg_header2_t_ntoh(&msg->header);
+  vapi_msg_qos_record_enable_disable_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_qos_record_enable_disable_msg_size(vapi_msg_qos_record_enable_disable *msg)
+{
+  return sizeof(*msg);
+}
+
+static inline vapi_msg_qos_record_enable_disable* vapi_alloc_qos_record_enable_disable(struct vapi_ctx_s *ctx)
+{
+  vapi_msg_qos_record_enable_disable *msg = NULL;
+  const size_t size = sizeof(vapi_msg_qos_record_enable_disable);
+  /* cast here required to play nicely with C++ world ... */
+  msg = (vapi_msg_qos_record_enable_disable*)vapi_msg_alloc(ctx, size);
+  if (!msg) {
+    return NULL;
+  }
+  msg->header.client_index = vapi_get_client_index(ctx);
+  msg->header.context = 0;
+  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_qos_record_enable_disable);
+
+  return msg;
+}
+
+static inline vapi_error_e vapi_qos_record_enable_disable(struct vapi_ctx_s *ctx,
+  vapi_msg_qos_record_enable_disable *msg,
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
+                           void *callback_ctx,
+                           vapi_error_e rv,
+                           bool is_last,
+                           vapi_payload_qos_record_enable_disable_reply *reply),
+  void *callback_ctx)
+{
+  if (!msg || !callback) {
+    return VAPI_EINVAL;
+  }
+  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
+    return VAPI_EAGAIN;
+  }
+  vapi_error_e rv;
+  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
+    return rv;
+  }
+  u32 req_context = vapi_gen_req_context(ctx);
+  msg->header.context = req_context;
+  vapi_msg_qos_record_enable_disable_hton(msg);
+  if (VAPI_OK == (rv = vapi_send (ctx, msg))) {
+    vapi_store_request(ctx, req_context, false, (vapi_cb_t)callback, callback_ctx);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+    if (vapi_is_nonblocking(ctx)) {
+      rv = VAPI_OK;
+    } else {
+      rv = vapi_dispatch(ctx);
+    }
+  } else {
+    vapi_msg_qos_record_enable_disable_ntoh(msg);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+  }
+  return rv;
+}
+
+
+static void __attribute__((constructor)) __vapi_constructor_qos_record_enable_disable()
+{
+  static const char name[] = "qos_record_enable_disable";
+  static const char name_with_crc[] = "qos_record_enable_disable_25b33f88";
+  static vapi_message_desc_t __vapi_metadata_qos_record_enable_disable = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header2_t, context),
+    offsetof(vapi_msg_qos_record_enable_disable, payload),
+    sizeof(vapi_msg_qos_record_enable_disable),
+    (generic_swap_fn_t)vapi_msg_qos_record_enable_disable_hton,
+    (generic_swap_fn_t)vapi_msg_qos_record_enable_disable_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_qos_record_enable_disable = vapi_register_msg(&__vapi_metadata_qos_record_enable_disable);
+  VAPI_DBG("Assigned msg id %d to qos_record_enable_disable", vapi_msg_id_qos_record_enable_disable);
+}
+#endif
+
 #ifndef defined_vapi_msg_qos_record_details
 #define defined_vapi_msg_qos_record_details
 typedef struct __attribute__ ((__packed__)) {
@@ -1123,7 +1056,7 @@ static inline uword vapi_calc_qos_record_details_msg_size(vapi_msg_qos_record_de
 static void __attribute__((constructor)) __vapi_constructor_qos_record_details()
 {
   static const char name[] = "qos_record_details";
-  static const char name_with_crc[] = "qos_record_details_01e537d6";
+  static const char name_with_crc[] = "qos_record_details_4956ccdd";
   static vapi_message_desc_t __vapi_metadata_qos_record_details = {
     name,
     sizeof(name) - 1,
@@ -1149,270 +1082,6 @@ static inline void vapi_set_vapi_msg_qos_record_details_event_cb (
 {
   vapi_set_event_cb(ctx, vapi_msg_id_qos_record_details, (vapi_event_cb)callback, callback_ctx);
 };
-#endif
-
-#ifndef defined_vapi_msg_qos_mark_details
-#define defined_vapi_msg_qos_mark_details
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_qos_mark mark; 
-} vapi_payload_qos_mark_details;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header1_t header;
-  vapi_payload_qos_mark_details payload;
-} vapi_msg_qos_mark_details;
-
-static inline void vapi_msg_qos_mark_details_payload_hton(vapi_payload_qos_mark_details *payload)
-{
-  vapi_type_qos_mark_hton(&payload->mark);
-}
-
-static inline void vapi_msg_qos_mark_details_payload_ntoh(vapi_payload_qos_mark_details *payload)
-{
-  vapi_type_qos_mark_ntoh(&payload->mark);
-}
-
-static inline void vapi_msg_qos_mark_details_hton(vapi_msg_qos_mark_details *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_qos_mark_details'@%p to big endian", msg);
-  vapi_type_msg_header1_t_hton(&msg->header);
-  vapi_msg_qos_mark_details_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_qos_mark_details_ntoh(vapi_msg_qos_mark_details *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_qos_mark_details'@%p to host byte order", msg);
-  vapi_type_msg_header1_t_ntoh(&msg->header);
-  vapi_msg_qos_mark_details_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_qos_mark_details_msg_size(vapi_msg_qos_mark_details *msg)
-{
-  return sizeof(*msg);
-}
-
-static void __attribute__((constructor)) __vapi_constructor_qos_mark_details()
-{
-  static const char name[] = "qos_mark_details";
-  static const char name_with_crc[] = "qos_mark_details_89fe81a9";
-  static vapi_message_desc_t __vapi_metadata_qos_mark_details = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header1_t, context),
-    offsetof(vapi_msg_qos_mark_details, payload),
-    sizeof(vapi_msg_qos_mark_details),
-    (generic_swap_fn_t)vapi_msg_qos_mark_details_hton,
-    (generic_swap_fn_t)vapi_msg_qos_mark_details_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_qos_mark_details = vapi_register_msg(&__vapi_metadata_qos_mark_details);
-  VAPI_DBG("Assigned msg id %d to qos_mark_details", vapi_msg_id_qos_mark_details);
-}
-
-static inline void vapi_set_vapi_msg_qos_mark_details_event_cb (
-  struct vapi_ctx_s *ctx, 
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_qos_mark_details *payload),
-  void *callback_ctx)
-{
-  vapi_set_event_cb(ctx, vapi_msg_id_qos_mark_details, (vapi_event_cb)callback, callback_ctx);
-};
-#endif
-
-#ifndef defined_vapi_msg_qos_mark_enable_disable_reply
-#define defined_vapi_msg_qos_mark_enable_disable_reply
-typedef struct __attribute__ ((__packed__)) {
-  i32 retval; 
-} vapi_payload_qos_mark_enable_disable_reply;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header1_t header;
-  vapi_payload_qos_mark_enable_disable_reply payload;
-} vapi_msg_qos_mark_enable_disable_reply;
-
-static inline void vapi_msg_qos_mark_enable_disable_reply_payload_hton(vapi_payload_qos_mark_enable_disable_reply *payload)
-{
-  payload->retval = htobe32(payload->retval);
-}
-
-static inline void vapi_msg_qos_mark_enable_disable_reply_payload_ntoh(vapi_payload_qos_mark_enable_disable_reply *payload)
-{
-  payload->retval = be32toh(payload->retval);
-}
-
-static inline void vapi_msg_qos_mark_enable_disable_reply_hton(vapi_msg_qos_mark_enable_disable_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_qos_mark_enable_disable_reply'@%p to big endian", msg);
-  vapi_type_msg_header1_t_hton(&msg->header);
-  vapi_msg_qos_mark_enable_disable_reply_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_qos_mark_enable_disable_reply_ntoh(vapi_msg_qos_mark_enable_disable_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_qos_mark_enable_disable_reply'@%p to host byte order", msg);
-  vapi_type_msg_header1_t_ntoh(&msg->header);
-  vapi_msg_qos_mark_enable_disable_reply_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_qos_mark_enable_disable_reply_msg_size(vapi_msg_qos_mark_enable_disable_reply *msg)
-{
-  return sizeof(*msg);
-}
-
-static void __attribute__((constructor)) __vapi_constructor_qos_mark_enable_disable_reply()
-{
-  static const char name[] = "qos_mark_enable_disable_reply";
-  static const char name_with_crc[] = "qos_mark_enable_disable_reply_e8d4e804";
-  static vapi_message_desc_t __vapi_metadata_qos_mark_enable_disable_reply = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header1_t, context),
-    offsetof(vapi_msg_qos_mark_enable_disable_reply, payload),
-    sizeof(vapi_msg_qos_mark_enable_disable_reply),
-    (generic_swap_fn_t)vapi_msg_qos_mark_enable_disable_reply_hton,
-    (generic_swap_fn_t)vapi_msg_qos_mark_enable_disable_reply_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_qos_mark_enable_disable_reply = vapi_register_msg(&__vapi_metadata_qos_mark_enable_disable_reply);
-  VAPI_DBG("Assigned msg id %d to qos_mark_enable_disable_reply", vapi_msg_id_qos_mark_enable_disable_reply);
-}
-
-static inline void vapi_set_vapi_msg_qos_mark_enable_disable_reply_event_cb (
-  struct vapi_ctx_s *ctx, 
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_qos_mark_enable_disable_reply *payload),
-  void *callback_ctx)
-{
-  vapi_set_event_cb(ctx, vapi_msg_id_qos_mark_enable_disable_reply, (vapi_event_cb)callback, callback_ctx);
-};
-#endif
-
-#ifndef defined_vapi_msg_qos_mark_enable_disable
-#define defined_vapi_msg_qos_mark_enable_disable
-typedef struct __attribute__ ((__packed__)) {
-  u8 enable;
-  vapi_type_qos_mark mark; 
-} vapi_payload_qos_mark_enable_disable;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header2_t header;
-  vapi_payload_qos_mark_enable_disable payload;
-} vapi_msg_qos_mark_enable_disable;
-
-static inline void vapi_msg_qos_mark_enable_disable_payload_hton(vapi_payload_qos_mark_enable_disable *payload)
-{
-  vapi_type_qos_mark_hton(&payload->mark);
-}
-
-static inline void vapi_msg_qos_mark_enable_disable_payload_ntoh(vapi_payload_qos_mark_enable_disable *payload)
-{
-  vapi_type_qos_mark_ntoh(&payload->mark);
-}
-
-static inline void vapi_msg_qos_mark_enable_disable_hton(vapi_msg_qos_mark_enable_disable *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_qos_mark_enable_disable'@%p to big endian", msg);
-  vapi_type_msg_header2_t_hton(&msg->header);
-  vapi_msg_qos_mark_enable_disable_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_qos_mark_enable_disable_ntoh(vapi_msg_qos_mark_enable_disable *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_qos_mark_enable_disable'@%p to host byte order", msg);
-  vapi_type_msg_header2_t_ntoh(&msg->header);
-  vapi_msg_qos_mark_enable_disable_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_qos_mark_enable_disable_msg_size(vapi_msg_qos_mark_enable_disable *msg)
-{
-  return sizeof(*msg);
-}
-
-static inline vapi_msg_qos_mark_enable_disable* vapi_alloc_qos_mark_enable_disable(struct vapi_ctx_s *ctx)
-{
-  vapi_msg_qos_mark_enable_disable *msg = NULL;
-  const size_t size = sizeof(vapi_msg_qos_mark_enable_disable);
-  /* cast here required to play nicely with C++ world ... */
-  msg = (vapi_msg_qos_mark_enable_disable*)vapi_msg_alloc(ctx, size);
-  if (!msg) {
-    return NULL;
-  }
-  msg->header.client_index = vapi_get_client_index(ctx);
-  msg->header.context = 0;
-  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_qos_mark_enable_disable);
-
-  return msg;
-}
-
-static inline vapi_error_e vapi_qos_mark_enable_disable(struct vapi_ctx_s *ctx,
-  vapi_msg_qos_mark_enable_disable *msg,
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
-                           void *callback_ctx,
-                           vapi_error_e rv,
-                           bool is_last,
-                           vapi_payload_qos_mark_enable_disable_reply *reply),
-  void *callback_ctx)
-{
-  if (!msg || !callback) {
-    return VAPI_EINVAL;
-  }
-  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
-    return VAPI_EAGAIN;
-  }
-  vapi_error_e rv;
-  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
-    return rv;
-  }
-  u32 req_context = vapi_gen_req_context(ctx);
-  msg->header.context = req_context;
-  vapi_msg_qos_mark_enable_disable_hton(msg);
-  if (VAPI_OK == (rv = vapi_send (ctx, msg))) {
-    vapi_store_request(ctx, req_context, false, (vapi_cb_t)callback, callback_ctx);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-    if (vapi_is_nonblocking(ctx)) {
-      rv = VAPI_OK;
-    } else {
-      rv = vapi_dispatch(ctx);
-    }
-  } else {
-    vapi_msg_qos_mark_enable_disable_ntoh(msg);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-  }
-  return rv;
-}
-
-
-static void __attribute__((constructor)) __vapi_constructor_qos_mark_enable_disable()
-{
-  static const char name[] = "qos_mark_enable_disable";
-  static const char name_with_crc[] = "qos_mark_enable_disable_a7f849c8";
-  static vapi_message_desc_t __vapi_metadata_qos_mark_enable_disable = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header2_t, context),
-    offsetof(vapi_msg_qos_mark_enable_disable, payload),
-    sizeof(vapi_msg_qos_mark_enable_disable),
-    (generic_swap_fn_t)vapi_msg_qos_mark_enable_disable_hton,
-    (generic_swap_fn_t)vapi_msg_qos_mark_enable_disable_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_qos_mark_enable_disable = vapi_register_msg(&__vapi_metadata_qos_mark_enable_disable);
-  VAPI_DBG("Assigned msg id %d to qos_mark_enable_disable", vapi_msg_id_qos_mark_enable_disable);
-}
 #endif
 
 #ifndef defined_vapi_msg_qos_record_dump
@@ -1713,6 +1382,77 @@ static void __attribute__((constructor)) __vapi_constructor_qos_egress_map_updat
 }
 #endif
 
+#ifndef defined_vapi_msg_qos_egress_map_delete_reply
+#define defined_vapi_msg_qos_egress_map_delete_reply
+typedef struct __attribute__ ((__packed__)) {
+  i32 retval; 
+} vapi_payload_qos_egress_map_delete_reply;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header1_t header;
+  vapi_payload_qos_egress_map_delete_reply payload;
+} vapi_msg_qos_egress_map_delete_reply;
+
+static inline void vapi_msg_qos_egress_map_delete_reply_payload_hton(vapi_payload_qos_egress_map_delete_reply *payload)
+{
+  payload->retval = htobe32(payload->retval);
+}
+
+static inline void vapi_msg_qos_egress_map_delete_reply_payload_ntoh(vapi_payload_qos_egress_map_delete_reply *payload)
+{
+  payload->retval = be32toh(payload->retval);
+}
+
+static inline void vapi_msg_qos_egress_map_delete_reply_hton(vapi_msg_qos_egress_map_delete_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_qos_egress_map_delete_reply'@%p to big endian", msg);
+  vapi_type_msg_header1_t_hton(&msg->header);
+  vapi_msg_qos_egress_map_delete_reply_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_qos_egress_map_delete_reply_ntoh(vapi_msg_qos_egress_map_delete_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_qos_egress_map_delete_reply'@%p to host byte order", msg);
+  vapi_type_msg_header1_t_ntoh(&msg->header);
+  vapi_msg_qos_egress_map_delete_reply_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_qos_egress_map_delete_reply_msg_size(vapi_msg_qos_egress_map_delete_reply *msg)
+{
+  return sizeof(*msg);
+}
+
+static void __attribute__((constructor)) __vapi_constructor_qos_egress_map_delete_reply()
+{
+  static const char name[] = "qos_egress_map_delete_reply";
+  static const char name_with_crc[] = "qos_egress_map_delete_reply_e8d4e804";
+  static vapi_message_desc_t __vapi_metadata_qos_egress_map_delete_reply = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header1_t, context),
+    offsetof(vapi_msg_qos_egress_map_delete_reply, payload),
+    sizeof(vapi_msg_qos_egress_map_delete_reply),
+    (generic_swap_fn_t)vapi_msg_qos_egress_map_delete_reply_hton,
+    (generic_swap_fn_t)vapi_msg_qos_egress_map_delete_reply_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_qos_egress_map_delete_reply = vapi_register_msg(&__vapi_metadata_qos_egress_map_delete_reply);
+  VAPI_DBG("Assigned msg id %d to qos_egress_map_delete_reply", vapi_msg_id_qos_egress_map_delete_reply);
+}
+
+static inline void vapi_set_vapi_msg_qos_egress_map_delete_reply_event_cb (
+  struct vapi_ctx_s *ctx, 
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_qos_egress_map_delete_reply *payload),
+  void *callback_ctx)
+{
+  vapi_set_event_cb(ctx, vapi_msg_id_qos_egress_map_delete_reply, (vapi_event_cb)callback, callback_ctx);
+};
+#endif
+
 #ifndef defined_vapi_msg_qos_egress_map_delete
 #define defined_vapi_msg_qos_egress_map_delete
 typedef struct __attribute__ ((__packed__)) {
@@ -1834,6 +1574,77 @@ static void __attribute__((constructor)) __vapi_constructor_qos_egress_map_delet
 }
 #endif
 
+#ifndef defined_vapi_msg_qos_egress_map_details
+#define defined_vapi_msg_qos_egress_map_details
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_qos_egress_map map; 
+} vapi_payload_qos_egress_map_details;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header1_t header;
+  vapi_payload_qos_egress_map_details payload;
+} vapi_msg_qos_egress_map_details;
+
+static inline void vapi_msg_qos_egress_map_details_payload_hton(vapi_payload_qos_egress_map_details *payload)
+{
+  vapi_type_qos_egress_map_hton(&payload->map);
+}
+
+static inline void vapi_msg_qos_egress_map_details_payload_ntoh(vapi_payload_qos_egress_map_details *payload)
+{
+  vapi_type_qos_egress_map_ntoh(&payload->map);
+}
+
+static inline void vapi_msg_qos_egress_map_details_hton(vapi_msg_qos_egress_map_details *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_qos_egress_map_details'@%p to big endian", msg);
+  vapi_type_msg_header1_t_hton(&msg->header);
+  vapi_msg_qos_egress_map_details_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_qos_egress_map_details_ntoh(vapi_msg_qos_egress_map_details *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_qos_egress_map_details'@%p to host byte order", msg);
+  vapi_type_msg_header1_t_ntoh(&msg->header);
+  vapi_msg_qos_egress_map_details_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_qos_egress_map_details_msg_size(vapi_msg_qos_egress_map_details *msg)
+{
+  return sizeof(*msg);
+}
+
+static void __attribute__((constructor)) __vapi_constructor_qos_egress_map_details()
+{
+  static const char name[] = "qos_egress_map_details";
+  static const char name_with_crc[] = "qos_egress_map_details_46c5653c";
+  static vapi_message_desc_t __vapi_metadata_qos_egress_map_details = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header1_t, context),
+    offsetof(vapi_msg_qos_egress_map_details, payload),
+    sizeof(vapi_msg_qos_egress_map_details),
+    (generic_swap_fn_t)vapi_msg_qos_egress_map_details_hton,
+    (generic_swap_fn_t)vapi_msg_qos_egress_map_details_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_qos_egress_map_details = vapi_register_msg(&__vapi_metadata_qos_egress_map_details);
+  VAPI_DBG("Assigned msg id %d to qos_egress_map_details", vapi_msg_id_qos_egress_map_details);
+}
+
+static inline void vapi_set_vapi_msg_qos_egress_map_details_event_cb (
+  struct vapi_ctx_s *ctx, 
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_qos_egress_map_details *payload),
+  void *callback_ctx)
+{
+  vapi_set_event_cb(ctx, vapi_msg_id_qos_egress_map_details, (vapi_event_cb)callback, callback_ctx);
+};
+#endif
+
 #ifndef defined_vapi_msg_qos_egress_map_dump
 #define defined_vapi_msg_qos_egress_map_dump
 typedef struct __attribute__ ((__packed__)) {
@@ -1940,10 +1751,274 @@ static void __attribute__((constructor)) __vapi_constructor_qos_egress_map_dump(
 }
 #endif
 
+#ifndef defined_vapi_msg_qos_mark_enable_disable_reply
+#define defined_vapi_msg_qos_mark_enable_disable_reply
+typedef struct __attribute__ ((__packed__)) {
+  i32 retval; 
+} vapi_payload_qos_mark_enable_disable_reply;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header1_t header;
+  vapi_payload_qos_mark_enable_disable_reply payload;
+} vapi_msg_qos_mark_enable_disable_reply;
+
+static inline void vapi_msg_qos_mark_enable_disable_reply_payload_hton(vapi_payload_qos_mark_enable_disable_reply *payload)
+{
+  payload->retval = htobe32(payload->retval);
+}
+
+static inline void vapi_msg_qos_mark_enable_disable_reply_payload_ntoh(vapi_payload_qos_mark_enable_disable_reply *payload)
+{
+  payload->retval = be32toh(payload->retval);
+}
+
+static inline void vapi_msg_qos_mark_enable_disable_reply_hton(vapi_msg_qos_mark_enable_disable_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_qos_mark_enable_disable_reply'@%p to big endian", msg);
+  vapi_type_msg_header1_t_hton(&msg->header);
+  vapi_msg_qos_mark_enable_disable_reply_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_qos_mark_enable_disable_reply_ntoh(vapi_msg_qos_mark_enable_disable_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_qos_mark_enable_disable_reply'@%p to host byte order", msg);
+  vapi_type_msg_header1_t_ntoh(&msg->header);
+  vapi_msg_qos_mark_enable_disable_reply_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_qos_mark_enable_disable_reply_msg_size(vapi_msg_qos_mark_enable_disable_reply *msg)
+{
+  return sizeof(*msg);
+}
+
+static void __attribute__((constructor)) __vapi_constructor_qos_mark_enable_disable_reply()
+{
+  static const char name[] = "qos_mark_enable_disable_reply";
+  static const char name_with_crc[] = "qos_mark_enable_disable_reply_e8d4e804";
+  static vapi_message_desc_t __vapi_metadata_qos_mark_enable_disable_reply = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header1_t, context),
+    offsetof(vapi_msg_qos_mark_enable_disable_reply, payload),
+    sizeof(vapi_msg_qos_mark_enable_disable_reply),
+    (generic_swap_fn_t)vapi_msg_qos_mark_enable_disable_reply_hton,
+    (generic_swap_fn_t)vapi_msg_qos_mark_enable_disable_reply_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_qos_mark_enable_disable_reply = vapi_register_msg(&__vapi_metadata_qos_mark_enable_disable_reply);
+  VAPI_DBG("Assigned msg id %d to qos_mark_enable_disable_reply", vapi_msg_id_qos_mark_enable_disable_reply);
+}
+
+static inline void vapi_set_vapi_msg_qos_mark_enable_disable_reply_event_cb (
+  struct vapi_ctx_s *ctx, 
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_qos_mark_enable_disable_reply *payload),
+  void *callback_ctx)
+{
+  vapi_set_event_cb(ctx, vapi_msg_id_qos_mark_enable_disable_reply, (vapi_event_cb)callback, callback_ctx);
+};
+#endif
+
+#ifndef defined_vapi_msg_qos_mark_enable_disable
+#define defined_vapi_msg_qos_mark_enable_disable
+typedef struct __attribute__ ((__packed__)) {
+  bool enable;
+  vapi_type_qos_mark mark; 
+} vapi_payload_qos_mark_enable_disable;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header2_t header;
+  vapi_payload_qos_mark_enable_disable payload;
+} vapi_msg_qos_mark_enable_disable;
+
+static inline void vapi_msg_qos_mark_enable_disable_payload_hton(vapi_payload_qos_mark_enable_disable *payload)
+{
+  vapi_type_qos_mark_hton(&payload->mark);
+}
+
+static inline void vapi_msg_qos_mark_enable_disable_payload_ntoh(vapi_payload_qos_mark_enable_disable *payload)
+{
+  vapi_type_qos_mark_ntoh(&payload->mark);
+}
+
+static inline void vapi_msg_qos_mark_enable_disable_hton(vapi_msg_qos_mark_enable_disable *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_qos_mark_enable_disable'@%p to big endian", msg);
+  vapi_type_msg_header2_t_hton(&msg->header);
+  vapi_msg_qos_mark_enable_disable_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_qos_mark_enable_disable_ntoh(vapi_msg_qos_mark_enable_disable *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_qos_mark_enable_disable'@%p to host byte order", msg);
+  vapi_type_msg_header2_t_ntoh(&msg->header);
+  vapi_msg_qos_mark_enable_disable_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_qos_mark_enable_disable_msg_size(vapi_msg_qos_mark_enable_disable *msg)
+{
+  return sizeof(*msg);
+}
+
+static inline vapi_msg_qos_mark_enable_disable* vapi_alloc_qos_mark_enable_disable(struct vapi_ctx_s *ctx)
+{
+  vapi_msg_qos_mark_enable_disable *msg = NULL;
+  const size_t size = sizeof(vapi_msg_qos_mark_enable_disable);
+  /* cast here required to play nicely with C++ world ... */
+  msg = (vapi_msg_qos_mark_enable_disable*)vapi_msg_alloc(ctx, size);
+  if (!msg) {
+    return NULL;
+  }
+  msg->header.client_index = vapi_get_client_index(ctx);
+  msg->header.context = 0;
+  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_qos_mark_enable_disable);
+
+  return msg;
+}
+
+static inline vapi_error_e vapi_qos_mark_enable_disable(struct vapi_ctx_s *ctx,
+  vapi_msg_qos_mark_enable_disable *msg,
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
+                           void *callback_ctx,
+                           vapi_error_e rv,
+                           bool is_last,
+                           vapi_payload_qos_mark_enable_disable_reply *reply),
+  void *callback_ctx)
+{
+  if (!msg || !callback) {
+    return VAPI_EINVAL;
+  }
+  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
+    return VAPI_EAGAIN;
+  }
+  vapi_error_e rv;
+  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
+    return rv;
+  }
+  u32 req_context = vapi_gen_req_context(ctx);
+  msg->header.context = req_context;
+  vapi_msg_qos_mark_enable_disable_hton(msg);
+  if (VAPI_OK == (rv = vapi_send (ctx, msg))) {
+    vapi_store_request(ctx, req_context, false, (vapi_cb_t)callback, callback_ctx);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+    if (vapi_is_nonblocking(ctx)) {
+      rv = VAPI_OK;
+    } else {
+      rv = vapi_dispatch(ctx);
+    }
+  } else {
+    vapi_msg_qos_mark_enable_disable_ntoh(msg);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+  }
+  return rv;
+}
+
+
+static void __attribute__((constructor)) __vapi_constructor_qos_mark_enable_disable()
+{
+  static const char name[] = "qos_mark_enable_disable";
+  static const char name_with_crc[] = "qos_mark_enable_disable_1a010f74";
+  static vapi_message_desc_t __vapi_metadata_qos_mark_enable_disable = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header2_t, context),
+    offsetof(vapi_msg_qos_mark_enable_disable, payload),
+    sizeof(vapi_msg_qos_mark_enable_disable),
+    (generic_swap_fn_t)vapi_msg_qos_mark_enable_disable_hton,
+    (generic_swap_fn_t)vapi_msg_qos_mark_enable_disable_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_qos_mark_enable_disable = vapi_register_msg(&__vapi_metadata_qos_mark_enable_disable);
+  VAPI_DBG("Assigned msg id %d to qos_mark_enable_disable", vapi_msg_id_qos_mark_enable_disable);
+}
+#endif
+
+#ifndef defined_vapi_msg_qos_mark_details
+#define defined_vapi_msg_qos_mark_details
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_qos_mark mark; 
+} vapi_payload_qos_mark_details;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header1_t header;
+  vapi_payload_qos_mark_details payload;
+} vapi_msg_qos_mark_details;
+
+static inline void vapi_msg_qos_mark_details_payload_hton(vapi_payload_qos_mark_details *payload)
+{
+  vapi_type_qos_mark_hton(&payload->mark);
+}
+
+static inline void vapi_msg_qos_mark_details_payload_ntoh(vapi_payload_qos_mark_details *payload)
+{
+  vapi_type_qos_mark_ntoh(&payload->mark);
+}
+
+static inline void vapi_msg_qos_mark_details_hton(vapi_msg_qos_mark_details *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_qos_mark_details'@%p to big endian", msg);
+  vapi_type_msg_header1_t_hton(&msg->header);
+  vapi_msg_qos_mark_details_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_qos_mark_details_ntoh(vapi_msg_qos_mark_details *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_qos_mark_details'@%p to host byte order", msg);
+  vapi_type_msg_header1_t_ntoh(&msg->header);
+  vapi_msg_qos_mark_details_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_qos_mark_details_msg_size(vapi_msg_qos_mark_details *msg)
+{
+  return sizeof(*msg);
+}
+
+static void __attribute__((constructor)) __vapi_constructor_qos_mark_details()
+{
+  static const char name[] = "qos_mark_details";
+  static const char name_with_crc[] = "qos_mark_details_89fe81a9";
+  static vapi_message_desc_t __vapi_metadata_qos_mark_details = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header1_t, context),
+    offsetof(vapi_msg_qos_mark_details, payload),
+    sizeof(vapi_msg_qos_mark_details),
+    (generic_swap_fn_t)vapi_msg_qos_mark_details_hton,
+    (generic_swap_fn_t)vapi_msg_qos_mark_details_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_qos_mark_details = vapi_register_msg(&__vapi_metadata_qos_mark_details);
+  VAPI_DBG("Assigned msg id %d to qos_mark_details", vapi_msg_id_qos_mark_details);
+}
+
+static inline void vapi_set_vapi_msg_qos_mark_details_event_cb (
+  struct vapi_ctx_s *ctx, 
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_qos_mark_details *payload),
+  void *callback_ctx)
+{
+  vapi_set_event_cb(ctx, vapi_msg_id_qos_mark_details, (vapi_event_cb)callback, callback_ctx);
+};
+#endif
+
 #ifndef defined_vapi_msg_qos_mark_dump
 #define defined_vapi_msg_qos_mark_dump
 typedef struct __attribute__ ((__packed__)) {
-  u32 sw_if_index; 
+  vapi_type_interface_index sw_if_index; 
 } vapi_payload_qos_mark_dump;
 
 typedef struct __attribute__ ((__packed__)) {
@@ -2041,7 +2116,7 @@ static inline vapi_error_e vapi_qos_mark_dump(struct vapi_ctx_s *ctx,
 static void __attribute__((constructor)) __vapi_constructor_qos_mark_dump()
 {
   static const char name[] = "qos_mark_dump";
-  static const char name_with_crc[] = "qos_mark_dump_529cb13f";
+  static const char name_with_crc[] = "qos_mark_dump_f9e6675e";
   static vapi_message_desc_t __vapi_metadata_qos_mark_dump = {
     name,
     sizeof(name) - 1,

@@ -1,0 +1,7 @@
+typedef enum {
+   VL_API_POLICER_ADD_DEL,
+   VL_API_POLICER_ADD_DEL_REPLY,
+   VL_API_POLICER_DUMP,
+   VL_API_POLICER_DETAILS,
+   VL_MSG_FIRST_AVAILABLE
+} vl_api_policer_enum_t;

@@ -23,7 +23,7 @@ extern "C" {
 typedef enum {
   ADDRESS_IP4 = 0,
   ADDRESS_IP6 = 1,
-} vapi_enum_address_family;
+} __attribute__((packed)) vapi_enum_address_family;
 
 #endif
 
@@ -34,7 +34,7 @@ typedef enum {
   IP_API_ECN_ECT0 = 1,
   IP_API_ECN_ECT1 = 2,
   IP_API_ECN_CE = 3,
-} vapi_enum_ip_ecn;
+} __attribute__((packed)) vapi_enum_ip_ecn;
 
 #endif
 
@@ -62,7 +62,7 @@ typedef enum {
   IP_API_DSCP_EF = 46,
   IP_API_DSCP_CS6 = 48,
   IP_API_DSCP_CS7 = 50,
-} vapi_enum_ip_dscp;
+} __attribute__((packed)) vapi_enum_ip_dscp;
 
 #endif
 
@@ -75,13 +75,14 @@ typedef enum {
   IP_API_PROTO_TCP = 6,
   IP_API_PROTO_UDP = 17,
   IP_API_PROTO_GRE = 47,
-  IP_API_PROTO_AH = 50,
-  IP_API_PROTO_ESP = 51,
+  IP_API_PROTO_ESP = 50,
+  IP_API_PROTO_AH = 51,
+  IP_API_PROTO_ICMP6 = 58,
   IP_API_PROTO_EIGRP = 88,
   IP_API_PROTO_OSPF = 89,
   IP_API_PROTO_SCTP = 132,
   IP_API_PROTO_RESERVED = 255,
-} vapi_enum_ip_proto;
+} __attribute__((packed)) vapi_enum_ip_proto;
 
 #endif
 
@@ -93,7 +94,7 @@ typedef enum {
   FIB_API_PATH_NH_PROTO_MPLS = 2,
   FIB_API_PATH_NH_PROTO_ETHERNET = 3,
   FIB_API_PATH_NH_PROTO_BIER = 4,
-} vapi_enum_fib_path_nh_proto;
+}  vapi_enum_fib_path_nh_proto;
 
 #endif
 
@@ -104,7 +105,7 @@ typedef enum {
   FIB_API_PATH_FLAG_RESOLVE_VIA_ATTACHED = 1,
   FIB_API_PATH_FLAG_RESOLVE_VIA_HOST = 2,
   FIB_API_PATH_FLAG_POP_PW_CW = 4,
-} vapi_enum_fib_path_flags;
+}  vapi_enum_fib_path_flags;
 
 #endif
 
@@ -122,7 +123,7 @@ typedef enum {
   FIB_API_PATH_TYPE_DVR = 8,
   FIB_API_PATH_TYPE_INTERFACE_RX = 9,
   FIB_API_PATH_TYPE_CLASSIFY = 10,
-} vapi_enum_fib_path_type;
+}  vapi_enum_fib_path_type;
 
 #endif
 
@@ -194,12 +195,12 @@ typedef struct __attribute__((__packed__)) {
 
 static inline void vapi_type_address_hton(vapi_type_address *msg)
 {
-  msg->af = (vapi_enum_address_family)htobe32(msg->af);
+
 }
 
 static inline void vapi_type_address_ntoh(vapi_type_address *msg)
 {
-  msg->af = (vapi_enum_address_family)be32toh(msg->af);
+
 }
 #endif
 
@@ -212,12 +213,12 @@ typedef struct __attribute__((__packed__)) {
 
 static inline void vapi_type_prefix_hton(vapi_type_prefix *msg)
 {
-  vapi_type_address_hton(&msg->address);
+
 }
 
 static inline void vapi_type_prefix_ntoh(vapi_type_prefix *msg)
 {
-  vapi_type_address_ntoh(&msg->address);
+
 }
 #endif
 
@@ -232,13 +233,11 @@ typedef struct __attribute__((__packed__)) {
 
 static inline void vapi_type_mprefix_hton(vapi_type_mprefix *msg)
 {
-  msg->af = (vapi_enum_address_family)htobe32(msg->af);
   msg->grp_address_length = htobe16(msg->grp_address_length);
 }
 
 static inline void vapi_type_mprefix_ntoh(vapi_type_mprefix *msg)
 {
-  msg->af = (vapi_enum_address_family)be32toh(msg->af);
   msg->grp_address_length = be16toh(msg->grp_address_length);
 }
 #endif
@@ -344,9 +343,9 @@ static inline void vapi_type_fib_path_ntoh(vapi_type_fib_path *msg)
 }
 #endif
 
-#ifndef defined_vapi_type_ip6_address_with_prefix
-#define defined_vapi_type_ip6_address_with_prefix
-typedef vapi_type_ip6_prefix vapi_type_ip6_address_with_prefix;
+#ifndef defined_vapi_type_address_with_prefix
+#define defined_vapi_type_address_with_prefix
+typedef vapi_type_prefix vapi_type_address_with_prefix;
 
 #endif
 
@@ -356,9 +355,9 @@ typedef vapi_type_ip4_prefix vapi_type_ip4_address_with_prefix;
 
 #endif
 
-#ifndef defined_vapi_type_address_with_prefix
-#define defined_vapi_type_address_with_prefix
-typedef vapi_type_prefix vapi_type_address_with_prefix;
+#ifndef defined_vapi_type_ip6_address_with_prefix
+#define defined_vapi_type_ip6_address_with_prefix
+typedef vapi_type_ip6_prefix vapi_type_ip6_address_with_prefix;
 
 #endif
 

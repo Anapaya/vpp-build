@@ -21,6 +21,7 @@
 #include <vnet/mfib/mfib_table.h>
 #include <vnet/bier/bier_disp_table.h>
 #include <vpp/api/types.h>
+#include <vnet/classify/vnet_classify.h>
 
 #include <vnet/vnet_msg_enum.h>
 
@@ -75,9 +76,9 @@ fib_api_next_hop_decode (const vl_api_fib_path_t *in,
                          ip46_address_t *out)
 {
     if (in->proto == FIB_API_PATH_NH_PROTO_IP4)
-        memcpy (&out->ip4, &in->nh.address.ip4, sizeof (out->ip4));
+        clib_memcpy (&out->ip4, &in->nh.address.ip4, sizeof (out->ip4));
     else if (in->proto == FIB_API_PATH_NH_PROTO_IP6)
-        memcpy (&out->ip6, &in->nh.address.ip6, sizeof (out->ip6));
+        clib_memcpy (&out->ip6, &in->nh.address.ip6, sizeof (out->ip6));
 }
 
 static vl_api_fib_path_nh_proto_t
@@ -110,11 +111,11 @@ fib_api_next_hop_encode (const fib_route_path_t *rpath,
     fp->proto = fib_api_path_dpo_proto_to_nh(rpath->frp_proto);
 
     if (rpath->frp_proto == DPO_PROTO_IP4)
-        memcpy (&fp->nh.address.ip4,
+        clib_memcpy (&fp->nh.address.ip4,
                 &rpath->frp_addr.ip4,
                 sizeof (rpath->frp_addr.ip4));
     else if (rpath->frp_proto == DPO_PROTO_IP6)
-        memcpy (&fp->nh.address.ip6,
+        clib_memcpy (&fp->nh.address.ip6,
                 &rpath->frp_addr.ip6,
                 sizeof (rpath->frp_addr.ip6));
 }
@@ -214,7 +215,7 @@ fib_api_path_decode (vl_api_fib_path_t *in,
         break;
     case FIB_API_PATH_TYPE_CLASSIFY:
         out->frp_flags |= FIB_ROUTE_PATH_CLASSIFY;
-        
+
         if (pool_is_free_index (cm->tables, ntohl (in->nh.classify_table_index)))
         {
             return VNET_API_ERROR_NO_SUCH_TABLE;
@@ -417,6 +418,10 @@ fib_api_path_encode (const fib_route_path_t * rpath,
         out->type = FIB_API_PATH_TYPE_BIER_IMP;
         out->nh.obj_id = rpath->frp_bier_imp;
     }
+    else if (rpath->frp_flags & FIB_ROUTE_PATH_INTF_RX)
+    {
+        out->type = FIB_API_PATH_TYPE_INTERFACE_RX;
+    }
     else
     {
         out->type = FIB_API_PATH_TYPE_NORMAL;
@@ -532,34 +537,35 @@ format_vl_api_fib_path (u8 * s, va_list * args)
     return (s);
 }
 
-fib_protocol_t
-fib_proto_from_api_address_family (int af)
+int
+fib_proto_from_api_address_family (vl_api_address_family_t af, fib_protocol_t * out)
 {
-    switch (clib_net_to_host_u32 (af))
+    switch (af)
     {
     case ADDRESS_IP4:
-        return (FIB_PROTOCOL_IP4);
+        *out = (FIB_PROTOCOL_IP4);
+        return (0);
     case ADDRESS_IP6:
-        return (FIB_PROTOCOL_IP6);
+        *out = (FIB_PROTOCOL_IP6);
+        return (0);
     }
 
-    ASSERT(0);
-    return (FIB_PROTOCOL_IP4);
+    return (VNET_API_ERROR_INVALID_ADDRESS_FAMILY);
 }
 
-int
+vl_api_address_family_t
 fib_proto_to_api_address_family (fib_protocol_t fproto)
 {
     switch (fproto)
     {
     case FIB_PROTOCOL_IP4:
-        return (clib_net_to_host_u32 (ADDRESS_IP4));
+        return (ADDRESS_IP4);
     case FIB_PROTOCOL_IP6:
-        return (clib_net_to_host_u32 (ADDRESS_IP6));
+        return (ADDRESS_IP6);
     default:
         break;
     }
 
     ASSERT(0);
-    return (clib_net_to_host_u32 (ADDRESS_IP4));
+    return (ADDRESS_IP4);
 }

@@ -14,16 +14,103 @@ extern "C" {
 #include <vapi/vpe.api.vapi.h>
 
 extern vapi_msg_id_t vapi_msg_id_sw_interface_span_enable_disable;
-extern vapi_msg_id_t vapi_msg_id_sw_interface_span_details;
-extern vapi_msg_id_t vapi_msg_id_sw_interface_span_dump;
 extern vapi_msg_id_t vapi_msg_id_sw_interface_span_enable_disable_reply;
+extern vapi_msg_id_t vapi_msg_id_sw_interface_span_dump;
+extern vapi_msg_id_t vapi_msg_id_sw_interface_span_details;
 
 #define DEFINE_VAPI_MSG_IDS_SPAN_API_JSON\
   vapi_msg_id_t vapi_msg_id_sw_interface_span_enable_disable;\
-  vapi_msg_id_t vapi_msg_id_sw_interface_span_details;\
+  vapi_msg_id_t vapi_msg_id_sw_interface_span_enable_disable_reply;\
   vapi_msg_id_t vapi_msg_id_sw_interface_span_dump;\
-  vapi_msg_id_t vapi_msg_id_sw_interface_span_enable_disable_reply;
+  vapi_msg_id_t vapi_msg_id_sw_interface_span_details;
 
+
+#ifndef defined_vapi_enum_if_status_flags
+#define defined_vapi_enum_if_status_flags
+typedef enum {
+  IF_STATUS_API_FLAG_ADMIN_UP = 1,
+  IF_STATUS_API_FLAG_LINK_UP = 2,
+}  vapi_enum_if_status_flags;
+
+#endif
+
+#ifndef defined_vapi_enum_mtu_proto
+#define defined_vapi_enum_mtu_proto
+typedef enum {
+  MTU_PROTO_API_L3 = 0,
+  MTU_PROTO_API_IP4 = 1,
+  MTU_PROTO_API_IP6 = 2,
+  MTU_PROTO_API_MPLS = 3,
+}  vapi_enum_mtu_proto;
+
+#endif
+
+#ifndef defined_vapi_enum_link_duplex
+#define defined_vapi_enum_link_duplex
+typedef enum {
+  LINK_DUPLEX_API_UNKNOWN = 0,
+  LINK_DUPLEX_API_HALF = 1,
+  LINK_DUPLEX_API_FULL = 2,
+}  vapi_enum_link_duplex;
+
+#endif
+
+#ifndef defined_vapi_enum_sub_if_flags
+#define defined_vapi_enum_sub_if_flags
+typedef enum {
+  SUB_IF_API_FLAG_NO_TAGS = 1,
+  SUB_IF_API_FLAG_ONE_TAG = 2,
+  SUB_IF_API_FLAG_TWO_TAGS = 4,
+  SUB_IF_API_FLAG_DOT1AD = 8,
+  SUB_IF_API_FLAG_EXACT_MATCH = 16,
+  SUB_IF_API_FLAG_DEFAULT = 32,
+  SUB_IF_API_FLAG_OUTER_VLAN_ID_ANY = 64,
+  SUB_IF_API_FLAG_INNER_VLAN_ID_ANY = 128,
+  SUB_IF_API_FLAG_MASK_VNET = 254,
+  SUB_IF_API_FLAG_DOT1AH = 256,
+}  vapi_enum_sub_if_flags;
+
+#endif
+
+#ifndef defined_vapi_enum_rx_mode
+#define defined_vapi_enum_rx_mode
+typedef enum {
+  RX_MODE_API_UNKNOWN = 0,
+  RX_MODE_API_POLLING = 1,
+  RX_MODE_API_INTERRUPT = 2,
+  RX_MODE_API_ADAPTIVE = 3,
+  RX_MODE_API_DEFAULT = 4,
+}  vapi_enum_rx_mode;
+
+#endif
+
+#ifndef defined_vapi_enum_if_type
+#define defined_vapi_enum_if_type
+typedef enum {
+  IF_API_TYPE_HARDWARE = 0,
+  IF_API_TYPE_SUB = 1,
+  IF_API_TYPE_P2P = 2,
+  IF_API_TYPE_PIPE = 3,
+}  vapi_enum_if_type;
+
+#endif
+
+#ifndef defined_vapi_enum_span_state
+#define defined_vapi_enum_span_state
+typedef enum {
+  SPAN_STATE_API_DISABLED = 0,
+  SPAN_STATE_API_RX = 1,
+  SPAN_STATE_API_TX = 2,
+  SPAN_STATE_API_RX_TX = 3,
+}  vapi_enum_span_state;
+
+#endif
+
+#ifndef defined_vapi_type_interface_index
+#define defined_vapi_type_interface_index
+typedef u32 vapi_type_interface_index;
+
+#endif
 
 #ifndef defined_vapi_msg_sw_interface_span_enable_disable_reply
 #define defined_vapi_msg_sw_interface_span_enable_disable_reply
@@ -99,10 +186,10 @@ static inline void vapi_set_vapi_msg_sw_interface_span_enable_disable_reply_even
 #ifndef defined_vapi_msg_sw_interface_span_enable_disable
 #define defined_vapi_msg_sw_interface_span_enable_disable
 typedef struct __attribute__ ((__packed__)) {
-  u32 sw_if_index_from;
-  u32 sw_if_index_to;
-  u8 state;
-  u8 is_l2; 
+  vapi_type_interface_index sw_if_index_from;
+  vapi_type_interface_index sw_if_index_to;
+  vapi_enum_span_state state;
+  bool is_l2; 
 } vapi_payload_sw_interface_span_enable_disable;
 
 typedef struct __attribute__ ((__packed__)) {
@@ -114,12 +201,14 @@ static inline void vapi_msg_sw_interface_span_enable_disable_payload_hton(vapi_p
 {
   payload->sw_if_index_from = htobe32(payload->sw_if_index_from);
   payload->sw_if_index_to = htobe32(payload->sw_if_index_to);
+  payload->state = (vapi_enum_span_state)htobe32(payload->state);
 }
 
 static inline void vapi_msg_sw_interface_span_enable_disable_payload_ntoh(vapi_payload_sw_interface_span_enable_disable *payload)
 {
   payload->sw_if_index_from = be32toh(payload->sw_if_index_from);
   payload->sw_if_index_to = be32toh(payload->sw_if_index_to);
+  payload->state = (vapi_enum_span_state)be32toh(payload->state);
 }
 
 static inline void vapi_msg_sw_interface_span_enable_disable_hton(vapi_msg_sw_interface_span_enable_disable *msg)
@@ -202,7 +291,7 @@ static inline vapi_error_e vapi_sw_interface_span_enable_disable(struct vapi_ctx
 static void __attribute__((constructor)) __vapi_constructor_sw_interface_span_enable_disable()
 {
   static const char name[] = "sw_interface_span_enable_disable";
-  static const char name_with_crc[] = "sw_interface_span_enable_disable_7216258d";
+  static const char name_with_crc[] = "sw_interface_span_enable_disable_acc8fea1";
   static vapi_message_desc_t __vapi_metadata_sw_interface_span_enable_disable = {
     name,
     sizeof(name) - 1,
@@ -225,10 +314,10 @@ static void __attribute__((constructor)) __vapi_constructor_sw_interface_span_en
 #ifndef defined_vapi_msg_sw_interface_span_details
 #define defined_vapi_msg_sw_interface_span_details
 typedef struct __attribute__ ((__packed__)) {
-  u32 sw_if_index_from;
-  u32 sw_if_index_to;
-  u8 state;
-  u8 is_l2; 
+  vapi_type_interface_index sw_if_index_from;
+  vapi_type_interface_index sw_if_index_to;
+  vapi_enum_span_state state;
+  bool is_l2; 
 } vapi_payload_sw_interface_span_details;
 
 typedef struct __attribute__ ((__packed__)) {
@@ -240,12 +329,14 @@ static inline void vapi_msg_sw_interface_span_details_payload_hton(vapi_payload_
 {
   payload->sw_if_index_from = htobe32(payload->sw_if_index_from);
   payload->sw_if_index_to = htobe32(payload->sw_if_index_to);
+  payload->state = (vapi_enum_span_state)htobe32(payload->state);
 }
 
 static inline void vapi_msg_sw_interface_span_details_payload_ntoh(vapi_payload_sw_interface_span_details *payload)
 {
   payload->sw_if_index_from = be32toh(payload->sw_if_index_from);
   payload->sw_if_index_to = be32toh(payload->sw_if_index_to);
+  payload->state = (vapi_enum_span_state)be32toh(payload->state);
 }
 
 static inline void vapi_msg_sw_interface_span_details_hton(vapi_msg_sw_interface_span_details *msg)
@@ -270,7 +361,7 @@ static inline uword vapi_calc_sw_interface_span_details_msg_size(vapi_msg_sw_int
 static void __attribute__((constructor)) __vapi_constructor_sw_interface_span_details()
 {
   static const char name[] = "sw_interface_span_details";
-  static const char name_with_crc[] = "sw_interface_span_details_23966371";
+  static const char name_with_crc[] = "sw_interface_span_details_055643fc";
   static vapi_message_desc_t __vapi_metadata_sw_interface_span_details = {
     name,
     sizeof(name) - 1,
@@ -301,7 +392,7 @@ static inline void vapi_set_vapi_msg_sw_interface_span_details_event_cb (
 #ifndef defined_vapi_msg_sw_interface_span_dump
 #define defined_vapi_msg_sw_interface_span_dump
 typedef struct __attribute__ ((__packed__)) {
-  u8 is_l2; 
+  bool is_l2; 
 } vapi_payload_sw_interface_span_dump;
 
 typedef struct __attribute__ ((__packed__)) {
@@ -399,7 +490,7 @@ static inline vapi_error_e vapi_sw_interface_span_dump(struct vapi_ctx_s *ctx,
 static void __attribute__((constructor)) __vapi_constructor_sw_interface_span_dump()
 {
   static const char name[] = "sw_interface_span_dump";
-  static const char name_with_crc[] = "sw_interface_span_dump_67c54650";
+  static const char name_with_crc[] = "sw_interface_span_dump_d6cf0c3d";
   static vapi_message_desc_t __vapi_metadata_sw_interface_span_dump = {
     name,
     sizeof(name) - 1,

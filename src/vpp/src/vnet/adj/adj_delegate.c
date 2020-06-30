@@ -125,6 +125,20 @@ adj_delegate_add (ip_adjacency_t *adj,
 }
 
 void
+adj_delegate_adj_modified (ip_adjacency_t *adj)
+{
+    adj_delegate_t *aed;
+
+    vec_foreach(aed, adj->ia_delegates)
+    {
+        if (ad_vfts[aed->ad_type].adv_adj_modified)
+        {
+            ad_vfts[aed->ad_type].adv_adj_modified(aed);
+        }
+    }
+}
+
+void
 adj_delegate_adj_deleted (ip_adjacency_t *adj)
 {
     adj_delegate_t *aed;
@@ -140,6 +154,20 @@ adj_delegate_adj_deleted (ip_adjacency_t *adj)
     vec_reset_length(adj->ia_delegates);
 }
 
+void
+adj_delegate_adj_created (ip_adjacency_t *adj)
+{
+    adj_delegate_vft_t *vft;
+
+    vec_foreach(vft, ad_vfts)
+    {
+        if (vft->adv_adj_created)
+        {
+            vft->adv_adj_created(adj_get_index(adj));
+        }
+    }
+}
+
 u8*
 adj_delegate_format (u8* s, ip_adjacency_t *adj)
 {
@@ -149,13 +177,13 @@ adj_delegate_format (u8* s, ip_adjacency_t *adj)
     {
         if (ad_vfts[aed->ad_type].adv_format)
         {
-            s = format(s, "{");
+            s = format(s, "\n  {");
             s = ad_vfts[aed->ad_type].adv_format(aed, s);
             s = format(s, "}");
         }
         else
         {
-            s = format(s, "{unknown delegate}");
+            s = format(s, "\n  {unknown delegate}");
         }
     }
 

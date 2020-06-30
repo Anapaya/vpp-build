@@ -44,9 +44,6 @@
 #include <vppinfra/tw_timer_1t_3w_1024sl_ov.h>
 
 #include <vlib/unix/unix.h>
-#include <vlib/unix/cj.h>
-
-CJ_GLOBAL_LOG_PROTOTYPE;
 
 /* Actually allocate a few extra slots of vector data to support
    speculative vector enqueues which overflow vector data in next frame. */
@@ -190,6 +187,31 @@ vlib_get_frame_to_node (vlib_main_t * vm, u32 to_node_index)
   return vlib_get_frame (vm, f);
 }
 
+static inline void
+vlib_validate_frame_indices (vlib_frame_t * f)
+{
+  if (CLIB_DEBUG > 0)
+    {
+      int i;
+      u32 *from = vlib_frame_vector_args (f);
+
+      /* Check for bad buffer index values */
+      for (i = 0; i < f->n_vectors; i++)
+	{
+	  if (from[i] == 0)
+	    {
+	      clib_warning ("BUG: buffer index 0 at index %d", i);
+	      ASSERT (0);
+	    }
+	  else if (from[i] == 0xfefefefe)
+	    {
+	      clib_warning ("BUG: frame poison pattern at index %d", i);
+	      ASSERT (0);
+	    }
+	}
+    }
+}
+
 void
 vlib_put_frame_to_node (vlib_main_t * vm, u32 to_node_index, vlib_frame_t * f)
 {
@@ -198,6 +220,8 @@ vlib_put_frame_to_node (vlib_main_t * vm, u32 to_node_index, vlib_frame_t * f)
 
   if (f->n_vectors == 0)
     return;
+
+  vlib_validate_frame_indices (f);
 
   to_node = vlib_get_node (vm, to_node_index);
 
@@ -432,6 +456,9 @@ vlib_put_next_frame_validate (vlib_main_t * vm,
   f = vlib_get_frame (vm, nf->frame);
 
   ASSERT (n_vectors_left <= VLIB_FRAME_SIZE);
+
+  vlib_validate_frame_indices (f);
+
   n_after = VLIB_FRAME_SIZE - n_vectors_left;
   n_before = f->n_vectors;
 
@@ -1004,14 +1031,17 @@ format_buffer_metadata (u8 * s, va_list * args)
   s = format (s, "flags: %U\n", format_vnet_buffer_flags, b);
   s = format (s, "current_data: %d, current_length: %d\n",
 	      (i32) (b->current_data), (i32) (b->current_length));
-  s = format (s, "current_config_index: %d, flow_id: %x, next_buffer: %x\n",
-	      b->current_config_index, b->flow_id, b->next_buffer);
-  s = format (s, "error: %d, ref_count: %d, buffer_pool_index: %d\n",
-	      (u32) (b->error), (u32) (b->ref_count),
-	      (u32) (b->buffer_pool_index));
-  s = format (s,
-	      "trace_handle: 0x%x, len_not_first_buf: %d\n",
-	      b->trace_handle, b->total_length_not_including_first_buffer);
+  s = format
+    (s,
+     "current_config_index/punt_reason: %d, flow_id: %x, next_buffer: %x\n",
+     b->current_config_index, b->flow_id, b->next_buffer);
+  s =
+    format (s, "error: %d, ref_count: %d, buffer_pool_index: %d\n",
+	    (u32) (b->error), (u32) (b->ref_count),
+	    (u32) (b->buffer_pool_index));
+  s =
+    format (s, "trace_handle: 0x%x, len_not_first_buf: %d\n", b->trace_handle,
+	    b->total_length_not_including_first_buffer);
   return s;
 }
 
@@ -1680,6 +1710,7 @@ vlib_main_or_worker_loop (vlib_main_t * vm, int is_main)
   vlib_thread_main_t *tm = vlib_get_thread_main ();
   uword i;
   u64 cpu_time_now;
+  f64 now;
   vlib_frame_queue_main_t *fqm;
   u32 *last_node_runtime_indices = 0;
   u32 frame_queue_check_counter = 0;
@@ -1714,6 +1745,7 @@ vlib_main_or_worker_loop (vlib_main_t * vm, int is_main)
 
   vm->cpu_id = clib_get_current_cpu_id ();
   vm->numa_node = clib_get_current_numa_node ();
+  os_set_numa_index (vm->numa_node);
 
   /* Start all processes. */
   if (is_main)
@@ -1922,6 +1954,33 @@ vlib_main_or_worker_loop (vlib_main_t * vm, int is_main)
       /* Record time stamp in case there are no enabled nodes and above
          calls do not update time stamp. */
       cpu_time_now = clib_cpu_time_now ();
+      vm->loops_this_reporting_interval++;
+      now = clib_time_now_internal (&vm->clib_time, cpu_time_now);
+      /* Time to update loops_per_second? */
+      if (PREDICT_FALSE (now >= vm->loop_interval_end))
+	{
+	  /* Next sample ends in 20ms */
+	  if (vm->loop_interval_start)
+	    {
+	      f64 this_loops_per_second;
+
+	      this_loops_per_second =
+		((f64) vm->loops_this_reporting_interval) / (now -
+							     vm->loop_interval_start);
+
+	      vm->loops_per_second =
+		vm->loops_per_second * vm->damping_constant +
+		(1.0 - vm->damping_constant) * this_loops_per_second;
+	      if (vm->loops_per_second != 0.0)
+		vm->seconds_per_loop = 1.0 / vm->loops_per_second;
+	      else
+		vm->seconds_per_loop = 0.0;
+	    }
+	  /* New interval starts now, and ends in 20ms */
+	  vm->loop_interval_start = now;
+	  vm->loop_interval_end = now + 2e-4;
+	  vm->loops_this_reporting_interval = 0;
+	}
     }
 }
 
@@ -1954,6 +2013,20 @@ vlib_main_configure (vlib_main_t * vm, unformat_input_t * input)
 	;
       else if (unformat (input, "elog-post-mortem-dump"))
 	vm->elog_post_mortem_dump = 1;
+      else if (unformat (input, "buffer-alloc-success-rate %f",
+			 &vm->buffer_alloc_success_rate))
+	{
+	  if (VLIB_BUFFER_ALLOC_FAULT_INJECTOR == 0)
+	    return clib_error_return
+	      (0, "Buffer fault injection not configured");
+	}
+      else if (unformat (input, "buffer-alloc-success-seed %u",
+			 &vm->buffer_alloc_success_seed))
+	{
+	  if (VLIB_BUFFER_ALLOC_FAULT_INJECTOR == 0)
+	    return clib_error_return
+	      (0, "Buffer fault injection not configured");
+	}
       else
 	return unformat_parse_error (input);
     }
@@ -2017,8 +2090,6 @@ vlib_main (vlib_main_t * volatile vm, unformat_input_t * input)
   vlib_node_main_t *nm = &vm->node_main;
 
   vm->queue_signal_callback = dummy_queue_signal_callback;
-
-  clib_time_init (&vm->clib_time);
 
   /* Turn on event log. */
   if (!vm->elog_main.event_ring_size)
@@ -2117,8 +2188,25 @@ vlib_main (vlib_main_t * volatile vm, unformat_input_t * input)
   vec_validate (vm->processing_rpc_requests, 0);
   _vec_len (vm->processing_rpc_requests) = 0;
 
+  /* Default params for the buffer allocator fault injector, if configured */
+  if (VLIB_BUFFER_ALLOC_FAULT_INJECTOR > 0)
+    {
+      vm->buffer_alloc_success_seed = 0xdeaddabe;
+      vm->buffer_alloc_success_rate = 0.80;
+    }
+
   if ((error = vlib_call_all_config_functions (vm, input, 0 /* is_early */ )))
     goto done;
+
+  /*
+   * Use exponential smoothing, with a half-life of 1 second
+   * reported_rate(t) = reported_rate(t-1) * K + rate(t)*(1-K)
+   *
+   * Sample every 20ms, aka 50 samples per second
+   * K = exp (-1.0/20.0);
+   * K = 0.95
+   */
+  vm->damping_constant = exp (-1.0 / 20.0);
 
   /* Sort per-thread init functions before we start threads */
   vlib_sort_init_exit_functions (&vm->worker_init_function_registrations);

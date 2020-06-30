@@ -1,5 +1,5 @@
 /*
- * VLIB API definitions 2020-06-13 06:00:57
+ * VLIB API definitions 2020-06-30 12:49:14
  * Input file: feature.api
  * Automatically generated: please edit the input file NOT this file!
  */
@@ -16,6 +16,10 @@
 #endif
 
 #define VL_API_PACKED(x) x __attribute__ ((packed))
+/* Imported API files */
+#ifndef vl_api_version
+#include <vnet/interface_types.api.h>
+#endif
 
 /****** Message ID / handler enum ******/
 
@@ -33,43 +37,26 @@ vl_msg_name(vl_api_feature_enable_disable_reply_t, 1)
 
 #ifdef vl_msg_name_crc_list
 #define foreach_vl_msg_name_crc_feature \
-_(VL_API_FEATURE_ENABLE_DISABLE, feature_enable_disable, f525e210) \
+_(VL_API_FEATURE_ENABLE_DISABLE, feature_enable_disable, 7531c862) \
 _(VL_API_FEATURE_ENABLE_DISABLE_REPLY, feature_enable_disable_reply, e8d4e804) 
 #endif
-
 /****** Typedefs ******/
 
 #ifdef vl_typedefs
-#ifndef included_feature_api
-#define included_feature_api
-#ifndef _vl_api_defined_feature_enable_disable
-#define _vl_api_defined_feature_enable_disable
-typedef VL_API_PACKED(struct _vl_api_feature_enable_disable {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u32 sw_if_index;
-    u8 enable;
-    u8 arc_name[64];
-    u8 feature_name[64];
-}) vl_api_feature_enable_disable_t;
+#include "feature.api_types.h"
 #endif
-
-#ifndef _vl_api_defined_feature_enable_disable_reply
-#define _vl_api_defined_feature_enable_disable_reply
-typedef VL_API_PACKED(struct _vl_api_feature_enable_disable_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_feature_enable_disable_reply_t;
-#endif
-
-
-#endif
-#endif
-
 /****** Print functions *****/
 #ifdef vl_printfun
+#ifndef included_feature_printfun_types
+#define included_feature_printfun_types
+
+
+#endif
+#endif /* vl_printfun_types */
+/****** Print functions *****/
+#ifdef vl_printfun
+#ifndef included_feature_printfun
+#define included_feature_printfun
 
 #ifdef LP64
 #define _uword_fmt "%lld"
@@ -79,39 +66,45 @@ typedef VL_API_PACKED(struct _vl_api_feature_enable_disable_reply {
 #define _uword_cast long
 #endif
 
-#ifndef _vl_api_defined_feature_enable_disable_t_print
-#define _vl_api_defined_feature_enable_disable_t_print
-static inline void *vl_api_feature_enable_disable_t_print (vl_api_feature_enable_disable_t *a,void *handle)
+static inline void *vl_api_feature_enable_disable_t_print (vl_api_feature_enable_disable_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_feature_enable_disable_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "sw_if_index: %u\n", a->sw_if_index);
-    vl_print(handle, "enable: %u\n", a->enable);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_feature_enable_disable_t: */
+    s = format(s, "vl_api_feature_enable_disable_t:");
+    s = format(s, "\n%Usw_if_index: %U", format_white_space, indent, format_vl_api_interface_index_t, &a->sw_if_index, indent);
+    s = format(s, "\n%Uenable: %u", format_white_space, indent, a->enable);
+    s = format(s, "\n%Uarc_name: %s", format_white_space, indent, a->arc_name);
+    s = format(s, "\n%Ufeature_name: %s", format_white_space, indent, a->feature_name);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_feature_enable_disable_reply_t_print
-#define _vl_api_defined_feature_enable_disable_reply_t_print
-static inline void *vl_api_feature_enable_disable_reply_t_print (vl_api_feature_enable_disable_reply_t *a,void *handle)
+static inline void *vl_api_feature_enable_disable_reply_t_print (vl_api_feature_enable_disable_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_feature_enable_disable_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_feature_enable_disable_reply_t: */
+    s = format(s, "vl_api_feature_enable_disable_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
+
 #endif
-
-
 #endif /* vl_printfun */
 
 /****** Endian swap functions *****/
 #ifdef vl_endianfun
+#ifndef included_feature_endianfun
+#define included_feature_endianfun
 
 #undef clib_net_to_host_uword
 #ifdef LP64
@@ -120,45 +113,42 @@ static inline void *vl_api_feature_enable_disable_reply_t_print (vl_api_feature_
 #define clib_net_to_host_uword clib_net_to_host_u32
 #endif
 
-#ifndef _vl_api_defined_feature_enable_disable_t_endian
-#define _vl_api_defined_feature_enable_disable_t_endian
 static inline void vl_api_feature_enable_disable_t_endian (vl_api_feature_enable_disable_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
-    a->sw_if_index = clib_net_to_host_u32(a->sw_if_index);
+    vl_api_interface_index_t_endian(&a->sw_if_index);
     /* a->enable = a->enable (no-op) */
+    /* a->arc_name = a->arc_name (no-op) */
+    /* a->feature_name = a->feature_name (no-op) */
 }
 
-#endif
-
-#ifndef _vl_api_defined_feature_enable_disable_reply_t_endian
-#define _vl_api_defined_feature_enable_disable_reply_t_endian
 static inline void vl_api_feature_enable_disable_reply_t_endian (vl_api_feature_enable_disable_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
+
 #endif
-
-
 #endif /* vl_endianfun */
 
 /****** Version tuple *****/
 
 #ifdef vl_api_version_tuple
 
-vl_api_version_tuple(feature.api, 1, 0, 1)
+vl_api_version_tuple(feature.api, 1, 0, 2)
 
 #endif /* vl_api_version_tuple */
 
 /****** API CRC (whole file) *****/
 
 #ifdef vl_api_version
-vl_api_version(feature.api, 0x5aec37eb)
+vl_api_version(feature.api, 0xfd2b0099)
 
 #endif
 

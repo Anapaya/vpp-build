@@ -13,222 +13,103 @@ extern "C" {
 #endif
 #include <vapi/vpe.api.vapi.h>
 
-extern vapi_msg_id_t vapi_msg_id_pg_enable_disable;
-extern vapi_msg_id_t vapi_msg_id_pg_create_interface_reply;
-extern vapi_msg_id_t vapi_msg_id_pg_enable_disable_reply;
-extern vapi_msg_id_t vapi_msg_id_pg_capture_reply;
 extern vapi_msg_id_t vapi_msg_id_pg_create_interface;
+extern vapi_msg_id_t vapi_msg_id_pg_create_interface_reply;
 extern vapi_msg_id_t vapi_msg_id_pg_capture;
+extern vapi_msg_id_t vapi_msg_id_pg_capture_reply;
+extern vapi_msg_id_t vapi_msg_id_pg_enable_disable;
+extern vapi_msg_id_t vapi_msg_id_pg_enable_disable_reply;
 
 #define DEFINE_VAPI_MSG_IDS_PG_API_JSON\
-  vapi_msg_id_t vapi_msg_id_pg_enable_disable;\
-  vapi_msg_id_t vapi_msg_id_pg_create_interface_reply;\
-  vapi_msg_id_t vapi_msg_id_pg_enable_disable_reply;\
-  vapi_msg_id_t vapi_msg_id_pg_capture_reply;\
   vapi_msg_id_t vapi_msg_id_pg_create_interface;\
-  vapi_msg_id_t vapi_msg_id_pg_capture;
+  vapi_msg_id_t vapi_msg_id_pg_create_interface_reply;\
+  vapi_msg_id_t vapi_msg_id_pg_capture;\
+  vapi_msg_id_t vapi_msg_id_pg_capture_reply;\
+  vapi_msg_id_t vapi_msg_id_pg_enable_disable;\
+  vapi_msg_id_t vapi_msg_id_pg_enable_disable_reply;
 
 
-#ifndef defined_vapi_msg_pg_enable_disable_reply
-#define defined_vapi_msg_pg_enable_disable_reply
-typedef struct __attribute__ ((__packed__)) {
-  i32 retval; 
-} vapi_payload_pg_enable_disable_reply;
+#ifndef defined_vapi_enum_if_status_flags
+#define defined_vapi_enum_if_status_flags
+typedef enum {
+  IF_STATUS_API_FLAG_ADMIN_UP = 1,
+  IF_STATUS_API_FLAG_LINK_UP = 2,
+}  vapi_enum_if_status_flags;
 
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header1_t header;
-  vapi_payload_pg_enable_disable_reply payload;
-} vapi_msg_pg_enable_disable_reply;
-
-static inline void vapi_msg_pg_enable_disable_reply_payload_hton(vapi_payload_pg_enable_disable_reply *payload)
-{
-  payload->retval = htobe32(payload->retval);
-}
-
-static inline void vapi_msg_pg_enable_disable_reply_payload_ntoh(vapi_payload_pg_enable_disable_reply *payload)
-{
-  payload->retval = be32toh(payload->retval);
-}
-
-static inline void vapi_msg_pg_enable_disable_reply_hton(vapi_msg_pg_enable_disable_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_pg_enable_disable_reply'@%p to big endian", msg);
-  vapi_type_msg_header1_t_hton(&msg->header);
-  vapi_msg_pg_enable_disable_reply_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_pg_enable_disable_reply_ntoh(vapi_msg_pg_enable_disable_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_pg_enable_disable_reply'@%p to host byte order", msg);
-  vapi_type_msg_header1_t_ntoh(&msg->header);
-  vapi_msg_pg_enable_disable_reply_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_pg_enable_disable_reply_msg_size(vapi_msg_pg_enable_disable_reply *msg)
-{
-  return sizeof(*msg);
-}
-
-static void __attribute__((constructor)) __vapi_constructor_pg_enable_disable_reply()
-{
-  static const char name[] = "pg_enable_disable_reply";
-  static const char name_with_crc[] = "pg_enable_disable_reply_e8d4e804";
-  static vapi_message_desc_t __vapi_metadata_pg_enable_disable_reply = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header1_t, context),
-    offsetof(vapi_msg_pg_enable_disable_reply, payload),
-    sizeof(vapi_msg_pg_enable_disable_reply),
-    (generic_swap_fn_t)vapi_msg_pg_enable_disable_reply_hton,
-    (generic_swap_fn_t)vapi_msg_pg_enable_disable_reply_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_pg_enable_disable_reply = vapi_register_msg(&__vapi_metadata_pg_enable_disable_reply);
-  VAPI_DBG("Assigned msg id %d to pg_enable_disable_reply", vapi_msg_id_pg_enable_disable_reply);
-}
-
-static inline void vapi_set_vapi_msg_pg_enable_disable_reply_event_cb (
-  struct vapi_ctx_s *ctx, 
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_pg_enable_disable_reply *payload),
-  void *callback_ctx)
-{
-  vapi_set_event_cb(ctx, vapi_msg_id_pg_enable_disable_reply, (vapi_event_cb)callback, callback_ctx);
-};
 #endif
 
-#ifndef defined_vapi_msg_pg_enable_disable
-#define defined_vapi_msg_pg_enable_disable
-typedef struct __attribute__ ((__packed__)) {
-  u8 is_enabled;
-  u32 stream_name_length;
-  u8 stream_name[0]; 
-} vapi_payload_pg_enable_disable;
+#ifndef defined_vapi_enum_mtu_proto
+#define defined_vapi_enum_mtu_proto
+typedef enum {
+  MTU_PROTO_API_L3 = 0,
+  MTU_PROTO_API_IP4 = 1,
+  MTU_PROTO_API_IP6 = 2,
+  MTU_PROTO_API_MPLS = 3,
+}  vapi_enum_mtu_proto;
 
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header2_t header;
-  vapi_payload_pg_enable_disable payload;
-} vapi_msg_pg_enable_disable;
+#endif
 
-static inline void vapi_msg_pg_enable_disable_payload_hton(vapi_payload_pg_enable_disable *payload)
-{
-  payload->stream_name_length = htobe32(payload->stream_name_length);
-}
+#ifndef defined_vapi_enum_link_duplex
+#define defined_vapi_enum_link_duplex
+typedef enum {
+  LINK_DUPLEX_API_UNKNOWN = 0,
+  LINK_DUPLEX_API_HALF = 1,
+  LINK_DUPLEX_API_FULL = 2,
+}  vapi_enum_link_duplex;
 
-static inline void vapi_msg_pg_enable_disable_payload_ntoh(vapi_payload_pg_enable_disable *payload)
-{
-  payload->stream_name_length = be32toh(payload->stream_name_length);
-}
+#endif
 
-static inline void vapi_msg_pg_enable_disable_hton(vapi_msg_pg_enable_disable *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_pg_enable_disable'@%p to big endian", msg);
-  vapi_type_msg_header2_t_hton(&msg->header);
-  vapi_msg_pg_enable_disable_payload_hton(&msg->payload);
-}
+#ifndef defined_vapi_enum_sub_if_flags
+#define defined_vapi_enum_sub_if_flags
+typedef enum {
+  SUB_IF_API_FLAG_NO_TAGS = 1,
+  SUB_IF_API_FLAG_ONE_TAG = 2,
+  SUB_IF_API_FLAG_TWO_TAGS = 4,
+  SUB_IF_API_FLAG_DOT1AD = 8,
+  SUB_IF_API_FLAG_EXACT_MATCH = 16,
+  SUB_IF_API_FLAG_DEFAULT = 32,
+  SUB_IF_API_FLAG_OUTER_VLAN_ID_ANY = 64,
+  SUB_IF_API_FLAG_INNER_VLAN_ID_ANY = 128,
+  SUB_IF_API_FLAG_MASK_VNET = 254,
+  SUB_IF_API_FLAG_DOT1AH = 256,
+}  vapi_enum_sub_if_flags;
 
-static inline void vapi_msg_pg_enable_disable_ntoh(vapi_msg_pg_enable_disable *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_pg_enable_disable'@%p to host byte order", msg);
-  vapi_type_msg_header2_t_ntoh(&msg->header);
-  vapi_msg_pg_enable_disable_payload_ntoh(&msg->payload);
-}
+#endif
 
-static inline uword vapi_calc_pg_enable_disable_msg_size(vapi_msg_pg_enable_disable *msg)
-{
-  return sizeof(*msg)+ msg->payload.stream_name_length * sizeof(msg->payload.stream_name[0]);
-}
+#ifndef defined_vapi_enum_rx_mode
+#define defined_vapi_enum_rx_mode
+typedef enum {
+  RX_MODE_API_UNKNOWN = 0,
+  RX_MODE_API_POLLING = 1,
+  RX_MODE_API_INTERRUPT = 2,
+  RX_MODE_API_ADAPTIVE = 3,
+  RX_MODE_API_DEFAULT = 4,
+}  vapi_enum_rx_mode;
 
-static inline vapi_msg_pg_enable_disable* vapi_alloc_pg_enable_disable(struct vapi_ctx_s *ctx, size_t _stream_name_array_size)
-{
-  vapi_msg_pg_enable_disable *msg = NULL;
-  const size_t size = sizeof(vapi_msg_pg_enable_disable) + sizeof(msg->payload.stream_name[0]) * _stream_name_array_size;
-  /* cast here required to play nicely with C++ world ... */
-  msg = (vapi_msg_pg_enable_disable*)vapi_msg_alloc(ctx, size);
-  if (!msg) {
-    return NULL;
-  }
-  msg->header.client_index = vapi_get_client_index(ctx);
-  msg->header.context = 0;
-  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_pg_enable_disable);
-  msg->payload.stream_name_length = _stream_name_array_size;
+#endif
 
-  return msg;
-}
+#ifndef defined_vapi_enum_if_type
+#define defined_vapi_enum_if_type
+typedef enum {
+  IF_API_TYPE_HARDWARE = 0,
+  IF_API_TYPE_SUB = 1,
+  IF_API_TYPE_P2P = 2,
+  IF_API_TYPE_PIPE = 3,
+}  vapi_enum_if_type;
 
-static inline vapi_error_e vapi_pg_enable_disable(struct vapi_ctx_s *ctx,
-  vapi_msg_pg_enable_disable *msg,
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
-                           void *callback_ctx,
-                           vapi_error_e rv,
-                           bool is_last,
-                           vapi_payload_pg_enable_disable_reply *reply),
-  void *callback_ctx)
-{
-  if (!msg || !callback) {
-    return VAPI_EINVAL;
-  }
-  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
-    return VAPI_EAGAIN;
-  }
-  vapi_error_e rv;
-  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
-    return rv;
-  }
-  u32 req_context = vapi_gen_req_context(ctx);
-  msg->header.context = req_context;
-  vapi_msg_pg_enable_disable_hton(msg);
-  if (VAPI_OK == (rv = vapi_send (ctx, msg))) {
-    vapi_store_request(ctx, req_context, false, (vapi_cb_t)callback, callback_ctx);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-    if (vapi_is_nonblocking(ctx)) {
-      rv = VAPI_OK;
-    } else {
-      rv = vapi_dispatch(ctx);
-    }
-  } else {
-    vapi_msg_pg_enable_disable_ntoh(msg);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-  }
-  return rv;
-}
+#endif
 
+#ifndef defined_vapi_type_interface_index
+#define defined_vapi_type_interface_index
+typedef u32 vapi_type_interface_index;
 
-static void __attribute__((constructor)) __vapi_constructor_pg_enable_disable()
-{
-  static const char name[] = "pg_enable_disable";
-  static const char name_with_crc[] = "pg_enable_disable_0cb71d10";
-  static vapi_message_desc_t __vapi_metadata_pg_enable_disable = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header2_t, context),
-    offsetof(vapi_msg_pg_enable_disable, payload),
-    sizeof(vapi_msg_pg_enable_disable),
-    (generic_swap_fn_t)vapi_msg_pg_enable_disable_hton,
-    (generic_swap_fn_t)vapi_msg_pg_enable_disable_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_pg_enable_disable = vapi_register_msg(&__vapi_metadata_pg_enable_disable);
-  VAPI_DBG("Assigned msg id %d to pg_enable_disable", vapi_msg_id_pg_enable_disable);
-}
 #endif
 
 #ifndef defined_vapi_msg_pg_create_interface_reply
 #define defined_vapi_msg_pg_create_interface_reply
 typedef struct __attribute__ ((__packed__)) {
   i32 retval;
-  u32 sw_if_index; 
+  vapi_type_interface_index sw_if_index; 
 } vapi_payload_pg_create_interface_reply;
 
 typedef struct __attribute__ ((__packed__)) {
@@ -270,7 +151,7 @@ static inline uword vapi_calc_pg_create_interface_reply_msg_size(vapi_msg_pg_cre
 static void __attribute__((constructor)) __vapi_constructor_pg_create_interface_reply()
 {
   static const char name[] = "pg_create_interface_reply";
-  static const char name_with_crc[] = "pg_create_interface_reply_fda5941f";
+  static const char name_with_crc[] = "pg_create_interface_reply_5383d31f";
   static vapi_message_desc_t __vapi_metadata_pg_create_interface_reply = {
     name,
     sizeof(name) - 1,
@@ -298,82 +179,11 @@ static inline void vapi_set_vapi_msg_pg_create_interface_reply_event_cb (
 };
 #endif
 
-#ifndef defined_vapi_msg_pg_capture_reply
-#define defined_vapi_msg_pg_capture_reply
-typedef struct __attribute__ ((__packed__)) {
-  i32 retval; 
-} vapi_payload_pg_capture_reply;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header1_t header;
-  vapi_payload_pg_capture_reply payload;
-} vapi_msg_pg_capture_reply;
-
-static inline void vapi_msg_pg_capture_reply_payload_hton(vapi_payload_pg_capture_reply *payload)
-{
-  payload->retval = htobe32(payload->retval);
-}
-
-static inline void vapi_msg_pg_capture_reply_payload_ntoh(vapi_payload_pg_capture_reply *payload)
-{
-  payload->retval = be32toh(payload->retval);
-}
-
-static inline void vapi_msg_pg_capture_reply_hton(vapi_msg_pg_capture_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_pg_capture_reply'@%p to big endian", msg);
-  vapi_type_msg_header1_t_hton(&msg->header);
-  vapi_msg_pg_capture_reply_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_pg_capture_reply_ntoh(vapi_msg_pg_capture_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_pg_capture_reply'@%p to host byte order", msg);
-  vapi_type_msg_header1_t_ntoh(&msg->header);
-  vapi_msg_pg_capture_reply_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_pg_capture_reply_msg_size(vapi_msg_pg_capture_reply *msg)
-{
-  return sizeof(*msg);
-}
-
-static void __attribute__((constructor)) __vapi_constructor_pg_capture_reply()
-{
-  static const char name[] = "pg_capture_reply";
-  static const char name_with_crc[] = "pg_capture_reply_e8d4e804";
-  static vapi_message_desc_t __vapi_metadata_pg_capture_reply = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header1_t, context),
-    offsetof(vapi_msg_pg_capture_reply, payload),
-    sizeof(vapi_msg_pg_capture_reply),
-    (generic_swap_fn_t)vapi_msg_pg_capture_reply_hton,
-    (generic_swap_fn_t)vapi_msg_pg_capture_reply_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_pg_capture_reply = vapi_register_msg(&__vapi_metadata_pg_capture_reply);
-  VAPI_DBG("Assigned msg id %d to pg_capture_reply", vapi_msg_id_pg_capture_reply);
-}
-
-static inline void vapi_set_vapi_msg_pg_capture_reply_event_cb (
-  struct vapi_ctx_s *ctx, 
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_pg_capture_reply *payload),
-  void *callback_ctx)
-{
-  vapi_set_event_cb(ctx, vapi_msg_id_pg_capture_reply, (vapi_event_cb)callback, callback_ctx);
-};
-#endif
-
 #ifndef defined_vapi_msg_pg_create_interface
 #define defined_vapi_msg_pg_create_interface
 typedef struct __attribute__ ((__packed__)) {
-  u32 interface_id;
-  u8 gso_enabled;
+  vapi_type_interface_index interface_id;
+  bool gso_enabled;
   u32 gso_size; 
 } vapi_payload_pg_create_interface;
 
@@ -474,7 +284,7 @@ static inline vapi_error_e vapi_pg_create_interface(struct vapi_ctx_s *ctx,
 static void __attribute__((constructor)) __vapi_constructor_pg_create_interface()
 {
   static const char name[] = "pg_create_interface";
-  static const char name_with_crc[] = "pg_create_interface_b1ecff05";
+  static const char name_with_crc[] = "pg_create_interface_b7c893d7";
   static vapi_message_desc_t __vapi_metadata_pg_create_interface = {
     name,
     sizeof(name) - 1,
@@ -494,14 +304,84 @@ static void __attribute__((constructor)) __vapi_constructor_pg_create_interface(
 }
 #endif
 
+#ifndef defined_vapi_msg_pg_capture_reply
+#define defined_vapi_msg_pg_capture_reply
+typedef struct __attribute__ ((__packed__)) {
+  i32 retval; 
+} vapi_payload_pg_capture_reply;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header1_t header;
+  vapi_payload_pg_capture_reply payload;
+} vapi_msg_pg_capture_reply;
+
+static inline void vapi_msg_pg_capture_reply_payload_hton(vapi_payload_pg_capture_reply *payload)
+{
+  payload->retval = htobe32(payload->retval);
+}
+
+static inline void vapi_msg_pg_capture_reply_payload_ntoh(vapi_payload_pg_capture_reply *payload)
+{
+  payload->retval = be32toh(payload->retval);
+}
+
+static inline void vapi_msg_pg_capture_reply_hton(vapi_msg_pg_capture_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_pg_capture_reply'@%p to big endian", msg);
+  vapi_type_msg_header1_t_hton(&msg->header);
+  vapi_msg_pg_capture_reply_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_pg_capture_reply_ntoh(vapi_msg_pg_capture_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_pg_capture_reply'@%p to host byte order", msg);
+  vapi_type_msg_header1_t_ntoh(&msg->header);
+  vapi_msg_pg_capture_reply_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_pg_capture_reply_msg_size(vapi_msg_pg_capture_reply *msg)
+{
+  return sizeof(*msg);
+}
+
+static void __attribute__((constructor)) __vapi_constructor_pg_capture_reply()
+{
+  static const char name[] = "pg_capture_reply";
+  static const char name_with_crc[] = "pg_capture_reply_e8d4e804";
+  static vapi_message_desc_t __vapi_metadata_pg_capture_reply = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header1_t, context),
+    offsetof(vapi_msg_pg_capture_reply, payload),
+    sizeof(vapi_msg_pg_capture_reply),
+    (generic_swap_fn_t)vapi_msg_pg_capture_reply_hton,
+    (generic_swap_fn_t)vapi_msg_pg_capture_reply_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_pg_capture_reply = vapi_register_msg(&__vapi_metadata_pg_capture_reply);
+  VAPI_DBG("Assigned msg id %d to pg_capture_reply", vapi_msg_id_pg_capture_reply);
+}
+
+static inline void vapi_set_vapi_msg_pg_capture_reply_event_cb (
+  struct vapi_ctx_s *ctx, 
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_pg_capture_reply *payload),
+  void *callback_ctx)
+{
+  vapi_set_event_cb(ctx, vapi_msg_id_pg_capture_reply, (vapi_event_cb)callback, callback_ctx);
+};
+#endif
+
 #ifndef defined_vapi_msg_pg_capture
 #define defined_vapi_msg_pg_capture
 typedef struct __attribute__ ((__packed__)) {
-  u32 interface_id;
-  u8 is_enabled;
+  vapi_type_interface_index interface_id;
+  bool is_enabled;
   u32 count;
-  u32 pcap_name_length;
-  u8 pcap_file_name[0]; 
+  vl_api_string_t pcap_file_name; 
 } vapi_payload_pg_capture;
 
 typedef struct __attribute__ ((__packed__)) {
@@ -513,14 +393,12 @@ static inline void vapi_msg_pg_capture_payload_hton(vapi_payload_pg_capture *pay
 {
   payload->interface_id = htobe32(payload->interface_id);
   payload->count = htobe32(payload->count);
-  payload->pcap_name_length = htobe32(payload->pcap_name_length);
 }
 
 static inline void vapi_msg_pg_capture_payload_ntoh(vapi_payload_pg_capture *payload)
 {
   payload->interface_id = be32toh(payload->interface_id);
   payload->count = be32toh(payload->count);
-  payload->pcap_name_length = be32toh(payload->pcap_name_length);
 }
 
 static inline void vapi_msg_pg_capture_hton(vapi_msg_pg_capture *msg)
@@ -539,13 +417,13 @@ static inline void vapi_msg_pg_capture_ntoh(vapi_msg_pg_capture *msg)
 
 static inline uword vapi_calc_pg_capture_msg_size(vapi_msg_pg_capture *msg)
 {
-  return sizeof(*msg)+ msg->payload.pcap_name_length * sizeof(msg->payload.pcap_file_name[0]);
+  return sizeof(*msg);
 }
 
-static inline vapi_msg_pg_capture* vapi_alloc_pg_capture(struct vapi_ctx_s *ctx, size_t _pcap_file_name_array_size)
+static inline vapi_msg_pg_capture* vapi_alloc_pg_capture(struct vapi_ctx_s *ctx)
 {
   vapi_msg_pg_capture *msg = NULL;
-  const size_t size = sizeof(vapi_msg_pg_capture) + sizeof(msg->payload.pcap_file_name[0]) * _pcap_file_name_array_size;
+  const size_t size = sizeof(vapi_msg_pg_capture);
   /* cast here required to play nicely with C++ world ... */
   msg = (vapi_msg_pg_capture*)vapi_msg_alloc(ctx, size);
   if (!msg) {
@@ -554,7 +432,6 @@ static inline vapi_msg_pg_capture* vapi_alloc_pg_capture(struct vapi_ctx_s *ctx,
   msg->header.client_index = vapi_get_client_index(ctx);
   msg->header.context = 0;
   msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_pg_capture);
-  msg->payload.pcap_name_length = _pcap_file_name_array_size;
 
   return msg;
 }
@@ -604,7 +481,7 @@ static inline vapi_error_e vapi_pg_capture(struct vapi_ctx_s *ctx,
 static void __attribute__((constructor)) __vapi_constructor_pg_capture()
 {
   static const char name[] = "pg_capture";
-  static const char name_with_crc[] = "pg_capture_453da78d";
+  static const char name_with_crc[] = "pg_capture_3712fb6c";
   static vapi_message_desc_t __vapi_metadata_pg_capture = {
     name,
     sizeof(name) - 1,
@@ -621,6 +498,199 @@ static void __attribute__((constructor)) __vapi_constructor_pg_capture()
 
   vapi_msg_id_pg_capture = vapi_register_msg(&__vapi_metadata_pg_capture);
   VAPI_DBG("Assigned msg id %d to pg_capture", vapi_msg_id_pg_capture);
+}
+#endif
+
+#ifndef defined_vapi_msg_pg_enable_disable_reply
+#define defined_vapi_msg_pg_enable_disable_reply
+typedef struct __attribute__ ((__packed__)) {
+  i32 retval; 
+} vapi_payload_pg_enable_disable_reply;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header1_t header;
+  vapi_payload_pg_enable_disable_reply payload;
+} vapi_msg_pg_enable_disable_reply;
+
+static inline void vapi_msg_pg_enable_disable_reply_payload_hton(vapi_payload_pg_enable_disable_reply *payload)
+{
+  payload->retval = htobe32(payload->retval);
+}
+
+static inline void vapi_msg_pg_enable_disable_reply_payload_ntoh(vapi_payload_pg_enable_disable_reply *payload)
+{
+  payload->retval = be32toh(payload->retval);
+}
+
+static inline void vapi_msg_pg_enable_disable_reply_hton(vapi_msg_pg_enable_disable_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_pg_enable_disable_reply'@%p to big endian", msg);
+  vapi_type_msg_header1_t_hton(&msg->header);
+  vapi_msg_pg_enable_disable_reply_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_pg_enable_disable_reply_ntoh(vapi_msg_pg_enable_disable_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_pg_enable_disable_reply'@%p to host byte order", msg);
+  vapi_type_msg_header1_t_ntoh(&msg->header);
+  vapi_msg_pg_enable_disable_reply_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_pg_enable_disable_reply_msg_size(vapi_msg_pg_enable_disable_reply *msg)
+{
+  return sizeof(*msg);
+}
+
+static void __attribute__((constructor)) __vapi_constructor_pg_enable_disable_reply()
+{
+  static const char name[] = "pg_enable_disable_reply";
+  static const char name_with_crc[] = "pg_enable_disable_reply_e8d4e804";
+  static vapi_message_desc_t __vapi_metadata_pg_enable_disable_reply = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header1_t, context),
+    offsetof(vapi_msg_pg_enable_disable_reply, payload),
+    sizeof(vapi_msg_pg_enable_disable_reply),
+    (generic_swap_fn_t)vapi_msg_pg_enable_disable_reply_hton,
+    (generic_swap_fn_t)vapi_msg_pg_enable_disable_reply_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_pg_enable_disable_reply = vapi_register_msg(&__vapi_metadata_pg_enable_disable_reply);
+  VAPI_DBG("Assigned msg id %d to pg_enable_disable_reply", vapi_msg_id_pg_enable_disable_reply);
+}
+
+static inline void vapi_set_vapi_msg_pg_enable_disable_reply_event_cb (
+  struct vapi_ctx_s *ctx, 
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_pg_enable_disable_reply *payload),
+  void *callback_ctx)
+{
+  vapi_set_event_cb(ctx, vapi_msg_id_pg_enable_disable_reply, (vapi_event_cb)callback, callback_ctx);
+};
+#endif
+
+#ifndef defined_vapi_msg_pg_enable_disable
+#define defined_vapi_msg_pg_enable_disable
+typedef struct __attribute__ ((__packed__)) {
+  bool is_enabled;
+  vl_api_string_t stream_name; 
+} vapi_payload_pg_enable_disable;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header2_t header;
+  vapi_payload_pg_enable_disable payload;
+} vapi_msg_pg_enable_disable;
+
+static inline void vapi_msg_pg_enable_disable_payload_hton(vapi_payload_pg_enable_disable *payload)
+{
+
+}
+
+static inline void vapi_msg_pg_enable_disable_payload_ntoh(vapi_payload_pg_enable_disable *payload)
+{
+
+}
+
+static inline void vapi_msg_pg_enable_disable_hton(vapi_msg_pg_enable_disable *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_pg_enable_disable'@%p to big endian", msg);
+  vapi_type_msg_header2_t_hton(&msg->header);
+  vapi_msg_pg_enable_disable_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_pg_enable_disable_ntoh(vapi_msg_pg_enable_disable *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_pg_enable_disable'@%p to host byte order", msg);
+  vapi_type_msg_header2_t_ntoh(&msg->header);
+  vapi_msg_pg_enable_disable_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_pg_enable_disable_msg_size(vapi_msg_pg_enable_disable *msg)
+{
+  return sizeof(*msg);
+}
+
+static inline vapi_msg_pg_enable_disable* vapi_alloc_pg_enable_disable(struct vapi_ctx_s *ctx)
+{
+  vapi_msg_pg_enable_disable *msg = NULL;
+  const size_t size = sizeof(vapi_msg_pg_enable_disable);
+  /* cast here required to play nicely with C++ world ... */
+  msg = (vapi_msg_pg_enable_disable*)vapi_msg_alloc(ctx, size);
+  if (!msg) {
+    return NULL;
+  }
+  msg->header.client_index = vapi_get_client_index(ctx);
+  msg->header.context = 0;
+  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_pg_enable_disable);
+
+  return msg;
+}
+
+static inline vapi_error_e vapi_pg_enable_disable(struct vapi_ctx_s *ctx,
+  vapi_msg_pg_enable_disable *msg,
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
+                           void *callback_ctx,
+                           vapi_error_e rv,
+                           bool is_last,
+                           vapi_payload_pg_enable_disable_reply *reply),
+  void *callback_ctx)
+{
+  if (!msg || !callback) {
+    return VAPI_EINVAL;
+  }
+  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
+    return VAPI_EAGAIN;
+  }
+  vapi_error_e rv;
+  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
+    return rv;
+  }
+  u32 req_context = vapi_gen_req_context(ctx);
+  msg->header.context = req_context;
+  vapi_msg_pg_enable_disable_hton(msg);
+  if (VAPI_OK == (rv = vapi_send (ctx, msg))) {
+    vapi_store_request(ctx, req_context, false, (vapi_cb_t)callback, callback_ctx);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+    if (vapi_is_nonblocking(ctx)) {
+      rv = VAPI_OK;
+    } else {
+      rv = vapi_dispatch(ctx);
+    }
+  } else {
+    vapi_msg_pg_enable_disable_ntoh(msg);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+  }
+  return rv;
+}
+
+
+static void __attribute__((constructor)) __vapi_constructor_pg_enable_disable()
+{
+  static const char name[] = "pg_enable_disable";
+  static const char name_with_crc[] = "pg_enable_disable_01f94f3a";
+  static vapi_message_desc_t __vapi_metadata_pg_enable_disable = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header2_t, context),
+    offsetof(vapi_msg_pg_enable_disable, payload),
+    sizeof(vapi_msg_pg_enable_disable),
+    (generic_swap_fn_t)vapi_msg_pg_enable_disable_hton,
+    (generic_swap_fn_t)vapi_msg_pg_enable_disable_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_pg_enable_disable = vapi_register_msg(&__vapi_metadata_pg_enable_disable);
+  VAPI_DBG("Assigned msg id %d to pg_enable_disable", vapi_msg_id_pg_enable_disable);
 }
 #endif
 

@@ -16,6 +16,7 @@
 #define _GNU_SOURCE
 #include <vnet/bonding/node.h>
 #include <lacp/node.h>
+#include <vpp/stats/stat_segment.h>
 
 static int
 lacp_packet_scan (vlib_main_t * vm, slave_if_t * sif)
@@ -61,7 +62,7 @@ marker_fill_request_pdu (marker_pdu_t * marker, slave_if_t * sif)
 }
 
 static void
-send_ethernet_marker_response_pdu (slave_if_t * sif)
+send_ethernet_marker_response_pdu (vlib_main_t * vm, slave_if_t * sif)
 {
   lacp_main_t *lm = &lacp_main;
   u32 *to_next;
@@ -70,7 +71,6 @@ send_ethernet_marker_response_pdu (slave_if_t * sif)
   u32 bi0;
   vlib_buffer_t *b0;
   vlib_frame_t *f;
-  vlib_main_t *vm = lm->vlib_main;
   vnet_main_t *vnm = lm->vnet_main;
 
   /*
@@ -108,7 +108,7 @@ send_ethernet_marker_response_pdu (slave_if_t * sif)
   f->n_vectors = 1;
 
   vlib_put_frame_to_node (vm, hw->output_node_index, f);
-  sif->last_marker_pdu_sent_time = vlib_time_now (lm->vlib_main);
+  sif->last_marker_pdu_sent_time = vlib_time_now (vm);
   sif->marker_pdu_sent++;
 }
 
@@ -125,7 +125,7 @@ handle_marker_protocol (vlib_main_t * vm, slave_if_t * sif)
       (marker->terminator.tlv_length != 0))
     return (LACP_ERROR_BAD_TLV);
 
-  send_ethernet_marker_response_pdu (sif);
+  send_ethernet_marker_response_pdu (vm, sif);
 
   return LACP_ERROR_NONE;
 }
@@ -136,12 +136,13 @@ handle_marker_protocol (vlib_main_t * vm, slave_if_t * sif)
 lacp_error_t
 lacp_input (vlib_main_t * vm, vlib_buffer_t * b0, u32 bi0)
 {
-  lacp_main_t *lm = &lacp_main;
+  bond_main_t *bm = &bond_main;
   slave_if_t *sif;
   uword nbytes;
   lacp_error_t e;
   marker_pdu_t *marker;
   uword last_packet_signature;
+  bond_if_t *bif;
 
   sif =
     bond_get_slave_by_sw_if_index (vnet_buffer (b0)->sw_if_index[VLIB_RX]);
@@ -154,7 +155,7 @@ lacp_input (vlib_main_t * vm, vlib_buffer_t * b0, u32 bi0)
   marker = (marker_pdu_t *) (b0->data + b0->current_data);
   if (marker->subtype == MARKER_SUBTYPE)
     {
-      sif->last_marker_pdu_recd_time = vlib_time_now (lm->vlib_main);
+      sif->last_marker_pdu_recd_time = vlib_time_now (vm);
       if (sif->last_marker_pkt)
 	_vec_len (sif->last_marker_pkt) = 0;
       vec_validate (sif->last_marker_pkt,
@@ -192,7 +193,7 @@ lacp_input (vlib_main_t * vm, vlib_buffer_t * b0, u32 bi0)
   nbytes = vlib_buffer_contents (vm, bi0, sif->last_rx_pkt);
   ASSERT (nbytes <= vec_len (sif->last_rx_pkt));
 
-  sif->last_lacpdu_recd_time = vlib_time_now (lm->vlib_main);
+  sif->last_lacpdu_recd_time = vlib_time_now (vm);
   if (nbytes < sizeof (lacp_pdu_t))
     {
       sif->bad_pdu_received++;
@@ -206,14 +207,20 @@ lacp_input (vlib_main_t * vm, vlib_buffer_t * b0, u32 bi0)
       (sif->last_packet_signature == last_packet_signature) &&
       ((sif->actor.state & LACP_STEADY_STATE) == LACP_STEADY_STATE))
     {
-      lacp_start_current_while_timer (lm->vlib_main, sif,
-				      sif->ttl_in_seconds);
+      lacp_start_current_while_timer (vm, sif, sif->ttl_in_seconds);
       e = LACP_ERROR_CACHE_HIT;
     }
   else
     {
       /* Actually scan the packet */
       e = lacp_packet_scan (vm, sif);
+      bif = bond_get_master_by_dev_instance (sif->bif_dev_instance);
+      stat_segment_set_state_counter (bm->stats[bif->sw_if_index]
+				      [sif->sw_if_index].actor_state,
+				      sif->actor.state);
+      stat_segment_set_state_counter (bm->stats[bif->sw_if_index]
+				      [sif->sw_if_index].partner_state,
+				      sif->partner.state);
       sif->last_packet_signature_valid = 1;
       sif->last_packet_signature = last_packet_signature;
     }
@@ -276,11 +283,11 @@ lacp_input_format_trace (u8 * s, va_list * args)
 	  s = format (s, "  Marker Information TLV: length %u\n",
 		      marker->marker_info.tlv_length);
 	  s = format (s, "  Requester port: %u\n",
-		      marker->marker_info.requester_port);
+		      ntohs (marker->marker_info.requester_port));
 	  s = format (s, "  Requester system: %U\n", format_ethernet_address,
 		      marker->marker_info.requester_system);
 	  s = format (s, "  Requester transaction ID: %u\n",
-		      marker->marker_info.requester_transaction_id);
+		      ntohl (marker->marker_info.requester_transaction_id));
 	  break;
 
 	case LACP_SUBTYPE:

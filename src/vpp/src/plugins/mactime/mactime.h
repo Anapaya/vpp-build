@@ -21,7 +21,7 @@
 #include <vnet/vnet.h>
 #include <vnet/ip/ip.h>
 #include <vnet/ethernet/ethernet.h>
-#include <vnet/ethernet/arp.h>
+//#include <vnet/ethernet/arp.h>
 #include <vlib/counter.h>
 
 #include <vppinfra/hash.h>
@@ -29,26 +29,7 @@
 #include <vppinfra/time_range.h>
 #include <vppinfra/bihash_8_8.h>
 
-#define MACTIME_RANGE_TYPE_DROP 0
-#define MACTIME_RANGE_TYPE_ALLOW 1
-
-typedef struct
-{
-  u8 *device_name;
-  u8 mac_address[6];
-  u64 data_quota;
-  u64 data_used_in_range;
-  u32 flags;
-  clib_timebase_range_t *ranges;
-} mactime_device_t;
-
-/** Always drop packets from this device */
-#define MACTIME_DEVICE_FLAG_STATIC_DROP		(1<<0)
-#define MACTIME_DEVICE_FLAG_STATIC_ALLOW	(1<<1)
-#define MACTIME_DEVICE_FLAG_DYNAMIC_DROP	(1<<2)
-#define MACTIME_DEVICE_FLAG_DYNAMIC_ALLOW	(1<<3)
-#define MACTIME_DEVICE_FLAG_DYNAMIC_ALLOW_QUOTA	(1<<4)
-#define MACTIME_DEVICE_FLAG_DROP_UDP_10001      (1<<5)
+#include <mactime/mactime_device.h>
 
 typedef struct
 {
@@ -75,6 +56,7 @@ typedef struct
 
   /* Device table */
   mactime_device_t *devices;
+  u32 device_table_epoch;
 
   /* Counters */
   vlib_combined_counter_main_t allow_counters;
@@ -89,7 +71,7 @@ typedef struct
   int feature_initialized;
 
   /* arp cache copy, for "show mactime" */
-  ethernet_arp_ip4_entry_t *arp_cache_copy;
+  index_t *arp_cache_copy;
 
   /* convenience */
   vlib_main_t *vlib_main;
@@ -107,6 +89,7 @@ extern vlib_node_registration_t mactime_node;
 extern vlib_node_registration_t mactime_tx_node;
 
 void mactime_send_create_entry_message (u8 * mac_address);
+void mactime_url_init (vlib_main_t * vm);
 
 /* Periodic function events */
 #define MACTIME_EVENT1 1

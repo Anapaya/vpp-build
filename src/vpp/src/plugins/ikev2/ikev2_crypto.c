@@ -342,11 +342,11 @@ ikev2_calc_integr (ikev2_sa_transform_t * tr, v8 * key, u8 * data, int len)
 
   if (tr->md == EVP_sha1 ())
     {
-      clib_warning ("integrity checking with sha1");
+      ikev2_elog_debug ("integrity checking with sha1");
     }
   else if (tr->md == EVP_sha256 ())
     {
-      clib_warning ("integrity checking with sha256");
+      ikev2_elog_debug ("integrity checking with sha256");
     }
 
   /* verify integrity of data */
@@ -389,7 +389,7 @@ ikev2_decrypt_data (ikev2_sa_t * sa, u8 * data, int len)
   /* check if data is multiplier of cipher block size */
   if (len % block_size)
     {
-      clib_warning ("wrong data length");
+      ikev2_elog_error ("wrong data length");
       return 0;
     }
 
@@ -458,6 +458,23 @@ ikev2_encrypt_data (ikev2_sa_t * sa, v8 * src, u8 * dst)
   return out_len + bs;
 }
 
+#ifndef BN_bn2binpad
+int
+BN_bn2binpad (const BIGNUM * a, unsigned char *to, int tolen)
+{
+  int r = BN_bn2bin (a, to);
+  ASSERT (tolen >= r);
+  int pad = tolen - r;
+  if (pad)
+    {
+      vec_insert (to, pad, 0);
+      clib_memset (to, 0, pad);
+      _vec_len (to) -= pad;
+    }
+  return tolen;
+}
+#endif
+
 void
 ikev2_generate_dh (ikev2_sa_t * sa, ikev2_sa_transform_t * t)
 {
@@ -486,13 +503,13 @@ ikev2_generate_dh (ikev2_sa_t * sa, ikev2_sa_transform_t * t)
 	  sa->dh_private_key = vec_new (u8, t->key_len);
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
 	  DH_get0_key (dh, &pub_key, &priv_key);
-	  r = BN_bn2bin (pub_key, sa->i_dh_data);
+	  r = BN_bn2binpad (pub_key, sa->i_dh_data, t->key_len);
 	  ASSERT (r == t->key_len);
-	  r = BN_bn2bin (priv_key, sa->dh_private_key);
+	  r = BN_bn2binpad (priv_key, sa->dh_private_key, t->key_len);
 #else
-	  r = BN_bn2bin (dh->pub_key, sa->i_dh_data);
+	  r = BN_bn2binpad (dh->pub_key, sa->i_dh_data, t->key_len);
 	  ASSERT (r == t->key_len);
-	  r = BN_bn2bin (dh->priv_key, sa->dh_private_key);
+	  r = BN_bn2binpad (dh->priv_key, sa->dh_private_key, t->key_len);
 #endif
 	  ASSERT (r == t->key_len);
 	}
@@ -501,9 +518,9 @@ ikev2_generate_dh (ikev2_sa_t * sa, ikev2_sa_transform_t * t)
 	  sa->r_dh_data = vec_new (u8, t->key_len);
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
 	  DH_get0_key (dh, &pub_key, &priv_key);
-	  r = BN_bn2bin (pub_key, sa->r_dh_data);
+	  r = BN_bn2binpad (pub_key, sa->r_dh_data, t->key_len);
 #else
-	  r = BN_bn2bin (dh->pub_key, sa->r_dh_data);
+	  r = BN_bn2binpad (dh->pub_key, sa->r_dh_data, t->key_len);
 #endif
 	  ASSERT (r == t->key_len);
 
@@ -511,7 +528,14 @@ ikev2_generate_dh (ikev2_sa_t * sa, ikev2_sa_transform_t * t)
 	  sa->dh_shared_key = vec_new (u8, t->key_len);
 	  ex = BN_bin2bn (sa->i_dh_data, vec_len (sa->i_dh_data), NULL);
 	  r = DH_compute_key (sa->dh_shared_key, ex, dh);
-	  ASSERT (r == t->key_len);
+	  ASSERT (t->key_len >= r);
+	  int pad = t->key_len - r;
+	  if (pad)
+	    {
+	      vec_insert (sa->dh_shared_key, pad, 0);
+	      clib_memset (sa->dh_shared_key, 0, pad);
+	      _vec_len (sa->dh_shared_key) -= pad;
+	    }
 	  BN_clear_free (ex);
 	}
       DH_free (dh);
@@ -630,7 +654,14 @@ ikev2_complete_dh (ikev2_sa_t * sa, ikev2_sa_transform_t * t)
       sa->dh_shared_key = vec_new (u8, t->key_len);
       ex = BN_bin2bn (sa->r_dh_data, vec_len (sa->r_dh_data), NULL);
       r = DH_compute_key (sa->dh_shared_key, ex, dh);
-      ASSERT (r == t->key_len);
+      ASSERT (t->key_len >= r);
+      int pad = t->key_len - r;
+      if (pad)
+	{
+	  vec_insert (sa->dh_shared_key, pad, 0);
+	  clib_memset (sa->dh_shared_key, 0, pad);
+	  _vec_len (sa->dh_shared_key) -= pad;
+	}
       BN_clear_free (ex);
       DH_free (dh);
     }
@@ -772,7 +803,7 @@ ikev2_load_cert_file (u8 * file)
   fp = fopen ((char *) file, "r");
   if (!fp)
     {
-      clib_warning ("open %s failed", file);
+      ikev2_log_error ("open %s failed", file);
       goto end;
     }
 
@@ -780,13 +811,13 @@ ikev2_load_cert_file (u8 * file)
   fclose (fp);
   if (x509 == NULL)
     {
-      clib_warning ("read cert %s failed", file);
+      ikev2_log_error ("read cert %s failed", file);
       goto end;
     }
 
   pkey = X509_get_pubkey (x509);
   if (pkey == NULL)
-    clib_warning ("get pubkey %s failed", file);
+    ikev2_log_error ("get pubkey %s failed", file);
 
 end:
   return pkey;
@@ -801,14 +832,14 @@ ikev2_load_key_file (u8 * file)
   fp = fopen ((char *) file, "r");
   if (!fp)
     {
-      clib_warning ("open %s failed", file);
+      ikev2_log_error ("open %s failed", file);
       goto end;
     }
 
   pkey = PEM_read_PrivateKey (fp, NULL, NULL, NULL);
   fclose (fp);
   if (pkey == NULL)
-    clib_warning ("read %s failed", file);
+    ikev2_log_error ("read %s failed", file);
 
 end:
   return pkey;
@@ -846,21 +877,21 @@ ikev2_crypto_init (ikev2_main_t * km)
 
   vec_add2 (km->supported_transforms, tr, 1);
   tr->type = IKEV2_TRANSFORM_TYPE_ENCR;
-  tr->encr_type = IKEV2_TRANSFORM_ENCR_TYPE_AES_GCM;
+  tr->encr_type = IKEV2_TRANSFORM_ENCR_TYPE_AES_GCM_16;
   tr->key_len = 256 / 8;
   tr->block_size = 128 / 8;
   tr->cipher = EVP_aes_256_gcm ();
 
   vec_add2 (km->supported_transforms, tr, 1);
   tr->type = IKEV2_TRANSFORM_TYPE_ENCR;
-  tr->encr_type = IKEV2_TRANSFORM_ENCR_TYPE_AES_GCM;
+  tr->encr_type = IKEV2_TRANSFORM_ENCR_TYPE_AES_GCM_16;
   tr->key_len = 192 / 8;
   tr->block_size = 128 / 8;
   tr->cipher = EVP_aes_192_gcm ();
 
   vec_add2 (km->supported_transforms, tr, 1);
   tr->type = IKEV2_TRANSFORM_TYPE_ENCR;
-  tr->encr_type = IKEV2_TRANSFORM_ENCR_TYPE_AES_GCM;
+  tr->encr_type = IKEV2_TRANSFORM_ENCR_TYPE_AES_GCM_16;
   tr->key_len = 128 / 8;
   tr->block_size = 128 / 8;
   tr->cipher = EVP_aes_128_gcm ();

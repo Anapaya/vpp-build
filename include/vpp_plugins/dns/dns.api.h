@@ -1,5 +1,5 @@
 /*
- * VLIB API definitions 2020-06-13 05:57:25
+ * VLIB API definitions 2020-06-30 12:41:19
  * Input file: dns.api
  * Automatically generated: please edit the input file NOT this file!
  */
@@ -16,6 +16,9 @@
 #endif
 
 #define VL_API_PACKED(x) x __attribute__ ((packed))
+/* Imported API files */
+#ifndef vl_api_version
+#endif
 
 /****** Message ID / handler enum ******/
 
@@ -54,102 +57,23 @@ _(VL_API_DNS_RESOLVE_NAME_REPLY, dns_resolve_name_reply, c2d758c3) \
 _(VL_API_DNS_RESOLVE_IP, dns_resolve_ip, ae96a1a3) \
 _(VL_API_DNS_RESOLVE_IP_REPLY, dns_resolve_ip_reply, 49ed78d6) 
 #endif
-
 /****** Typedefs ******/
 
 #ifdef vl_typedefs
-#ifndef included_dns_api
-#define included_dns_api
-#ifndef _vl_api_defined_dns_enable_disable
-#define _vl_api_defined_dns_enable_disable
-typedef VL_API_PACKED(struct _vl_api_dns_enable_disable {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u8 enable;
-}) vl_api_dns_enable_disable_t;
+#include "dns.api_types.h"
 #endif
-
-#ifndef _vl_api_defined_dns_enable_disable_reply
-#define _vl_api_defined_dns_enable_disable_reply
-typedef VL_API_PACKED(struct _vl_api_dns_enable_disable_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_dns_enable_disable_reply_t;
-#endif
-
-#ifndef _vl_api_defined_dns_name_server_add_del
-#define _vl_api_defined_dns_name_server_add_del
-typedef VL_API_PACKED(struct _vl_api_dns_name_server_add_del {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u8 is_ip6;
-    u8 is_add;
-    u8 server_address[16];
-}) vl_api_dns_name_server_add_del_t;
-#endif
-
-#ifndef _vl_api_defined_dns_name_server_add_del_reply
-#define _vl_api_defined_dns_name_server_add_del_reply
-typedef VL_API_PACKED(struct _vl_api_dns_name_server_add_del_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_dns_name_server_add_del_reply_t;
-#endif
-
-#ifndef _vl_api_defined_dns_resolve_name
-#define _vl_api_defined_dns_resolve_name
-typedef VL_API_PACKED(struct _vl_api_dns_resolve_name {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u8 name[256];
-}) vl_api_dns_resolve_name_t;
-#endif
-
-#ifndef _vl_api_defined_dns_resolve_name_reply
-#define _vl_api_defined_dns_resolve_name_reply
-typedef VL_API_PACKED(struct _vl_api_dns_resolve_name_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-    u8 ip4_set;
-    u8 ip6_set;
-    u8 ip4_address[4];
-    u8 ip6_address[16];
-}) vl_api_dns_resolve_name_reply_t;
-#endif
-
-#ifndef _vl_api_defined_dns_resolve_ip
-#define _vl_api_defined_dns_resolve_ip
-typedef VL_API_PACKED(struct _vl_api_dns_resolve_ip {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u8 is_ip6;
-    u8 address[16];
-}) vl_api_dns_resolve_ip_t;
-#endif
-
-#ifndef _vl_api_defined_dns_resolve_ip_reply
-#define _vl_api_defined_dns_resolve_ip_reply
-typedef VL_API_PACKED(struct _vl_api_dns_resolve_ip_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-    u8 name[256];
-}) vl_api_dns_resolve_ip_reply_t;
-#endif
-
-
-#endif
-#endif
-
 /****** Print functions *****/
 #ifdef vl_printfun
+#ifndef included_dns_printfun_types
+#define included_dns_printfun_types
+
+
+#endif
+#endif /* vl_printfun_types */
+/****** Print functions *****/
+#ifdef vl_printfun
+#ifndef included_dns_printfun
+#define included_dns_printfun
 
 #ifdef LP64
 #define _uword_fmt "%lld"
@@ -161,71 +85,81 @@ typedef VL_API_PACKED(struct _vl_api_dns_resolve_ip_reply {
 
 /***** manual: vl_api_dns_enable_disable_t_print  *****/
 
-#ifndef _vl_api_defined_dns_enable_disable_reply_t_print
-#define _vl_api_defined_dns_enable_disable_reply_t_print
-static inline void *vl_api_dns_enable_disable_reply_t_print (vl_api_dns_enable_disable_reply_t *a,void *handle)
+static inline void *vl_api_dns_enable_disable_reply_t_print (vl_api_dns_enable_disable_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_dns_enable_disable_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_dns_enable_disable_reply_t: */
+    s = format(s, "vl_api_dns_enable_disable_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
-
-#endif
 
 /***** manual: vl_api_dns_name_server_add_del_t_print  *****/
 
-#ifndef _vl_api_defined_dns_name_server_add_del_reply_t_print
-#define _vl_api_defined_dns_name_server_add_del_reply_t_print
-static inline void *vl_api_dns_name_server_add_del_reply_t_print (vl_api_dns_name_server_add_del_reply_t *a,void *handle)
+static inline void *vl_api_dns_name_server_add_del_reply_t_print (vl_api_dns_name_server_add_del_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_dns_name_server_add_del_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_dns_name_server_add_del_reply_t: */
+    s = format(s, "vl_api_dns_name_server_add_del_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
-
-#endif
 
 /***** manual: vl_api_dns_resolve_name_t_print  *****/
 
-#ifndef _vl_api_defined_dns_resolve_name_reply_t_print
-#define _vl_api_defined_dns_resolve_name_reply_t_print
-static inline void *vl_api_dns_resolve_name_reply_t_print (vl_api_dns_resolve_name_reply_t *a,void *handle)
+static inline void *vl_api_dns_resolve_name_reply_t_print (vl_api_dns_resolve_name_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_dns_resolve_name_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
-    vl_print(handle, "ip4_set: %u\n", a->ip4_set);
-    vl_print(handle, "ip6_set: %u\n", a->ip6_set);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_dns_resolve_name_reply_t: */
+    s = format(s, "vl_api_dns_resolve_name_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    s = format(s, "\n%Uip4_set: %u", format_white_space, indent, a->ip4_set);
+    s = format(s, "\n%Uip6_set: %u", format_white_space, indent, a->ip6_set);
+    s = format(s, "\n%Uip4_address: %U", format_white_space, indent, format_hex_bytes, a, 4);
+    s = format(s, "\n%Uip6_address: %U", format_white_space, indent, format_hex_bytes, a, 16);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
-
-#endif
 
 /***** manual: vl_api_dns_resolve_ip_t_print  *****/
 
-#ifndef _vl_api_defined_dns_resolve_ip_reply_t_print
-#define _vl_api_defined_dns_resolve_ip_reply_t_print
-static inline void *vl_api_dns_resolve_ip_reply_t_print (vl_api_dns_resolve_ip_reply_t *a,void *handle)
+static inline void *vl_api_dns_resolve_ip_reply_t_print (vl_api_dns_resolve_ip_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_dns_resolve_ip_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_dns_resolve_ip_reply_t: */
+    s = format(s, "vl_api_dns_resolve_ip_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    s = format(s, "\n%Uname: %U", format_white_space, indent, format_hex_bytes, a, 256);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
+
 #endif
-
-
 #endif /* vl_printfun */
 
 /****** Endian swap functions *****/
 #ifdef vl_endianfun
+#ifndef included_dns_endianfun
+#define included_dns_endianfun
 
 #undef clib_net_to_host_uword
 #ifdef LP64
@@ -234,101 +168,84 @@ static inline void *vl_api_dns_resolve_ip_reply_t_print (vl_api_dns_resolve_ip_r
 #define clib_net_to_host_uword clib_net_to_host_u32
 #endif
 
-#ifndef _vl_api_defined_dns_enable_disable_t_endian
-#define _vl_api_defined_dns_enable_disable_t_endian
 static inline void vl_api_dns_enable_disable_t_endian (vl_api_dns_enable_disable_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
     /* a->enable = a->enable (no-op) */
 }
 
-#endif
-
-#ifndef _vl_api_defined_dns_enable_disable_reply_t_endian
-#define _vl_api_defined_dns_enable_disable_reply_t_endian
 static inline void vl_api_dns_enable_disable_reply_t_endian (vl_api_dns_enable_disable_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
-#endif
-
-#ifndef _vl_api_defined_dns_name_server_add_del_t_endian
-#define _vl_api_defined_dns_name_server_add_del_t_endian
 static inline void vl_api_dns_name_server_add_del_t_endian (vl_api_dns_name_server_add_del_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
     /* a->is_ip6 = a->is_ip6 (no-op) */
     /* a->is_add = a->is_add (no-op) */
+    /* a->server_address = a->server_address (no-op) */
 }
 
-#endif
-
-#ifndef _vl_api_defined_dns_name_server_add_del_reply_t_endian
-#define _vl_api_defined_dns_name_server_add_del_reply_t_endian
 static inline void vl_api_dns_name_server_add_del_reply_t_endian (vl_api_dns_name_server_add_del_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
-#endif
-
-#ifndef _vl_api_defined_dns_resolve_name_t_endian
-#define _vl_api_defined_dns_resolve_name_t_endian
 static inline void vl_api_dns_resolve_name_t_endian (vl_api_dns_resolve_name_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
+    /* a->name = a->name (no-op) */
 }
 
-#endif
-
-#ifndef _vl_api_defined_dns_resolve_name_reply_t_endian
-#define _vl_api_defined_dns_resolve_name_reply_t_endian
 static inline void vl_api_dns_resolve_name_reply_t_endian (vl_api_dns_resolve_name_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
     /* a->ip4_set = a->ip4_set (no-op) */
     /* a->ip6_set = a->ip6_set (no-op) */
+    /* a->ip4_address = a->ip4_address (no-op) */
+    /* a->ip6_address = a->ip6_address (no-op) */
 }
 
-#endif
-
-#ifndef _vl_api_defined_dns_resolve_ip_t_endian
-#define _vl_api_defined_dns_resolve_ip_t_endian
 static inline void vl_api_dns_resolve_ip_t_endian (vl_api_dns_resolve_ip_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
     /* a->is_ip6 = a->is_ip6 (no-op) */
+    /* a->address = a->address (no-op) */
 }
 
-#endif
-
-#ifndef _vl_api_defined_dns_resolve_ip_reply_t_endian
-#define _vl_api_defined_dns_resolve_ip_reply_t_endian
 static inline void vl_api_dns_resolve_ip_reply_t_endian (vl_api_dns_resolve_ip_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
+    /* a->name = a->name (no-op) */
 }
 
+
 #endif
-
-
 #endif /* vl_endianfun */
 
 /****** Version tuple *****/
@@ -342,7 +259,7 @@ vl_api_version_tuple(dns.api, 1, 0, 0)
 /****** API CRC (whole file) *****/
 
 #ifdef vl_api_version
-vl_api_version(dns.api, 0xd464ac52)
+vl_api_version(dns.api, 0x269575cd)
 
 #endif
 

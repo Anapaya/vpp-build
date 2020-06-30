@@ -118,7 +118,7 @@ vl_socket_api_send (vl_api_registration_t * rp, u8 * elem)
 #endif
   socket_main_t *sm = &socket_main;
   u16 msg_id = ntohs (*(u16 *) elem);
-  api_main_t *am = &api_main;
+  api_main_t *am = vlibapi_get_main ();
   msgbuf_t *mb = (msgbuf_t *) (elem - offsetof (msgbuf_t, data));
   vl_api_registration_t *sock_rp;
   clib_file_main_t *fm = &file_main;
@@ -190,16 +190,13 @@ vl_socket_free_registration_index (u32 pool_index)
 }
 
 void
-vl_socket_process_api_msg (clib_file_t * uf, vl_api_registration_t * rp,
-			   i8 * input_v)
+vl_socket_process_api_msg (vl_api_registration_t * rp, i8 * input_v)
 {
   msgbuf_t *mbp = (msgbuf_t *) input_v;
 
   u8 *the_msg = (u8 *) (mbp->data);
-  socket_main.current_uf = uf;
   socket_main.current_rp = rp;
   vl_msg_api_socket_handler (the_msg);
-  socket_main.current_uf = 0;
   socket_main.current_rp = 0;
 }
 
@@ -235,8 +232,9 @@ vl_socket_read_ready (clib_file_t * uf)
   u32 msgbuf_len;
   u32 save_input_buffer_length = vec_len (socket_main.input_buffer);
   vl_socket_args_for_process_t *a;
+  u32 reg_index = uf->private_data;
 
-  rp = pool_elt_at_index (socket_main.registration_pool, uf->private_data);
+  rp = vl_socket_get_registration (reg_index);
 
   /* Ignore unprocessed_input for now, n describes input_buffer for now. */
   n = read (uf->file_descriptor, socket_main.input_buffer,
@@ -248,17 +246,7 @@ vl_socket_read_ready (clib_file_t * uf)
 	{
 	  /* Severe error, close the file. */
 	  clib_file_del (fm, uf);
-
-	  if (!pool_is_free (socket_main.registration_pool, rp))
-	    {
-	      u32 index = rp - socket_main.registration_pool;
-	      vl_socket_free_registration_index (index);
-	    }
-	  else
-	    {
-	      clib_warning ("client index %d already free?",
-			    rp->vl_api_registration_pool_index);
-	    }
+	  vl_socket_free_registration_index (reg_index);
 	}
       /* EAGAIN means we do not close the file, but no data to process anyway. */
       return 0;
@@ -326,8 +314,7 @@ vl_socket_read_ready (clib_file_t * uf)
       _vec_len (data_for_process) = msgbuf_len;
       /* Everything is ready to signal the SOCKET_READ_EVENT. */
       pool_get (socket_main.process_args, a);
-      a->clib_file = uf;
-      a->regp = rp;
+      a->reg_index = reg_index;
       a->data = data_for_process;
 
       vlib_process_signal_event (vm, vl_api_clnt_node.index,
@@ -458,7 +445,7 @@ vl_api_sockclnt_create_t_handler (vl_api_sockclnt_create_t * mp)
 {
   vl_api_registration_t *regp;
   vl_api_sockclnt_create_reply_t *rp;
-  api_main_t *am = &api_main;
+  api_main_t *am = vlibapi_get_main ();
   hash_pair_t *hp;
   int rv = 0;
   u32 nmsg = hash_elts (am->msg_index_by_name_and_crc);
@@ -482,8 +469,10 @@ vl_api_sockclnt_create_t_handler (vl_api_sockclnt_create_t * mp)
   hash_foreach_pair (hp, am->msg_index_by_name_and_crc,
   ({
     rp->message_table[i].index = htons(hp->value[0]);
-    strncpy_s((char *)rp->message_table[i].name, 64 /* bytes of space at dst */,
-              (char *)hp->key, 64-1 /* chars to copy, without zero byte. */);
+    (void) strncpy_s((char *)rp->message_table[i].name,
+                     64 /* bytes of space at dst */,
+                     (char *)hp->key,
+                     64-1 /* chars to copy, without zero byte. */);
     i++;
   }));
   /* *INDENT-ON* */
@@ -619,7 +608,7 @@ vl_api_sock_init_shm_t_handler (vl_api_sock_init_shm_t * mp)
   ssvm_private_t _memfd_private, *memfd = &_memfd_private;
   svm_map_region_args_t _args, *a = &_args;
   vl_api_registration_t *regp;
-  api_main_t *am = &api_main;
+  api_main_t *am = vlibapi_get_main ();
   svm_region_t *vlib_rp;
   clib_file_t *cf;
   vl_api_shm_elem_config_t *config = 0;
@@ -755,22 +744,6 @@ vl_sock_api_init (vlib_main_t * vm)
   vec_resize (sm->input_buffer, 4096);
 
   sock->config = (char *) sm->socket_name;
-
-  /* mkdir of file socket, only under /run  */
-  if (strncmp (sock->config, "/run", 4) == 0)
-    {
-      u8 *tmp = format (0, "%s", sock->config);
-      int i = vec_len (tmp);
-      while (i && tmp[--i] != '/')
-	;
-
-      tmp[i] = 0;
-
-      if (i)
-	vlib_unix_recursive_mkdir ((char *) tmp);
-      vec_free (tmp);
-    }
-
   sock->flags = CLIB_SOCKET_F_IS_SERVER | CLIB_SOCKET_F_ALLOW_GROUP_WRITE;
   error = clib_socket_init (sock);
   if (error)
@@ -823,16 +796,21 @@ socksvr_config (vlib_main_t * vm, unformat_input_t * input)
     {
       if (unformat (input, "socket-name %s", &sm->socket_name))
 	;
+      /* DEPRECATE: default keyword is ignored */
       else if (unformat (input, "default"))
-	{
-	  sm->socket_name = format (0, "%s%c", API_SOCKET_FILE, 0);
-	}
+	;
       else
 	{
 	  return clib_error_return (0, "unknown input '%U'",
 				    format_unformat_error, input);
 	}
     }
+
+  if (!vec_len (sm->socket_name))
+    sm->socket_name = format (0, "%s/%s", vlib_unix_get_runtime_dir (),
+			      API_SOCKET_FILENAME);
+  vec_terminate_c_string (sm->socket_name);
+
   return 0;
 }
 

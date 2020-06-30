@@ -1,5 +1,5 @@
 /*
- * VLIB API definitions 2020-06-13 05:56:05
+ * VLIB API definitions 2020-06-30 12:38:57
  * Input file: bfd.api
  * Automatically generated: please edit the input file NOT this file!
  */
@@ -16,6 +16,11 @@
 #endif
 
 #define VL_API_PACKED(x) x __attribute__ ((packed))
+/* Imported API files */
+#ifndef vl_api_version
+#include <vnet/interface_types.api.h>
+#include <vnet/ip/ip_types.api.h>
+#endif
 
 /****** Message ID / handler enum ******/
 
@@ -85,23 +90,23 @@ vl_msg_name(vl_api_bfd_udp_auth_deactivate_reply_t, 1)
 
 #ifdef vl_msg_name_crc_list
 #define foreach_vl_msg_name_crc_bfd \
-_(VL_API_BFD_UDP_SET_ECHO_SOURCE, bfd_udp_set_echo_source, 529cb13f) \
+_(VL_API_BFD_UDP_SET_ECHO_SOURCE, bfd_udp_set_echo_source, f9e6675e) \
 _(VL_API_BFD_UDP_SET_ECHO_SOURCE_REPLY, bfd_udp_set_echo_source_reply, e8d4e804) \
 _(VL_API_BFD_UDP_DEL_ECHO_SOURCE, bfd_udp_del_echo_source, 51077d14) \
 _(VL_API_BFD_UDP_DEL_ECHO_SOURCE_REPLY, bfd_udp_del_echo_source_reply, e8d4e804) \
 _(VL_API_BFD_UDP_GET_ECHO_SOURCE, bfd_udp_get_echo_source, 51077d14) \
-_(VL_API_BFD_UDP_GET_ECHO_SOURCE_REPLY, bfd_udp_get_echo_source_reply, 6924ca6b) \
-_(VL_API_BFD_UDP_ADD, bfd_udp_add, 61cf1850) \
+_(VL_API_BFD_UDP_GET_ECHO_SOURCE_REPLY, bfd_udp_get_echo_source_reply, 1e00cfce) \
+_(VL_API_BFD_UDP_ADD, bfd_udp_add, 7a6d1185) \
 _(VL_API_BFD_UDP_ADD_REPLY, bfd_udp_add_reply, e8d4e804) \
-_(VL_API_BFD_UDP_MOD, bfd_udp_mod, 6049bf47) \
+_(VL_API_BFD_UDP_MOD, bfd_udp_mod, 783a3ff6) \
 _(VL_API_BFD_UDP_MOD_REPLY, bfd_udp_mod_reply, e8d4e804) \
-_(VL_API_BFD_UDP_DEL, bfd_udp_del, c9e9cc5a) \
+_(VL_API_BFD_UDP_DEL, bfd_udp_del, 8096514d) \
 _(VL_API_BFD_UDP_DEL_REPLY, bfd_udp_del_reply, e8d4e804) \
 _(VL_API_BFD_UDP_SESSION_DUMP, bfd_udp_session_dump, 51077d14) \
-_(VL_API_BFD_UDP_SESSION_DETAILS, bfd_udp_session_details, 837bb0ed) \
-_(VL_API_BFD_UDP_SESSION_SET_FLAGS, bfd_udp_session_set_flags, 667d6e7c) \
+_(VL_API_BFD_UDP_SESSION_DETAILS, bfd_udp_session_details, 60653c02) \
+_(VL_API_BFD_UDP_SESSION_SET_FLAGS, bfd_udp_session_set_flags, cf313851) \
 _(VL_API_BFD_UDP_SESSION_SET_FLAGS_REPLY, bfd_udp_session_set_flags_reply, e8d4e804) \
-_(VL_API_WANT_BFD_EVENTS, want_bfd_events, 476f5a08) \
+_(VL_API_WANT_BFD_EVENTS, want_bfd_events, c5e2af94) \
 _(VL_API_WANT_BFD_EVENTS_REPLY, want_bfd_events_reply, e8d4e804) \
 _(VL_API_BFD_AUTH_SET_KEY, bfd_auth_set_key, 690b8877) \
 _(VL_API_BFD_AUTH_SET_KEY_REPLY, bfd_auth_set_key_reply, e8d4e804) \
@@ -109,339 +114,47 @@ _(VL_API_BFD_AUTH_DEL_KEY, bfd_auth_del_key, 65310b22) \
 _(VL_API_BFD_AUTH_DEL_KEY_REPLY, bfd_auth_del_key_reply, e8d4e804) \
 _(VL_API_BFD_AUTH_KEYS_DUMP, bfd_auth_keys_dump, 51077d14) \
 _(VL_API_BFD_AUTH_KEYS_DETAILS, bfd_auth_keys_details, 84130e9f) \
-_(VL_API_BFD_UDP_AUTH_ACTIVATE, bfd_udp_auth_activate, 1bae0947) \
+_(VL_API_BFD_UDP_AUTH_ACTIVATE, bfd_udp_auth_activate, 493ee0ec) \
 _(VL_API_BFD_UDP_AUTH_ACTIVATE_REPLY, bfd_udp_auth_activate_reply, e8d4e804) \
-_(VL_API_BFD_UDP_AUTH_DEACTIVATE, bfd_udp_auth_deactivate, 10661991) \
+_(VL_API_BFD_UDP_AUTH_DEACTIVATE, bfd_udp_auth_deactivate, 99978c32) \
 _(VL_API_BFD_UDP_AUTH_DEACTIVATE_REPLY, bfd_udp_auth_deactivate_reply, e8d4e804) 
 #endif
-
 /****** Typedefs ******/
 
 #ifdef vl_typedefs
-#ifndef included_bfd_api
-#define included_bfd_api
-#ifndef _vl_api_defined_bfd_udp_set_echo_source
-#define _vl_api_defined_bfd_udp_set_echo_source
-typedef VL_API_PACKED(struct _vl_api_bfd_udp_set_echo_source {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u32 sw_if_index;
-}) vl_api_bfd_udp_set_echo_source_t;
+#include "bfd.api_types.h"
 #endif
-
-#ifndef _vl_api_defined_bfd_udp_set_echo_source_reply
-#define _vl_api_defined_bfd_udp_set_echo_source_reply
-typedef VL_API_PACKED(struct _vl_api_bfd_udp_set_echo_source_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_bfd_udp_set_echo_source_reply_t;
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_del_echo_source
-#define _vl_api_defined_bfd_udp_del_echo_source
-typedef VL_API_PACKED(struct _vl_api_bfd_udp_del_echo_source {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-}) vl_api_bfd_udp_del_echo_source_t;
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_del_echo_source_reply
-#define _vl_api_defined_bfd_udp_del_echo_source_reply
-typedef VL_API_PACKED(struct _vl_api_bfd_udp_del_echo_source_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_bfd_udp_del_echo_source_reply_t;
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_get_echo_source
-#define _vl_api_defined_bfd_udp_get_echo_source
-typedef VL_API_PACKED(struct _vl_api_bfd_udp_get_echo_source {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-}) vl_api_bfd_udp_get_echo_source_t;
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_get_echo_source_reply
-#define _vl_api_defined_bfd_udp_get_echo_source_reply
-typedef VL_API_PACKED(struct _vl_api_bfd_udp_get_echo_source_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-    u32 sw_if_index;
-    u8 is_set;
-    u8 have_usable_ip4;
-    u8 ip4_addr[4];
-    u8 have_usable_ip6;
-    u8 ip6_addr[16];
-}) vl_api_bfd_udp_get_echo_source_reply_t;
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_add
-#define _vl_api_defined_bfd_udp_add
-typedef VL_API_PACKED(struct _vl_api_bfd_udp_add {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u32 sw_if_index;
-    u32 desired_min_tx;
-    u32 required_min_rx;
-    u8 local_addr[16];
-    u8 peer_addr[16];
-    u8 is_ipv6;
-    u8 detect_mult;
-    u8 is_authenticated;
-    u8 bfd_key_id;
-    u32 conf_key_id;
-}) vl_api_bfd_udp_add_t;
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_add_reply
-#define _vl_api_defined_bfd_udp_add_reply
-typedef VL_API_PACKED(struct _vl_api_bfd_udp_add_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_bfd_udp_add_reply_t;
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_mod
-#define _vl_api_defined_bfd_udp_mod
-typedef VL_API_PACKED(struct _vl_api_bfd_udp_mod {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u32 sw_if_index;
-    u32 desired_min_tx;
-    u32 required_min_rx;
-    u8 local_addr[16];
-    u8 peer_addr[16];
-    u8 is_ipv6;
-    u8 detect_mult;
-}) vl_api_bfd_udp_mod_t;
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_mod_reply
-#define _vl_api_defined_bfd_udp_mod_reply
-typedef VL_API_PACKED(struct _vl_api_bfd_udp_mod_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_bfd_udp_mod_reply_t;
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_del
-#define _vl_api_defined_bfd_udp_del
-typedef VL_API_PACKED(struct _vl_api_bfd_udp_del {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u32 sw_if_index;
-    u8 local_addr[16];
-    u8 peer_addr[16];
-    u8 is_ipv6;
-}) vl_api_bfd_udp_del_t;
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_del_reply
-#define _vl_api_defined_bfd_udp_del_reply
-typedef VL_API_PACKED(struct _vl_api_bfd_udp_del_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_bfd_udp_del_reply_t;
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_session_dump
-#define _vl_api_defined_bfd_udp_session_dump
-typedef VL_API_PACKED(struct _vl_api_bfd_udp_session_dump {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-}) vl_api_bfd_udp_session_dump_t;
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_session_details
-#define _vl_api_defined_bfd_udp_session_details
-typedef VL_API_PACKED(struct _vl_api_bfd_udp_session_details {
-    u16 _vl_msg_id;
-    u32 context;
-    u32 sw_if_index;
-    u8 local_addr[16];
-    u8 peer_addr[16];
-    u8 is_ipv6;
-    u8 state;
-    u8 is_authenticated;
-    u8 bfd_key_id;
-    u32 conf_key_id;
-    u32 required_min_rx;
-    u32 desired_min_tx;
-    u8 detect_mult;
-}) vl_api_bfd_udp_session_details_t;
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_session_set_flags
-#define _vl_api_defined_bfd_udp_session_set_flags
-typedef VL_API_PACKED(struct _vl_api_bfd_udp_session_set_flags {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u32 sw_if_index;
-    u8 local_addr[16];
-    u8 peer_addr[16];
-    u8 is_ipv6;
-    u8 admin_up_down;
-}) vl_api_bfd_udp_session_set_flags_t;
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_session_set_flags_reply
-#define _vl_api_defined_bfd_udp_session_set_flags_reply
-typedef VL_API_PACKED(struct _vl_api_bfd_udp_session_set_flags_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_bfd_udp_session_set_flags_reply_t;
-#endif
-
-#ifndef _vl_api_defined_want_bfd_events
-#define _vl_api_defined_want_bfd_events
-typedef VL_API_PACKED(struct _vl_api_want_bfd_events {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u32 enable_disable;
-    u32 pid;
-}) vl_api_want_bfd_events_t;
-#endif
-
-#ifndef _vl_api_defined_want_bfd_events_reply
-#define _vl_api_defined_want_bfd_events_reply
-typedef VL_API_PACKED(struct _vl_api_want_bfd_events_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_want_bfd_events_reply_t;
-#endif
-
-#ifndef _vl_api_defined_bfd_auth_set_key
-#define _vl_api_defined_bfd_auth_set_key
-typedef VL_API_PACKED(struct _vl_api_bfd_auth_set_key {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u32 conf_key_id;
-    u8 key_len;
-    u8 auth_type;
-    u8 key[20];
-}) vl_api_bfd_auth_set_key_t;
-#endif
-
-#ifndef _vl_api_defined_bfd_auth_set_key_reply
-#define _vl_api_defined_bfd_auth_set_key_reply
-typedef VL_API_PACKED(struct _vl_api_bfd_auth_set_key_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_bfd_auth_set_key_reply_t;
-#endif
-
-#ifndef _vl_api_defined_bfd_auth_del_key
-#define _vl_api_defined_bfd_auth_del_key
-typedef VL_API_PACKED(struct _vl_api_bfd_auth_del_key {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u32 conf_key_id;
-}) vl_api_bfd_auth_del_key_t;
-#endif
-
-#ifndef _vl_api_defined_bfd_auth_del_key_reply
-#define _vl_api_defined_bfd_auth_del_key_reply
-typedef VL_API_PACKED(struct _vl_api_bfd_auth_del_key_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_bfd_auth_del_key_reply_t;
-#endif
-
-#ifndef _vl_api_defined_bfd_auth_keys_dump
-#define _vl_api_defined_bfd_auth_keys_dump
-typedef VL_API_PACKED(struct _vl_api_bfd_auth_keys_dump {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-}) vl_api_bfd_auth_keys_dump_t;
-#endif
-
-#ifndef _vl_api_defined_bfd_auth_keys_details
-#define _vl_api_defined_bfd_auth_keys_details
-typedef VL_API_PACKED(struct _vl_api_bfd_auth_keys_details {
-    u16 _vl_msg_id;
-    u32 context;
-    u32 conf_key_id;
-    u32 use_count;
-    u8 auth_type;
-}) vl_api_bfd_auth_keys_details_t;
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_auth_activate
-#define _vl_api_defined_bfd_udp_auth_activate
-typedef VL_API_PACKED(struct _vl_api_bfd_udp_auth_activate {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u32 sw_if_index;
-    u8 local_addr[16];
-    u8 peer_addr[16];
-    u8 is_ipv6;
-    u8 is_delayed;
-    u8 bfd_key_id;
-    u32 conf_key_id;
-}) vl_api_bfd_udp_auth_activate_t;
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_auth_activate_reply
-#define _vl_api_defined_bfd_udp_auth_activate_reply
-typedef VL_API_PACKED(struct _vl_api_bfd_udp_auth_activate_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_bfd_udp_auth_activate_reply_t;
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_auth_deactivate
-#define _vl_api_defined_bfd_udp_auth_deactivate
-typedef VL_API_PACKED(struct _vl_api_bfd_udp_auth_deactivate {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u32 sw_if_index;
-    u8 local_addr[16];
-    u8 peer_addr[16];
-    u8 is_ipv6;
-    u8 is_delayed;
-}) vl_api_bfd_udp_auth_deactivate_t;
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_auth_deactivate_reply
-#define _vl_api_defined_bfd_udp_auth_deactivate_reply
-typedef VL_API_PACKED(struct _vl_api_bfd_udp_auth_deactivate_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_bfd_udp_auth_deactivate_reply_t;
-#endif
-
-
-#endif
-#endif
-
 /****** Print functions *****/
 #ifdef vl_printfun
+#ifndef included_bfd_printfun_types
+#define included_bfd_printfun_types
+
+static inline u8 *format_vl_api_bfd_state_t (u8 *s, va_list * args)
+{
+    vl_api_bfd_state_t *a = va_arg (*args, vl_api_bfd_state_t *);
+    u32 indent __attribute__((unused)) = va_arg (*args, u32);
+    int i __attribute__((unused));
+    indent += 2;
+    switch(*a) {
+    case 0:
+        return format(s, "BFD_STATE_API_ADMIN_DOWN");
+    case 1:
+        return format(s, "BFD_STATE_API_DOWN");
+    case 2:
+        return format(s, "BFD_STATE_API_INIT");
+    case 3:
+        return format(s, "BFD_STATE_API_UP");
+    }
+    return s;
+}
+
+
+#endif
+#endif /* vl_printfun_types */
+/****** Print functions *****/
+#ifdef vl_printfun
+#ifndef included_bfd_printfun
+#define included_bfd_printfun
 
 #ifdef LP64
 #define _uword_fmt "%lld"
@@ -451,422 +164,449 @@ typedef VL_API_PACKED(struct _vl_api_bfd_udp_auth_deactivate_reply {
 #define _uword_cast long
 #endif
 
-#ifndef _vl_api_defined_bfd_udp_set_echo_source_t_print
-#define _vl_api_defined_bfd_udp_set_echo_source_t_print
-static inline void *vl_api_bfd_udp_set_echo_source_t_print (vl_api_bfd_udp_set_echo_source_t *a,void *handle)
+static inline void *vl_api_bfd_udp_set_echo_source_t_print (vl_api_bfd_udp_set_echo_source_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_bfd_udp_set_echo_source_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "sw_if_index: %u\n", a->sw_if_index);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_bfd_udp_set_echo_source_t: */
+    s = format(s, "vl_api_bfd_udp_set_echo_source_t:");
+    s = format(s, "\n%Usw_if_index: %U", format_white_space, indent, format_vl_api_interface_index_t, &a->sw_if_index, indent);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_set_echo_source_reply_t_print
-#define _vl_api_defined_bfd_udp_set_echo_source_reply_t_print
-static inline void *vl_api_bfd_udp_set_echo_source_reply_t_print (vl_api_bfd_udp_set_echo_source_reply_t *a,void *handle)
+static inline void *vl_api_bfd_udp_set_echo_source_reply_t_print (vl_api_bfd_udp_set_echo_source_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_bfd_udp_set_echo_source_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_bfd_udp_set_echo_source_reply_t: */
+    s = format(s, "vl_api_bfd_udp_set_echo_source_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_del_echo_source_t_print
-#define _vl_api_defined_bfd_udp_del_echo_source_t_print
-static inline void *vl_api_bfd_udp_del_echo_source_t_print (vl_api_bfd_udp_del_echo_source_t *a,void *handle)
+static inline void *vl_api_bfd_udp_del_echo_source_t_print (vl_api_bfd_udp_del_echo_source_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_bfd_udp_del_echo_source_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_bfd_udp_del_echo_source_t: */
+    s = format(s, "vl_api_bfd_udp_del_echo_source_t:");
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_del_echo_source_reply_t_print
-#define _vl_api_defined_bfd_udp_del_echo_source_reply_t_print
-static inline void *vl_api_bfd_udp_del_echo_source_reply_t_print (vl_api_bfd_udp_del_echo_source_reply_t *a,void *handle)
+static inline void *vl_api_bfd_udp_del_echo_source_reply_t_print (vl_api_bfd_udp_del_echo_source_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_bfd_udp_del_echo_source_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_bfd_udp_del_echo_source_reply_t: */
+    s = format(s, "vl_api_bfd_udp_del_echo_source_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_get_echo_source_t_print
-#define _vl_api_defined_bfd_udp_get_echo_source_t_print
-static inline void *vl_api_bfd_udp_get_echo_source_t_print (vl_api_bfd_udp_get_echo_source_t *a,void *handle)
+static inline void *vl_api_bfd_udp_get_echo_source_t_print (vl_api_bfd_udp_get_echo_source_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_bfd_udp_get_echo_source_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_bfd_udp_get_echo_source_t: */
+    s = format(s, "vl_api_bfd_udp_get_echo_source_t:");
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_get_echo_source_reply_t_print
-#define _vl_api_defined_bfd_udp_get_echo_source_reply_t_print
-static inline void *vl_api_bfd_udp_get_echo_source_reply_t_print (vl_api_bfd_udp_get_echo_source_reply_t *a,void *handle)
+static inline void *vl_api_bfd_udp_get_echo_source_reply_t_print (vl_api_bfd_udp_get_echo_source_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_bfd_udp_get_echo_source_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
-    vl_print(handle, "sw_if_index: %u\n", a->sw_if_index);
-    vl_print(handle, "is_set: %u\n", a->is_set);
-    vl_print(handle, "have_usable_ip4: %u\n", a->have_usable_ip4);
-    vl_print(handle, "have_usable_ip6: %u\n", a->have_usable_ip6);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_bfd_udp_get_echo_source_reply_t: */
+    s = format(s, "vl_api_bfd_udp_get_echo_source_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    s = format(s, "\n%Usw_if_index: %U", format_white_space, indent, format_vl_api_interface_index_t, &a->sw_if_index, indent);
+    s = format(s, "\n%Uis_set: %u", format_white_space, indent, a->is_set);
+    s = format(s, "\n%Uhave_usable_ip4: %u", format_white_space, indent, a->have_usable_ip4);
+    s = format(s, "\n%Uip4_addr: %U", format_white_space, indent, format_vl_api_ip4_address_t, &a->ip4_addr, indent);
+    s = format(s, "\n%Uhave_usable_ip6: %u", format_white_space, indent, a->have_usable_ip6);
+    s = format(s, "\n%Uip6_addr: %U", format_white_space, indent, format_vl_api_ip6_address_t, &a->ip6_addr, indent);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_add_t_print
-#define _vl_api_defined_bfd_udp_add_t_print
-static inline void *vl_api_bfd_udp_add_t_print (vl_api_bfd_udp_add_t *a,void *handle)
+static inline void *vl_api_bfd_udp_add_t_print (vl_api_bfd_udp_add_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_bfd_udp_add_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "sw_if_index: %u\n", a->sw_if_index);
-    vl_print(handle, "desired_min_tx: %u\n", a->desired_min_tx);
-    vl_print(handle, "required_min_rx: %u\n", a->required_min_rx);
-    vl_print(handle, "is_ipv6: %u\n", a->is_ipv6);
-    vl_print(handle, "detect_mult: %u\n", a->detect_mult);
-    vl_print(handle, "is_authenticated: %u\n", a->is_authenticated);
-    vl_print(handle, "bfd_key_id: %u\n", a->bfd_key_id);
-    vl_print(handle, "conf_key_id: %u\n", a->conf_key_id);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_bfd_udp_add_t: */
+    s = format(s, "vl_api_bfd_udp_add_t:");
+    s = format(s, "\n%Usw_if_index: %U", format_white_space, indent, format_vl_api_interface_index_t, &a->sw_if_index, indent);
+    s = format(s, "\n%Udesired_min_tx: %u", format_white_space, indent, a->desired_min_tx);
+    s = format(s, "\n%Urequired_min_rx: %u", format_white_space, indent, a->required_min_rx);
+    s = format(s, "\n%Ulocal_addr: %U", format_white_space, indent, format_vl_api_address_t, &a->local_addr, indent);
+    s = format(s, "\n%Upeer_addr: %U", format_white_space, indent, format_vl_api_address_t, &a->peer_addr, indent);
+    s = format(s, "\n%Udetect_mult: %u", format_white_space, indent, a->detect_mult);
+    s = format(s, "\n%Uis_authenticated: %u", format_white_space, indent, a->is_authenticated);
+    s = format(s, "\n%Ubfd_key_id: %u", format_white_space, indent, a->bfd_key_id);
+    s = format(s, "\n%Uconf_key_id: %u", format_white_space, indent, a->conf_key_id);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_add_reply_t_print
-#define _vl_api_defined_bfd_udp_add_reply_t_print
-static inline void *vl_api_bfd_udp_add_reply_t_print (vl_api_bfd_udp_add_reply_t *a,void *handle)
+static inline void *vl_api_bfd_udp_add_reply_t_print (vl_api_bfd_udp_add_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_bfd_udp_add_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_bfd_udp_add_reply_t: */
+    s = format(s, "vl_api_bfd_udp_add_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_mod_t_print
-#define _vl_api_defined_bfd_udp_mod_t_print
-static inline void *vl_api_bfd_udp_mod_t_print (vl_api_bfd_udp_mod_t *a,void *handle)
+static inline void *vl_api_bfd_udp_mod_t_print (vl_api_bfd_udp_mod_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_bfd_udp_mod_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "sw_if_index: %u\n", a->sw_if_index);
-    vl_print(handle, "desired_min_tx: %u\n", a->desired_min_tx);
-    vl_print(handle, "required_min_rx: %u\n", a->required_min_rx);
-    vl_print(handle, "is_ipv6: %u\n", a->is_ipv6);
-    vl_print(handle, "detect_mult: %u\n", a->detect_mult);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_bfd_udp_mod_t: */
+    s = format(s, "vl_api_bfd_udp_mod_t:");
+    s = format(s, "\n%Usw_if_index: %U", format_white_space, indent, format_vl_api_interface_index_t, &a->sw_if_index, indent);
+    s = format(s, "\n%Udesired_min_tx: %u", format_white_space, indent, a->desired_min_tx);
+    s = format(s, "\n%Urequired_min_rx: %u", format_white_space, indent, a->required_min_rx);
+    s = format(s, "\n%Ulocal_addr: %U", format_white_space, indent, format_vl_api_address_t, &a->local_addr, indent);
+    s = format(s, "\n%Upeer_addr: %U", format_white_space, indent, format_vl_api_address_t, &a->peer_addr, indent);
+    s = format(s, "\n%Udetect_mult: %u", format_white_space, indent, a->detect_mult);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_mod_reply_t_print
-#define _vl_api_defined_bfd_udp_mod_reply_t_print
-static inline void *vl_api_bfd_udp_mod_reply_t_print (vl_api_bfd_udp_mod_reply_t *a,void *handle)
+static inline void *vl_api_bfd_udp_mod_reply_t_print (vl_api_bfd_udp_mod_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_bfd_udp_mod_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_bfd_udp_mod_reply_t: */
+    s = format(s, "vl_api_bfd_udp_mod_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_del_t_print
-#define _vl_api_defined_bfd_udp_del_t_print
-static inline void *vl_api_bfd_udp_del_t_print (vl_api_bfd_udp_del_t *a,void *handle)
+static inline void *vl_api_bfd_udp_del_t_print (vl_api_bfd_udp_del_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_bfd_udp_del_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "sw_if_index: %u\n", a->sw_if_index);
-    vl_print(handle, "is_ipv6: %u\n", a->is_ipv6);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_bfd_udp_del_t: */
+    s = format(s, "vl_api_bfd_udp_del_t:");
+    s = format(s, "\n%Usw_if_index: %U", format_white_space, indent, format_vl_api_interface_index_t, &a->sw_if_index, indent);
+    s = format(s, "\n%Ulocal_addr: %U", format_white_space, indent, format_vl_api_address_t, &a->local_addr, indent);
+    s = format(s, "\n%Upeer_addr: %U", format_white_space, indent, format_vl_api_address_t, &a->peer_addr, indent);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_del_reply_t_print
-#define _vl_api_defined_bfd_udp_del_reply_t_print
-static inline void *vl_api_bfd_udp_del_reply_t_print (vl_api_bfd_udp_del_reply_t *a,void *handle)
+static inline void *vl_api_bfd_udp_del_reply_t_print (vl_api_bfd_udp_del_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_bfd_udp_del_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_bfd_udp_del_reply_t: */
+    s = format(s, "vl_api_bfd_udp_del_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_session_dump_t_print
-#define _vl_api_defined_bfd_udp_session_dump_t_print
-static inline void *vl_api_bfd_udp_session_dump_t_print (vl_api_bfd_udp_session_dump_t *a,void *handle)
+static inline void *vl_api_bfd_udp_session_dump_t_print (vl_api_bfd_udp_session_dump_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_bfd_udp_session_dump_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_bfd_udp_session_dump_t: */
+    s = format(s, "vl_api_bfd_udp_session_dump_t:");
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_session_details_t_print
-#define _vl_api_defined_bfd_udp_session_details_t_print
-static inline void *vl_api_bfd_udp_session_details_t_print (vl_api_bfd_udp_session_details_t *a,void *handle)
+static inline void *vl_api_bfd_udp_session_details_t_print (vl_api_bfd_udp_session_details_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_bfd_udp_session_details_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "sw_if_index: %u\n", a->sw_if_index);
-    vl_print(handle, "is_ipv6: %u\n", a->is_ipv6);
-    vl_print(handle, "state: %u\n", a->state);
-    vl_print(handle, "is_authenticated: %u\n", a->is_authenticated);
-    vl_print(handle, "bfd_key_id: %u\n", a->bfd_key_id);
-    vl_print(handle, "conf_key_id: %u\n", a->conf_key_id);
-    vl_print(handle, "required_min_rx: %u\n", a->required_min_rx);
-    vl_print(handle, "desired_min_tx: %u\n", a->desired_min_tx);
-    vl_print(handle, "detect_mult: %u\n", a->detect_mult);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_bfd_udp_session_details_t: */
+    s = format(s, "vl_api_bfd_udp_session_details_t:");
+    s = format(s, "\n%Usw_if_index: %U", format_white_space, indent, format_vl_api_interface_index_t, &a->sw_if_index, indent);
+    s = format(s, "\n%Ulocal_addr: %U", format_white_space, indent, format_vl_api_address_t, &a->local_addr, indent);
+    s = format(s, "\n%Upeer_addr: %U", format_white_space, indent, format_vl_api_address_t, &a->peer_addr, indent);
+    s = format(s, "\n%Ustate: %U", format_white_space, indent, format_vl_api_bfd_state_t, &a->state, indent);
+    s = format(s, "\n%Uis_authenticated: %u", format_white_space, indent, a->is_authenticated);
+    s = format(s, "\n%Ubfd_key_id: %u", format_white_space, indent, a->bfd_key_id);
+    s = format(s, "\n%Uconf_key_id: %u", format_white_space, indent, a->conf_key_id);
+    s = format(s, "\n%Urequired_min_rx: %u", format_white_space, indent, a->required_min_rx);
+    s = format(s, "\n%Udesired_min_tx: %u", format_white_space, indent, a->desired_min_tx);
+    s = format(s, "\n%Udetect_mult: %u", format_white_space, indent, a->detect_mult);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_session_set_flags_t_print
-#define _vl_api_defined_bfd_udp_session_set_flags_t_print
-static inline void *vl_api_bfd_udp_session_set_flags_t_print (vl_api_bfd_udp_session_set_flags_t *a,void *handle)
+static inline void *vl_api_bfd_udp_session_set_flags_t_print (vl_api_bfd_udp_session_set_flags_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_bfd_udp_session_set_flags_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "sw_if_index: %u\n", a->sw_if_index);
-    vl_print(handle, "is_ipv6: %u\n", a->is_ipv6);
-    vl_print(handle, "admin_up_down: %u\n", a->admin_up_down);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_bfd_udp_session_set_flags_t: */
+    s = format(s, "vl_api_bfd_udp_session_set_flags_t:");
+    s = format(s, "\n%Usw_if_index: %U", format_white_space, indent, format_vl_api_interface_index_t, &a->sw_if_index, indent);
+    s = format(s, "\n%Ulocal_addr: %U", format_white_space, indent, format_vl_api_address_t, &a->local_addr, indent);
+    s = format(s, "\n%Upeer_addr: %U", format_white_space, indent, format_vl_api_address_t, &a->peer_addr, indent);
+    s = format(s, "\n%Uflags: %U", format_white_space, indent, format_vl_api_if_status_flags_t, &a->flags, indent);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_session_set_flags_reply_t_print
-#define _vl_api_defined_bfd_udp_session_set_flags_reply_t_print
-static inline void *vl_api_bfd_udp_session_set_flags_reply_t_print (vl_api_bfd_udp_session_set_flags_reply_t *a,void *handle)
+static inline void *vl_api_bfd_udp_session_set_flags_reply_t_print (vl_api_bfd_udp_session_set_flags_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_bfd_udp_session_set_flags_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_bfd_udp_session_set_flags_reply_t: */
+    s = format(s, "vl_api_bfd_udp_session_set_flags_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_want_bfd_events_t_print
-#define _vl_api_defined_want_bfd_events_t_print
-static inline void *vl_api_want_bfd_events_t_print (vl_api_want_bfd_events_t *a,void *handle)
+static inline void *vl_api_want_bfd_events_t_print (vl_api_want_bfd_events_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_want_bfd_events_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "enable_disable: %u\n", a->enable_disable);
-    vl_print(handle, "pid: %u\n", a->pid);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_want_bfd_events_t: */
+    s = format(s, "vl_api_want_bfd_events_t:");
+    s = format(s, "\n%Uenable_disable: %u", format_white_space, indent, a->enable_disable);
+    s = format(s, "\n%Upid: %u", format_white_space, indent, a->pid);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_want_bfd_events_reply_t_print
-#define _vl_api_defined_want_bfd_events_reply_t_print
-static inline void *vl_api_want_bfd_events_reply_t_print (vl_api_want_bfd_events_reply_t *a,void *handle)
+static inline void *vl_api_want_bfd_events_reply_t_print (vl_api_want_bfd_events_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_want_bfd_events_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_want_bfd_events_reply_t: */
+    s = format(s, "vl_api_want_bfd_events_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_auth_set_key_t_print
-#define _vl_api_defined_bfd_auth_set_key_t_print
-static inline void *vl_api_bfd_auth_set_key_t_print (vl_api_bfd_auth_set_key_t *a,void *handle)
+static inline void *vl_api_bfd_auth_set_key_t_print (vl_api_bfd_auth_set_key_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_bfd_auth_set_key_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "conf_key_id: %u\n", a->conf_key_id);
-    vl_print(handle, "key_len: %u\n", a->key_len);
-    vl_print(handle, "auth_type: %u\n", a->auth_type);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_bfd_auth_set_key_t: */
+    s = format(s, "vl_api_bfd_auth_set_key_t:");
+    s = format(s, "\n%Uconf_key_id: %u", format_white_space, indent, a->conf_key_id);
+    s = format(s, "\n%Ukey_len: %u", format_white_space, indent, a->key_len);
+    s = format(s, "\n%Uauth_type: %u", format_white_space, indent, a->auth_type);
+    s = format(s, "\n%Ukey: %U", format_white_space, indent, format_hex_bytes, a, 20);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_auth_set_key_reply_t_print
-#define _vl_api_defined_bfd_auth_set_key_reply_t_print
-static inline void *vl_api_bfd_auth_set_key_reply_t_print (vl_api_bfd_auth_set_key_reply_t *a,void *handle)
+static inline void *vl_api_bfd_auth_set_key_reply_t_print (vl_api_bfd_auth_set_key_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_bfd_auth_set_key_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_bfd_auth_set_key_reply_t: */
+    s = format(s, "vl_api_bfd_auth_set_key_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_auth_del_key_t_print
-#define _vl_api_defined_bfd_auth_del_key_t_print
-static inline void *vl_api_bfd_auth_del_key_t_print (vl_api_bfd_auth_del_key_t *a,void *handle)
+static inline void *vl_api_bfd_auth_del_key_t_print (vl_api_bfd_auth_del_key_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_bfd_auth_del_key_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "conf_key_id: %u\n", a->conf_key_id);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_bfd_auth_del_key_t: */
+    s = format(s, "vl_api_bfd_auth_del_key_t:");
+    s = format(s, "\n%Uconf_key_id: %u", format_white_space, indent, a->conf_key_id);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_auth_del_key_reply_t_print
-#define _vl_api_defined_bfd_auth_del_key_reply_t_print
-static inline void *vl_api_bfd_auth_del_key_reply_t_print (vl_api_bfd_auth_del_key_reply_t *a,void *handle)
+static inline void *vl_api_bfd_auth_del_key_reply_t_print (vl_api_bfd_auth_del_key_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_bfd_auth_del_key_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_bfd_auth_del_key_reply_t: */
+    s = format(s, "vl_api_bfd_auth_del_key_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_auth_keys_dump_t_print
-#define _vl_api_defined_bfd_auth_keys_dump_t_print
-static inline void *vl_api_bfd_auth_keys_dump_t_print (vl_api_bfd_auth_keys_dump_t *a,void *handle)
+static inline void *vl_api_bfd_auth_keys_dump_t_print (vl_api_bfd_auth_keys_dump_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_bfd_auth_keys_dump_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_bfd_auth_keys_dump_t: */
+    s = format(s, "vl_api_bfd_auth_keys_dump_t:");
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_auth_keys_details_t_print
-#define _vl_api_defined_bfd_auth_keys_details_t_print
-static inline void *vl_api_bfd_auth_keys_details_t_print (vl_api_bfd_auth_keys_details_t *a,void *handle)
+static inline void *vl_api_bfd_auth_keys_details_t_print (vl_api_bfd_auth_keys_details_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_bfd_auth_keys_details_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "conf_key_id: %u\n", a->conf_key_id);
-    vl_print(handle, "use_count: %u\n", a->use_count);
-    vl_print(handle, "auth_type: %u\n", a->auth_type);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_bfd_auth_keys_details_t: */
+    s = format(s, "vl_api_bfd_auth_keys_details_t:");
+    s = format(s, "\n%Uconf_key_id: %u", format_white_space, indent, a->conf_key_id);
+    s = format(s, "\n%Uuse_count: %u", format_white_space, indent, a->use_count);
+    s = format(s, "\n%Uauth_type: %u", format_white_space, indent, a->auth_type);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_auth_activate_t_print
-#define _vl_api_defined_bfd_udp_auth_activate_t_print
-static inline void *vl_api_bfd_udp_auth_activate_t_print (vl_api_bfd_udp_auth_activate_t *a,void *handle)
+static inline void *vl_api_bfd_udp_auth_activate_t_print (vl_api_bfd_udp_auth_activate_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_bfd_udp_auth_activate_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "sw_if_index: %u\n", a->sw_if_index);
-    vl_print(handle, "is_ipv6: %u\n", a->is_ipv6);
-    vl_print(handle, "is_delayed: %u\n", a->is_delayed);
-    vl_print(handle, "bfd_key_id: %u\n", a->bfd_key_id);
-    vl_print(handle, "conf_key_id: %u\n", a->conf_key_id);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_bfd_udp_auth_activate_t: */
+    s = format(s, "vl_api_bfd_udp_auth_activate_t:");
+    s = format(s, "\n%Usw_if_index: %U", format_white_space, indent, format_vl_api_interface_index_t, &a->sw_if_index, indent);
+    s = format(s, "\n%Ulocal_addr: %U", format_white_space, indent, format_vl_api_address_t, &a->local_addr, indent);
+    s = format(s, "\n%Upeer_addr: %U", format_white_space, indent, format_vl_api_address_t, &a->peer_addr, indent);
+    s = format(s, "\n%Uis_delayed: %u", format_white_space, indent, a->is_delayed);
+    s = format(s, "\n%Ubfd_key_id: %u", format_white_space, indent, a->bfd_key_id);
+    s = format(s, "\n%Uconf_key_id: %u", format_white_space, indent, a->conf_key_id);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_auth_activate_reply_t_print
-#define _vl_api_defined_bfd_udp_auth_activate_reply_t_print
-static inline void *vl_api_bfd_udp_auth_activate_reply_t_print (vl_api_bfd_udp_auth_activate_reply_t *a,void *handle)
+static inline void *vl_api_bfd_udp_auth_activate_reply_t_print (vl_api_bfd_udp_auth_activate_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_bfd_udp_auth_activate_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_bfd_udp_auth_activate_reply_t: */
+    s = format(s, "vl_api_bfd_udp_auth_activate_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_auth_deactivate_t_print
-#define _vl_api_defined_bfd_udp_auth_deactivate_t_print
-static inline void *vl_api_bfd_udp_auth_deactivate_t_print (vl_api_bfd_udp_auth_deactivate_t *a,void *handle)
+static inline void *vl_api_bfd_udp_auth_deactivate_t_print (vl_api_bfd_udp_auth_deactivate_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_bfd_udp_auth_deactivate_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "sw_if_index: %u\n", a->sw_if_index);
-    vl_print(handle, "is_ipv6: %u\n", a->is_ipv6);
-    vl_print(handle, "is_delayed: %u\n", a->is_delayed);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_bfd_udp_auth_deactivate_t: */
+    s = format(s, "vl_api_bfd_udp_auth_deactivate_t:");
+    s = format(s, "\n%Usw_if_index: %U", format_white_space, indent, format_vl_api_interface_index_t, &a->sw_if_index, indent);
+    s = format(s, "\n%Ulocal_addr: %U", format_white_space, indent, format_vl_api_address_t, &a->local_addr, indent);
+    s = format(s, "\n%Upeer_addr: %U", format_white_space, indent, format_vl_api_address_t, &a->peer_addr, indent);
+    s = format(s, "\n%Uis_delayed: %u", format_white_space, indent, a->is_delayed);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_auth_deactivate_reply_t_print
-#define _vl_api_defined_bfd_udp_auth_deactivate_reply_t_print
-static inline void *vl_api_bfd_udp_auth_deactivate_reply_t_print (vl_api_bfd_udp_auth_deactivate_reply_t *a,void *handle)
+static inline void *vl_api_bfd_udp_auth_deactivate_reply_t_print (vl_api_bfd_udp_auth_deactivate_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_bfd_udp_auth_deactivate_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_bfd_udp_auth_deactivate_reply_t: */
+    s = format(s, "vl_api_bfd_udp_auth_deactivate_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
+
 #endif
-
-
 #endif /* vl_printfun */
 
 /****** Endian swap functions *****/
 #ifdef vl_endianfun
+#ifndef included_bfd_endianfun
+#define included_bfd_endianfun
 
 #undef clib_net_to_host_uword
 #ifdef LP64
@@ -875,178 +615,150 @@ static inline void *vl_api_bfd_udp_auth_deactivate_reply_t_print (vl_api_bfd_udp
 #define clib_net_to_host_uword clib_net_to_host_u32
 #endif
 
-#ifndef _vl_api_defined_bfd_udp_set_echo_source_t_endian
-#define _vl_api_defined_bfd_udp_set_echo_source_t_endian
+static inline void vl_api_bfd_state_t_endian (vl_api_bfd_state_t *a)
+{
+    int i __attribute__((unused));
+    *a = clib_net_to_host_u32(*a);
+}
+
 static inline void vl_api_bfd_udp_set_echo_source_t_endian (vl_api_bfd_udp_set_echo_source_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
-    a->sw_if_index = clib_net_to_host_u32(a->sw_if_index);
+    vl_api_interface_index_t_endian(&a->sw_if_index);
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_set_echo_source_reply_t_endian
-#define _vl_api_defined_bfd_udp_set_echo_source_reply_t_endian
 static inline void vl_api_bfd_udp_set_echo_source_reply_t_endian (vl_api_bfd_udp_set_echo_source_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_del_echo_source_t_endian
-#define _vl_api_defined_bfd_udp_del_echo_source_t_endian
 static inline void vl_api_bfd_udp_del_echo_source_t_endian (vl_api_bfd_udp_del_echo_source_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_del_echo_source_reply_t_endian
-#define _vl_api_defined_bfd_udp_del_echo_source_reply_t_endian
 static inline void vl_api_bfd_udp_del_echo_source_reply_t_endian (vl_api_bfd_udp_del_echo_source_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_get_echo_source_t_endian
-#define _vl_api_defined_bfd_udp_get_echo_source_t_endian
 static inline void vl_api_bfd_udp_get_echo_source_t_endian (vl_api_bfd_udp_get_echo_source_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_get_echo_source_reply_t_endian
-#define _vl_api_defined_bfd_udp_get_echo_source_reply_t_endian
 static inline void vl_api_bfd_udp_get_echo_source_reply_t_endian (vl_api_bfd_udp_get_echo_source_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
-    a->sw_if_index = clib_net_to_host_u32(a->sw_if_index);
+    a->retval = clib_net_to_host_i32(a->retval);
+    vl_api_interface_index_t_endian(&a->sw_if_index);
     /* a->is_set = a->is_set (no-op) */
     /* a->have_usable_ip4 = a->have_usable_ip4 (no-op) */
+    vl_api_ip4_address_t_endian(&a->ip4_addr);
     /* a->have_usable_ip6 = a->have_usable_ip6 (no-op) */
+    vl_api_ip6_address_t_endian(&a->ip6_addr);
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_add_t_endian
-#define _vl_api_defined_bfd_udp_add_t_endian
 static inline void vl_api_bfd_udp_add_t_endian (vl_api_bfd_udp_add_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
-    a->sw_if_index = clib_net_to_host_u32(a->sw_if_index);
+    vl_api_interface_index_t_endian(&a->sw_if_index);
     a->desired_min_tx = clib_net_to_host_u32(a->desired_min_tx);
     a->required_min_rx = clib_net_to_host_u32(a->required_min_rx);
-    /* a->is_ipv6 = a->is_ipv6 (no-op) */
+    vl_api_address_t_endian(&a->local_addr);
+    vl_api_address_t_endian(&a->peer_addr);
     /* a->detect_mult = a->detect_mult (no-op) */
     /* a->is_authenticated = a->is_authenticated (no-op) */
     /* a->bfd_key_id = a->bfd_key_id (no-op) */
     a->conf_key_id = clib_net_to_host_u32(a->conf_key_id);
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_add_reply_t_endian
-#define _vl_api_defined_bfd_udp_add_reply_t_endian
 static inline void vl_api_bfd_udp_add_reply_t_endian (vl_api_bfd_udp_add_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_mod_t_endian
-#define _vl_api_defined_bfd_udp_mod_t_endian
 static inline void vl_api_bfd_udp_mod_t_endian (vl_api_bfd_udp_mod_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
-    a->sw_if_index = clib_net_to_host_u32(a->sw_if_index);
+    vl_api_interface_index_t_endian(&a->sw_if_index);
     a->desired_min_tx = clib_net_to_host_u32(a->desired_min_tx);
     a->required_min_rx = clib_net_to_host_u32(a->required_min_rx);
-    /* a->is_ipv6 = a->is_ipv6 (no-op) */
+    vl_api_address_t_endian(&a->local_addr);
+    vl_api_address_t_endian(&a->peer_addr);
     /* a->detect_mult = a->detect_mult (no-op) */
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_mod_reply_t_endian
-#define _vl_api_defined_bfd_udp_mod_reply_t_endian
 static inline void vl_api_bfd_udp_mod_reply_t_endian (vl_api_bfd_udp_mod_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_del_t_endian
-#define _vl_api_defined_bfd_udp_del_t_endian
 static inline void vl_api_bfd_udp_del_t_endian (vl_api_bfd_udp_del_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
-    a->sw_if_index = clib_net_to_host_u32(a->sw_if_index);
-    /* a->is_ipv6 = a->is_ipv6 (no-op) */
+    vl_api_interface_index_t_endian(&a->sw_if_index);
+    vl_api_address_t_endian(&a->local_addr);
+    vl_api_address_t_endian(&a->peer_addr);
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_del_reply_t_endian
-#define _vl_api_defined_bfd_udp_del_reply_t_endian
 static inline void vl_api_bfd_udp_del_reply_t_endian (vl_api_bfd_udp_del_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_session_dump_t_endian
-#define _vl_api_defined_bfd_udp_session_dump_t_endian
 static inline void vl_api_bfd_udp_session_dump_t_endian (vl_api_bfd_udp_session_dump_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_session_details_t_endian
-#define _vl_api_defined_bfd_udp_session_details_t_endian
 static inline void vl_api_bfd_udp_session_details_t_endian (vl_api_bfd_udp_session_details_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->sw_if_index = clib_net_to_host_u32(a->sw_if_index);
-    /* a->is_ipv6 = a->is_ipv6 (no-op) */
-    /* a->state = a->state (no-op) */
+    vl_api_interface_index_t_endian(&a->sw_if_index);
+    vl_api_address_t_endian(&a->local_addr);
+    vl_api_address_t_endian(&a->peer_addr);
+    vl_api_bfd_state_t_endian(&a->state);
     /* a->is_authenticated = a->is_authenticated (no-op) */
     /* a->bfd_key_id = a->bfd_key_id (no-op) */
     a->conf_key_id = clib_net_to_host_u32(a->conf_key_id);
@@ -1055,120 +767,92 @@ static inline void vl_api_bfd_udp_session_details_t_endian (vl_api_bfd_udp_sessi
     /* a->detect_mult = a->detect_mult (no-op) */
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_session_set_flags_t_endian
-#define _vl_api_defined_bfd_udp_session_set_flags_t_endian
 static inline void vl_api_bfd_udp_session_set_flags_t_endian (vl_api_bfd_udp_session_set_flags_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
-    a->sw_if_index = clib_net_to_host_u32(a->sw_if_index);
-    /* a->is_ipv6 = a->is_ipv6 (no-op) */
-    /* a->admin_up_down = a->admin_up_down (no-op) */
+    vl_api_interface_index_t_endian(&a->sw_if_index);
+    vl_api_address_t_endian(&a->local_addr);
+    vl_api_address_t_endian(&a->peer_addr);
+    vl_api_if_status_flags_t_endian(&a->flags);
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_session_set_flags_reply_t_endian
-#define _vl_api_defined_bfd_udp_session_set_flags_reply_t_endian
 static inline void vl_api_bfd_udp_session_set_flags_reply_t_endian (vl_api_bfd_udp_session_set_flags_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
-#endif
-
-#ifndef _vl_api_defined_want_bfd_events_t_endian
-#define _vl_api_defined_want_bfd_events_t_endian
 static inline void vl_api_want_bfd_events_t_endian (vl_api_want_bfd_events_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
-    a->enable_disable = clib_net_to_host_u32(a->enable_disable);
+    /* a->enable_disable = a->enable_disable (no-op) */
     a->pid = clib_net_to_host_u32(a->pid);
 }
 
-#endif
-
-#ifndef _vl_api_defined_want_bfd_events_reply_t_endian
-#define _vl_api_defined_want_bfd_events_reply_t_endian
 static inline void vl_api_want_bfd_events_reply_t_endian (vl_api_want_bfd_events_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_auth_set_key_t_endian
-#define _vl_api_defined_bfd_auth_set_key_t_endian
 static inline void vl_api_bfd_auth_set_key_t_endian (vl_api_bfd_auth_set_key_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
     a->conf_key_id = clib_net_to_host_u32(a->conf_key_id);
     /* a->key_len = a->key_len (no-op) */
     /* a->auth_type = a->auth_type (no-op) */
+    /* a->key = a->key (no-op) */
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_auth_set_key_reply_t_endian
-#define _vl_api_defined_bfd_auth_set_key_reply_t_endian
 static inline void vl_api_bfd_auth_set_key_reply_t_endian (vl_api_bfd_auth_set_key_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_auth_del_key_t_endian
-#define _vl_api_defined_bfd_auth_del_key_t_endian
 static inline void vl_api_bfd_auth_del_key_t_endian (vl_api_bfd_auth_del_key_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
     a->conf_key_id = clib_net_to_host_u32(a->conf_key_id);
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_auth_del_key_reply_t_endian
-#define _vl_api_defined_bfd_auth_del_key_reply_t_endian
 static inline void vl_api_bfd_auth_del_key_reply_t_endian (vl_api_bfd_auth_del_key_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_auth_keys_dump_t_endian
-#define _vl_api_defined_bfd_auth_keys_dump_t_endian
 static inline void vl_api_bfd_auth_keys_dump_t_endian (vl_api_bfd_auth_keys_dump_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_auth_keys_details_t_endian
-#define _vl_api_defined_bfd_auth_keys_details_t_endian
 static inline void vl_api_bfd_auth_keys_details_t_endian (vl_api_bfd_auth_keys_details_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
     a->conf_key_id = clib_net_to_host_u32(a->conf_key_id);
@@ -1176,75 +860,64 @@ static inline void vl_api_bfd_auth_keys_details_t_endian (vl_api_bfd_auth_keys_d
     /* a->auth_type = a->auth_type (no-op) */
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_auth_activate_t_endian
-#define _vl_api_defined_bfd_udp_auth_activate_t_endian
 static inline void vl_api_bfd_udp_auth_activate_t_endian (vl_api_bfd_udp_auth_activate_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
-    a->sw_if_index = clib_net_to_host_u32(a->sw_if_index);
-    /* a->is_ipv6 = a->is_ipv6 (no-op) */
+    vl_api_interface_index_t_endian(&a->sw_if_index);
+    vl_api_address_t_endian(&a->local_addr);
+    vl_api_address_t_endian(&a->peer_addr);
     /* a->is_delayed = a->is_delayed (no-op) */
     /* a->bfd_key_id = a->bfd_key_id (no-op) */
     a->conf_key_id = clib_net_to_host_u32(a->conf_key_id);
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_auth_activate_reply_t_endian
-#define _vl_api_defined_bfd_udp_auth_activate_reply_t_endian
 static inline void vl_api_bfd_udp_auth_activate_reply_t_endian (vl_api_bfd_udp_auth_activate_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_auth_deactivate_t_endian
-#define _vl_api_defined_bfd_udp_auth_deactivate_t_endian
 static inline void vl_api_bfd_udp_auth_deactivate_t_endian (vl_api_bfd_udp_auth_deactivate_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
-    a->sw_if_index = clib_net_to_host_u32(a->sw_if_index);
-    /* a->is_ipv6 = a->is_ipv6 (no-op) */
+    vl_api_interface_index_t_endian(&a->sw_if_index);
+    vl_api_address_t_endian(&a->local_addr);
+    vl_api_address_t_endian(&a->peer_addr);
     /* a->is_delayed = a->is_delayed (no-op) */
 }
 
-#endif
-
-#ifndef _vl_api_defined_bfd_udp_auth_deactivate_reply_t_endian
-#define _vl_api_defined_bfd_udp_auth_deactivate_reply_t_endian
 static inline void vl_api_bfd_udp_auth_deactivate_reply_t_endian (vl_api_bfd_udp_auth_deactivate_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
+
 #endif
-
-
 #endif /* vl_endianfun */
 
 /****** Version tuple *****/
 
 #ifdef vl_api_version_tuple
 
-vl_api_version_tuple(bfd.api, 1, 0, 0)
+vl_api_version_tuple(bfd.api, 2, 0, 0)
 
 #endif /* vl_api_version_tuple */
 
 /****** API CRC (whole file) *****/
 
 #ifdef vl_api_version
-vl_api_version(bfd.api, 0x5c3ba394)
+vl_api_version(bfd.api, 0xbfeb2477)
 
 #endif
 

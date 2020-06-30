@@ -14,16 +14,78 @@ extern "C" {
 #include <vapi/vpe.api.vapi.h>
 
 extern vapi_msg_id_t vapi_msg_id_policer_add_del;
-extern vapi_msg_id_t vapi_msg_id_policer_details;
-extern vapi_msg_id_t vapi_msg_id_policer_dump;
 extern vapi_msg_id_t vapi_msg_id_policer_add_del_reply;
+extern vapi_msg_id_t vapi_msg_id_policer_dump;
+extern vapi_msg_id_t vapi_msg_id_policer_details;
 
 #define DEFINE_VAPI_MSG_IDS_POLICER_API_JSON\
   vapi_msg_id_t vapi_msg_id_policer_add_del;\
-  vapi_msg_id_t vapi_msg_id_policer_details;\
+  vapi_msg_id_t vapi_msg_id_policer_add_del_reply;\
   vapi_msg_id_t vapi_msg_id_policer_dump;\
-  vapi_msg_id_t vapi_msg_id_policer_add_del_reply;
+  vapi_msg_id_t vapi_msg_id_policer_details;
 
+
+#ifndef defined_vapi_enum_sse2_qos_rate_type
+#define defined_vapi_enum_sse2_qos_rate_type
+typedef enum {
+  SSE2_QOS_RATE_API_KBPS = 0,
+  SSE2_QOS_RATE_API_PPS = 1,
+  SSE2_QOS_RATE_API_INVALID = 2,
+} __attribute__((packed)) vapi_enum_sse2_qos_rate_type;
+
+#endif
+
+#ifndef defined_vapi_enum_sse2_qos_round_type
+#define defined_vapi_enum_sse2_qos_round_type
+typedef enum {
+  SSE2_QOS_ROUND_API_TO_CLOSEST = 0,
+  SSE2_QOS_ROUND_API_TO_UP = 1,
+  SSE2_QOS_ROUND_API_TO_DOWN = 2,
+  SSE2_QOS_ROUND_API_INVALID = 3,
+} __attribute__((packed)) vapi_enum_sse2_qos_round_type;
+
+#endif
+
+#ifndef defined_vapi_enum_sse2_qos_policer_type
+#define defined_vapi_enum_sse2_qos_policer_type
+typedef enum {
+  SSE2_QOS_POLICER_TYPE_API_1R2C = 0,
+  SSE2_QOS_POLICER_TYPE_API_1R3C_RFC_2697 = 1,
+  SSE2_QOS_POLICER_TYPE_API_2R3C_RFC_2698 = 2,
+  SSE2_QOS_POLICER_TYPE_API_2R3C_RFC_4115 = 3,
+  SSE2_QOS_POLICER_TYPE_API_2R3C_RFC_MEF5CF1 = 4,
+  SSE2_QOS_POLICER_TYPE_API_MAX = 5,
+} __attribute__((packed)) vapi_enum_sse2_qos_policer_type;
+
+#endif
+
+#ifndef defined_vapi_enum_sse2_qos_action_type
+#define defined_vapi_enum_sse2_qos_action_type
+typedef enum {
+  SSE2_QOS_ACTION_API_DROP = 0,
+  SSE2_QOS_ACTION_API_TRANSMIT = 1,
+  SSE2_QOS_ACTION_API_MARK_AND_TRANSMIT = 2,
+} __attribute__((packed)) vapi_enum_sse2_qos_action_type;
+
+#endif
+
+#ifndef defined_vapi_type_sse2_qos_action
+#define defined_vapi_type_sse2_qos_action
+typedef struct __attribute__((__packed__)) {
+  vapi_enum_sse2_qos_action_type type;
+  u8 dscp;
+} vapi_type_sse2_qos_action;
+
+static inline void vapi_type_sse2_qos_action_hton(vapi_type_sse2_qos_action *msg)
+{
+
+}
+
+static inline void vapi_type_sse2_qos_action_ntoh(vapi_type_sse2_qos_action *msg)
+{
+
+}
+#endif
 
 #ifndef defined_vapi_msg_policer_add_del_reply
 #define defined_vapi_msg_policer_add_del_reply
@@ -102,22 +164,19 @@ static inline void vapi_set_vapi_msg_policer_add_del_reply_event_cb (
 #ifndef defined_vapi_msg_policer_add_del
 #define defined_vapi_msg_policer_add_del
 typedef struct __attribute__ ((__packed__)) {
-  u8 is_add;
+  bool is_add;
   u8 name[64];
   u32 cir;
   u32 eir;
   u64 cb;
   u64 eb;
-  u8 rate_type;
-  u8 round_type;
-  u8 type;
-  u8 color_aware;
-  u8 conform_action_type;
-  u8 conform_dscp;
-  u8 exceed_action_type;
-  u8 exceed_dscp;
-  u8 violate_action_type;
-  u8 violate_dscp; 
+  vapi_enum_sse2_qos_rate_type rate_type;
+  vapi_enum_sse2_qos_round_type round_type;
+  vapi_enum_sse2_qos_policer_type type;
+  bool color_aware;
+  vapi_type_sse2_qos_action conform_action;
+  vapi_type_sse2_qos_action exceed_action;
+  vapi_type_sse2_qos_action violate_action; 
 } vapi_payload_policer_add_del;
 
 typedef struct __attribute__ ((__packed__)) {
@@ -221,7 +280,7 @@ static inline vapi_error_e vapi_policer_add_del(struct vapi_ctx_s *ctx,
 static void __attribute__((constructor)) __vapi_constructor_policer_add_del()
 {
   static const char name[] = "policer_add_del";
-  static const char name_with_crc[] = "policer_add_del_dfea2be8";
+  static const char name_with_crc[] = "policer_add_del_cb948f6e";
   static vapi_message_desc_t __vapi_metadata_policer_add_del = {
     name,
     sizeof(name) - 1,
@@ -249,17 +308,14 @@ typedef struct __attribute__ ((__packed__)) {
   u32 eir;
   u64 cb;
   u64 eb;
-  u8 rate_type;
-  u8 round_type;
-  u8 type;
-  u8 conform_action_type;
-  u8 conform_dscp;
-  u8 exceed_action_type;
-  u8 exceed_dscp;
-  u8 violate_action_type;
-  u8 violate_dscp;
-  u8 single_rate;
-  u8 color_aware;
+  vapi_enum_sse2_qos_rate_type rate_type;
+  vapi_enum_sse2_qos_round_type round_type;
+  vapi_enum_sse2_qos_policer_type type;
+  vapi_type_sse2_qos_action conform_action;
+  vapi_type_sse2_qos_action exceed_action;
+  vapi_type_sse2_qos_action violate_action;
+  bool single_rate;
+  bool color_aware;
   u32 scale;
   u32 cir_tokens_per_period;
   u32 pir_tokens_per_period;
@@ -329,7 +385,7 @@ static inline uword vapi_calc_policer_details_msg_size(vapi_msg_policer_details 
 static void __attribute__((constructor)) __vapi_constructor_policer_details()
 {
   static const char name[] = "policer_details";
-  static const char name_with_crc[] = "policer_details_ff2765f0";
+  static const char name_with_crc[] = "policer_details_a43f781a";
   static vapi_message_desc_t __vapi_metadata_policer_details = {
     name,
     sizeof(name) - 1,
@@ -360,7 +416,7 @@ static inline void vapi_set_vapi_msg_policer_details_event_cb (
 #ifndef defined_vapi_msg_policer_dump
 #define defined_vapi_msg_policer_dump
 typedef struct __attribute__ ((__packed__)) {
-  u8 match_name_valid;
+  bool match_name_valid;
   u8 match_name[64]; 
 } vapi_payload_policer_dump;
 
@@ -459,7 +515,7 @@ static inline vapi_error_e vapi_policer_dump(struct vapi_ctx_s *ctx,
 static void __attribute__((constructor)) __vapi_constructor_policer_dump()
 {
   static const char name[] = "policer_dump";
-  static const char name_with_crc[] = "policer_dump_8be04d34";
+  static const char name_with_crc[] = "policer_dump_35f1ae0f";
   static vapi_message_desc_t __vapi_metadata_policer_dump = {
     name,
     sizeof(name) - 1,

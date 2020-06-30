@@ -1,0 +1,7 @@
+typedef enum {
+   VL_API_UDP_PING_ADD_DEL,
+   VL_API_UDP_PING_ADD_DEL_REPLY,
+   VL_API_UDP_PING_EXPORT,
+   VL_API_UDP_PING_EXPORT_REPLY,
+   VL_MSG_FIRST_AVAILABLE
+} vl_api_udp_ping_enum_t;

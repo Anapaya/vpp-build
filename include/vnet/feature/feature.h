@@ -219,6 +219,9 @@ vnet_feature_enable_disable (const char *arc_name, const char *node_name,
 			     void *feature_config,
 			     u32 n_feature_config_bytes);
 
+u32
+vnet_feature_modify_end_node (u8 arc_index, u32 sw_if_index, u32 node_index);
+
 static_always_inline u32
 vnet_get_feature_count (u8 arc, u32 sw_if_index)
 {
@@ -278,6 +281,23 @@ vnet_feature_arc_start_with_data (u8 arc, u32 sw_if_index, u32 * next,
   return 0;
 }
 
+static_always_inline void *
+vnet_feature_arc_start_w_cfg_index (u8 arc,
+				    u32 sw_if_index,
+				    u32 * next,
+				    vlib_buffer_t * b, u32 cfg_index)
+{
+  vnet_feature_main_t *fm = &feature_main;
+  vnet_feature_config_main_t *cm;
+  cm = &fm->feature_config_mains[arc];
+
+  vnet_buffer (b)->feature_arc_index = arc;
+  b->current_config_index = cfg_index;
+
+  return vnet_get_config_data (&cm->config_main, &b->current_config_index,
+			       next, 0);
+}
+
 static_always_inline void
 vnet_feature_arc_start (u8 arc, u32 sw_if_index, u32 * next0,
 			vlib_buffer_t * b0)
@@ -302,6 +322,14 @@ static_always_inline void
 vnet_feature_next (u32 * next0, vlib_buffer_t * b0)
 {
   vnet_feature_next_with_data (next0, b0, 0);
+}
+
+static_always_inline void
+vnet_feature_next_u16 (u16 * next0, vlib_buffer_t * b0)
+{
+  u32 next32;
+  vnet_feature_next_with_data (&next32, b0, 0);
+  *next0 = next32;
 }
 
 static_always_inline int
@@ -453,6 +481,12 @@ clib_error_t *vnet_feature_arc_init
 
 void vnet_interface_features_show (vlib_main_t * vm, u32 sw_if_index,
 				   int verbose);
+
+typedef void (*vnet_feature_update_cb_t) (u32 sw_if_index,
+					  u8 arc_index,
+					  u8 is_enable, void *cb);
+
+extern void vnet_feature_register (vnet_feature_update_cb_t cb, void *data);
 
 #endif /* included_feature_h */
 

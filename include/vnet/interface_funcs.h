@@ -239,6 +239,7 @@ clib_error_t *vnet_create_sw_interface (vnet_main_t * vnm,
 void vnet_delete_hw_interface (vnet_main_t * vnm, u32 hw_if_index);
 void vnet_delete_sw_interface (vnet_main_t * vnm, u32 sw_if_index);
 int vnet_sw_interface_is_p2p (vnet_main_t * vnm, u32 sw_if_index);
+int vnet_sw_interface_is_nbma (vnet_main_t * vnm, u32 sw_if_index);
 
 always_inline vnet_sw_interface_flags_t
 vnet_sw_interface_get_flags (vnet_main_t * vnm, u32 sw_if_index)
@@ -390,6 +391,12 @@ void vnet_hw_interface_init_for_class (vnet_main_t * vnm, u32 hw_if_index,
 clib_error_t *vnet_rename_interface (vnet_main_t * vnm, u32 hw_if_index,
 				     char *new_name);
 
+/* Add/delete secondary interface mac address*/
+clib_error_t *vnet_hw_interface_add_del_mac_address (vnet_main_t * vnm,
+						     u32 hw_if_index,
+						     const u8 * mac_address,
+						     u8 is_add);
+
 /* Change interface mac address*/
 clib_error_t *vnet_hw_interface_change_mac_address (vnet_main_t * vnm,
 						    u32 hw_if_index,
@@ -437,10 +444,14 @@ format_function_t format_vnet_sw_interface_flags;
 /* Parses sw/hw interface name -> index. */
 unformat_function_t unformat_vnet_sw_interface;
 unformat_function_t unformat_vnet_hw_interface;
+unformat_function_t unformat_vnet_buffer_flags;
 
 /* Parses interface flags (up, down, enable, disable, etc.) */
 unformat_function_t unformat_vnet_hw_interface_flags;
 unformat_function_t unformat_vnet_sw_interface_flags;
+
+/* VLAN tag-rewrite */
+format_function_t format_vtr;
 
 /* Node runtime for interface output function. */
 typedef struct

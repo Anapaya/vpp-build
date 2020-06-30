@@ -47,6 +47,9 @@
 #include "mlx5.h"
 #include "mlx5-abi.h"
 #include "wqe.h"
+#include "mlx5_ifc.h"
+
+static void mlx5_free_context(struct ibv_context *ibctx);
 
 #ifndef PCI_VENDOR_ID_MELLANOX
 #define PCI_VENDOR_ID_MELLANOX			0x15b3
@@ -77,8 +80,10 @@ static const struct verbs_match_ent hca_table[] = {
 	HCA(MELLANOX, 0x101c),	/* ConnectX-6 VF */
 	HCA(MELLANOX, 0x101d),	/* ConnectX-6 DX */
 	HCA(MELLANOX, 0x101e),	/* ConnectX family mlx5Gen Virtual Function */
+	HCA(MELLANOX, 0x1021),  /* ConnectX-7 */
 	HCA(MELLANOX, 0xa2d2),	/* BlueField integrated ConnectX-5 network controller */
 	HCA(MELLANOX, 0xa2d3),	/* BlueField integrated ConnectX-5 network controller VF */
+	HCA(MELLANOX, 0xa2d6),  /* BlueField-2 integrated ConnectX-6 Dx network controller */
 	{}
 };
 
@@ -145,6 +150,7 @@ static const struct verbs_context_ops mlx5_ctx_common_ops = {
 	.modify_flow_action_esp = mlx5_modify_flow_action_esp,
 	.modify_qp_rate_limit = mlx5_modify_qp_rate_limit,
 	.modify_wq = mlx5_modify_wq,
+	.open_qp = mlx5_open_qp,
 	.open_xrcd = mlx5_open_xrcd,
 	.post_srq_ops = mlx5_post_srq_ops,
 	.query_device_ex = mlx5_query_device_ex,
@@ -152,6 +158,7 @@ static const struct verbs_context_ops mlx5_ctx_common_ops = {
 	.read_counters = mlx5_read_counters,
 	.reg_dm_mr = mlx5_reg_dm_mr,
 	.alloc_null_mr = mlx5_alloc_null_mr,
+	.free_context = mlx5_free_context,
 };
 
 static const struct verbs_context_ops mlx5_ctx_cqev1_ops = {
@@ -672,6 +679,42 @@ static void mlx5_map_clock_info(struct mlx5_device *mdev,
 		context->clock_info_page = clock_info_page;
 }
 
+static uint32_t get_dc_odp_caps(struct ibv_context *ctx)
+{
+	uint32_t in[DEVX_ST_SZ_DW(query_hca_cap_in)] = {};
+	uint32_t out[DEVX_ST_SZ_DW(query_hca_cap_out)] = {};
+	uint16_t opmod = (MLX5_CAP_ODP << 1) | HCA_CAP_OPMOD_GET_CUR;
+	uint32_t ret;
+
+	DEVX_SET(query_hca_cap_in, in, opcode, MLX5_CMD_OP_QUERY_HCA_CAP);
+	DEVX_SET(query_hca_cap_in, in, op_mod, opmod);
+
+	ret = mlx5dv_devx_general_cmd(ctx, in, sizeof(in), out, sizeof(out));
+	if (ret)
+		return 0;
+
+	if (DEVX_GET(query_hca_cap_out, out,
+		     capability.odp_cap.dc_odp_caps.send))
+		ret |= IBV_ODP_SUPPORT_SEND;
+	if (DEVX_GET(query_hca_cap_out, out,
+		     capability.odp_cap.dc_odp_caps.receive))
+		ret |= IBV_ODP_SUPPORT_RECV;
+	if (DEVX_GET(query_hca_cap_out, out,
+		     capability.odp_cap.dc_odp_caps.write))
+		ret |= IBV_ODP_SUPPORT_WRITE;
+	if (DEVX_GET(query_hca_cap_out, out,
+		     capability.odp_cap.dc_odp_caps.read))
+		ret |= IBV_ODP_SUPPORT_READ;
+	if (DEVX_GET(query_hca_cap_out, out,
+		     capability.odp_cap.dc_odp_caps.atomic))
+		ret |= IBV_ODP_SUPPORT_ATOMIC;
+	if (DEVX_GET(query_hca_cap_out, out,
+		     capability.odp_cap.dc_odp_caps.srq_receive))
+		ret |= IBV_ODP_SUPPORT_SRQ_RECV;
+
+	return ret;
+}
+
 int mlx5dv_query_device(struct ibv_context *ctx_in,
 			 struct mlx5dv_context *attrs_out)
 {
@@ -739,6 +782,18 @@ int mlx5dv_query_device(struct ibv_context *ctx_in,
 	if (attrs_out->comp_mask & MLX5DV_CONTEXT_MASK_FLOW_ACTION_FLAGS) {
 		attrs_out->flow_action_flags = mctx->flow_action_flags;
 		comp_mask_out |= MLX5DV_CONTEXT_MASK_FLOW_ACTION_FLAGS;
+	}
+
+	if (attrs_out->comp_mask & MLX5DV_CONTEXT_MASK_DC_ODP_CAPS) {
+		attrs_out->dc_odp_caps = get_dc_odp_caps(ctx_in);
+		comp_mask_out |= MLX5DV_CONTEXT_MASK_DC_ODP_CAPS;
+	}
+
+	if (attrs_out->comp_mask & MLX5DV_CONTEXT_MASK_HCA_CORE_CLOCK) {
+		if (mctx->hca_core_clock) {
+			attrs_out->hca_core_clock = mctx->hca_core_clock;
+			comp_mask_out |= MLX5DV_CONTEXT_MASK_HCA_CORE_CLOCK;
+		}
 	}
 
 	attrs_out->comp_mask = comp_mask_out;
@@ -1399,7 +1454,6 @@ static const struct verbs_device_ops mlx5_dev_ops = {
 	.alloc_device = mlx5_device_alloc,
 	.uninit_device = mlx5_uninit_device,
 	.alloc_context = mlx5_alloc_context,
-	.free_context = mlx5_free_context,
 };
 
 bool is_mlx5_dev(struct ibv_device *device)

@@ -292,6 +292,8 @@ format_ipsec_sa (u8 * s, va_list * args)
 
   s = format (s, "\n   locks %d", sa->node.fn_locks);
   s = format (s, "\n   salt 0x%x", clib_net_to_host_u32 (sa->salt));
+  s = format (s, "\n   thread-indices [encrypt:%d decrypt:%d]",
+	      sa->encrypt_thread_index, sa->decrypt_thread_index);
   s = format (s, "\n   seq %u seq-hi %u", sa->seq, sa->seq_hi);
   s = format (s, "\n   last-seq %u last-seq-hi %u window %U",
 	      sa->last_seq, sa->last_seq_hi,
@@ -308,6 +310,9 @@ format_ipsec_sa (u8 * s, va_list * args)
     s = format (s, " key %U", format_ipsec_key, &sa->integ_key);
   else
     s = format (s, " key [redacted]");
+  s = format (s, "\n   UDP:[src:%d dst:%d]",
+	      clib_host_to_net_u16 (sa->udp_hdr.src_port),
+	      clib_host_to_net_u16 (sa->udp_hdr.dst_port));
 
   vlib_get_combined_counter (&ipsec_sa_counters, sai, &counts);
   s = format (s, "\n   packets %u bytes %u", counts.packets, counts.bytes);
@@ -335,60 +340,33 @@ done:
 }
 
 u8 *
-format_ipsec_tunnel (u8 * s, va_list * args)
+format_ipsec_tun_protect_index (u8 * s, va_list * args)
 {
-  ipsec_main_t *im = &ipsec_main;
-  u32 ti = va_arg (*args, u32);
-  ipsec_tunnel_if_t *t;
+  u32 itpi = va_arg (*args, index_t);
+  ipsec_tun_protect_t *itp;
 
-  if (pool_is_free_index (im->tunnel_interfaces, ti))
-    {
-      s = format (s, "No such tunnel index: %d", ti);
-      goto done;
-    }
+  if (pool_is_free_index (ipsec_tun_protect_pool, itpi))
+    return (format (s, "No such tunnel index: %d", itpi));
 
-  t = pool_elt_at_index (im->tunnel_interfaces, ti);
+  itp = pool_elt_at_index (ipsec_tun_protect_pool, itpi);
 
-  if (t->hw_if_index == ~0)
-    goto done;
-
-  s =
-    format (s, "%U\n", format_vnet_hw_if_index_name, im->vnet_main,
-	    t->hw_if_index);
-
-  s = format (s, "   out-bound sa: ");
-  s = format (s, "%U\n", format_ipsec_sa, t->output_sa_index,
-	      IPSEC_FORMAT_BRIEF);
-
-  s = format (s, "    in-bound sa: ");
-  s = format (s, "%U\n", format_ipsec_sa, t->input_sa_index,
-	      IPSEC_FORMAT_BRIEF);
-
-done:
-  return (s);
+  return (format (s, "%U", format_ipsec_tun_protect, itp));
 }
+
 
 u8 *
 format_ipsec_tun_protect (u8 * s, va_list * args)
 {
-  u32 itpi = va_arg (*args, u32);
-  ipsec_tun_protect_t *itp;
+  ipsec_tun_protect_t *itp = va_arg (*args, ipsec_tun_protect_t *);
   u32 sai;
-
-  if (pool_is_free_index (ipsec_protect_pool, itpi))
-    {
-      s = format (s, "No such tunnel index: %d", itpi);
-      goto done;
-    }
-
-  itp = pool_elt_at_index (ipsec_protect_pool, itpi);
 
   s = format (s, "%U", format_vnet_sw_if_index_name,
 	      vnet_get_main (), itp->itp_sw_if_index);
+  if (!ip_address_is_zero (itp->itp_key))
+    s = format (s, ": %U", format_ip_address, itp->itp_key);
   s = format (s, "\n output-sa:");
-  s =
-    format (s, "\n  %U", format_ipsec_sa, itp->itp_out_sa,
-	    IPSEC_FORMAT_BRIEF);
+  s = format (s, "\n  %U", format_ipsec_sa, itp->itp_out_sa,
+	      IPSEC_FORMAT_BRIEF);
 
   s = format (s, "\n input-sa:");
   /* *INDENT-OFF* */
@@ -398,7 +376,6 @@ format_ipsec_tun_protect (u8 * s, va_list * args)
   }));
   /* *INDENT-ON* */
 
-done:
   return (s);
 }
 

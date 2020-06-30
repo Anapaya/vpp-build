@@ -55,8 +55,7 @@ typedef enum ipsec_tun_next_t_
 #define _(v, s) IPSEC_TUN_PROTECT_NEXT_##v,
   foreach_ipsec_input_next
 #undef _
-    IPSEC_TUN_PROTECT_NEXT_DECRYPT,
-  IPSEC_TUN_PROTECT_N_NEXT,
+    IPSEC_TUN_PROTECT_N_NEXT,
 } ipsec_tun_next_t;
 
 typedef struct
@@ -68,6 +67,7 @@ typedef struct
   };
   u8 is_ip6;
   u32 seq;
+  u32 sa_index;
 } ipsec_tun_protect_input_trace_t;
 
 static u8 *
@@ -79,11 +79,11 @@ format_ipsec_tun_protect_input_trace (u8 * s, va_list * args)
     va_arg (*args, ipsec_tun_protect_input_trace_t *);
 
   if (t->is_ip6)
-    s = format (s, "IPSec: %U seq %u",
-		format_ipsec6_tunnel_key, &t->key6, t->seq);
+    s = format (s, "IPSec: %U seq %u sa %d",
+		format_ipsec6_tunnel_key, &t->key6, t->seq, t->sa_index);
   else
-    s = format (s, "IPSec: %U seq %u",
-		format_ipsec4_tunnel_key, &t->key4, t->seq);
+    s = format (s, "IPSec: %U seq %u sa %d",
+		format_ipsec4_tunnel_key, &t->key4, t->seq, t->sa_index);
   return s;
 }
 
@@ -273,7 +273,7 @@ ipsec_tun_protect_input_inline (vlib_main_t * vm, vlib_node_runtime_t * node,
 	    }
 	}
 
-      itp0 = pool_elt_at_index (ipsec_protect_pool, itr0.tun_index);
+      itp0 = pool_elt_at_index (ipsec_tun_protect_pool, itr0.tun_index);
       vnet_buffer (b[0])->ipsec.sad_index = itr0.sa_index;
       vnet_buffer (b[0])->ipsec.protect_index = itr0.tun_index;
 
@@ -310,59 +310,7 @@ ipsec_tun_protect_input_inline (vlib_main_t * vm, vlib_node_runtime_t * node,
 	      n_bytes = len0;
 	    }
 
-	  /*
-	   * compare the packet's outer IP headers to that of the tunnels
-	   */
-	  if (is_ip6)
-	    {
-	      if (PREDICT_FALSE
-		  (!ip46_address_is_equal_v6
-		   (&itp0->itp_crypto.dst, &ip60->src_address)
-		   || !ip46_address_is_equal_v6 (&itp0->itp_crypto.src,
-						 &ip60->dst_address)))
-		{
-		  b[0]->error =
-		    node->errors
-		    [IPSEC_TUN_PROTECT_INPUT_ERROR_TUNNEL_MISMATCH];
-		  next[0] = IPSEC_INPUT_NEXT_DROP;
-		  goto trace00;
-		}
-	    }
-	  else
-	    {
-	      if (PREDICT_FALSE
-		  (!ip46_address_is_equal_v4
-		   (&itp0->itp_crypto.dst, &ip40->src_address)
-		   || !ip46_address_is_equal_v4 (&itp0->itp_crypto.src,
-						 &ip40->dst_address)))
-		{
-		  b[0]->error =
-		    node->errors
-		    [IPSEC_TUN_PROTECT_INPUT_ERROR_TUNNEL_MISMATCH];
-		  next[0] = IPSEC_INPUT_NEXT_DROP;
-		  goto trace00;
-		}
-	    }
-
-	  /*
-	   * There are two encap possibilities
-	   * 1) the tunnel and ths SA are prodiving encap, i.e. it's
-	   *   MAC | SA-IP | TUN-IP | ESP | PAYLOAD
-	   * implying the SA is in tunnel mode (on a tunnel interface)
-	   * 2) only the tunnel provides encap
-	   *   MAC | TUN-IP | ESP | PAYLOAD
-	   * implying the SA is in transport mode.
-	   *
-	   * For 2) we need only strip the tunnel encap and we're good.
-	   *  since the tunnel and crypto ecnap (int the tun=protect
-	   * object) are the same and we verified above that these match
-	   * for 1) we need to strip the SA-IP outer headers, to
-	   * reveal the tunnel IP and then check that this matches
-	   * the configured tunnel. this we can;t do here since it
-	   * involves a lookup in the per-tunnel-type DB - so ship
-	   * the packet to the tunnel-types provided node to do that
-	   */
-	  next[0] = IPSEC_TUN_PROTECT_NEXT_DECRYPT;
+	  next[0] = im->esp4_decrypt_tun_next_index;	//IPSEC_TUN_PROTECT_NEXT_DECRYPT;
 	}
     trace00:
       if (PREDICT_FALSE (is_trace))
@@ -376,9 +324,9 @@ ipsec_tun_protect_input_inline (vlib_main_t * vm, vlib_node_runtime_t * node,
 	      else
 		clib_memcpy (&tr->key4, &key40, sizeof (tr->key4));
 	      tr->is_ip6 = is_ip6;
-	      tr->seq =
-		len0 >=
-		sizeof (*esp0) ? clib_host_to_net_u32 (esp0->seq) : ~0;
+	      tr->seq = (len0 >= sizeof (*esp0) ?
+			 clib_host_to_net_u32 (esp0->seq) : ~0);
+	      tr->sa_index = vnet_buffer (b[0])->ipsec.sad_index;
 	    }
 	}
 
@@ -399,6 +347,9 @@ ipsec_tun_protect_input_inline (vlib_main_t * vm, vlib_node_runtime_t * node,
 			       IPSEC_TUN_PROTECT_INPUT_ERROR_RX,
 			       from_frame->n_vectors - (n_disabled +
 							n_no_tunnel));
+  vlib_node_increment_counter (vm, node->node_index,
+			       IPSEC_TUN_PROTECT_INPUT_ERROR_NO_TUNNEL,
+			       n_no_tunnel);
 
   vlib_buffer_enqueue_to_next (vm, node, from, nexts, from_frame->n_vectors);
 
@@ -409,8 +360,7 @@ VLIB_NODE_FN (ipsec4_tun_input_node) (vlib_main_t * vm,
 				      vlib_node_runtime_t * node,
 				      vlib_frame_t * from_frame)
 {
-  return ipsec_tun_protect_input_inline (vm, node, from_frame,
-					 0 /* is_ip6 */ );
+  return ipsec_tun_protect_input_inline (vm, node, from_frame, 0);
 }
 
 /* *INDENT-OFF* */
@@ -425,7 +375,6 @@ VLIB_REGISTER_NODE (ipsec4_tun_input_node) = {
   .next_nodes = {
     [IPSEC_TUN_PROTECT_NEXT_DROP] = "ip4-drop",
     [IPSEC_TUN_PROTECT_NEXT_PUNT] = "punt-dispatch",
-    [IPSEC_TUN_PROTECT_NEXT_DECRYPT] = "esp4-decrypt-tun",
   }
 };
 /* *INDENT-ON* */
@@ -434,8 +383,7 @@ VLIB_NODE_FN (ipsec6_tun_input_node) (vlib_main_t * vm,
 				      vlib_node_runtime_t * node,
 				      vlib_frame_t * from_frame)
 {
-  return ipsec_tun_protect_input_inline (vm, node, from_frame,
-					 1 /* is_ip6 */ );
+  return ipsec_tun_protect_input_inline (vm, node, from_frame, 1);
 }
 
 /* *INDENT-OFF* */
@@ -450,7 +398,6 @@ VLIB_REGISTER_NODE (ipsec6_tun_input_node) = {
   .next_nodes = {
     [IPSEC_TUN_PROTECT_NEXT_DROP] = "ip6-drop",
     [IPSEC_TUN_PROTECT_NEXT_PUNT] = "punt-dispatch",
-    [IPSEC_TUN_PROTECT_NEXT_DECRYPT] = "esp6-decrypt-tun",
   }
 };
 /* *INDENT-ON* */

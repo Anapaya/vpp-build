@@ -16,7 +16,6 @@
 #include <vnet/vnet.h>
 #include <vppinfra/vec.h>
 #include <vppinfra/format.h>
-#include <vlib/unix/cj.h>
 #include <assert.h>
 
 #include <vnet/ip/ip.h>
@@ -174,10 +173,8 @@ dpdk_device_start (dpdk_device_t * xd)
     }
 
   if (xd->default_mac_address)
-    rv =
-      rte_eth_dev_default_mac_addr_set (xd->port_id,
-					(struct ether_addr *)
-					xd->default_mac_address);
+    rv = rte_eth_dev_default_mac_addr_set (xd->port_id,
+					   (void *) xd->default_mac_address);
 
   if (rv)
     dpdk_device_error (xd, "rte_eth_dev_default_mac_addr_set", rv);

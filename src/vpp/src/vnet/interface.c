@@ -200,8 +200,14 @@ unserialize_vnet_interface_state (serialize_main_t * m, va_list * va)
     pool_foreach (hif, im->hw_interfaces, ({
       unserialize_cstring (m, &class_name);
       p = hash_get_mem (im->hw_interface_class_by_name, class_name);
-      ASSERT (p != 0);
-      error = vnet_hw_interface_set_class_helper (vnm, hif->hw_if_index, p[0], /* redistribute */ 0);
+      if (p)
+        {
+          error = vnet_hw_interface_set_class_helper
+            (vnm, hif->hw_if_index, p[0], /* redistribute */ 0);
+        }
+      else
+        error = clib_error_return (0, "hw class %s AWOL?", class_name);
+
       if (error)
 	clib_error_report (error);
       vec_free (class_name);
@@ -581,6 +587,16 @@ vnet_create_sw_interface (vnet_main_t * vnm, vnet_sw_interface_t * template,
   clib_error_t *error;
   vnet_hw_interface_t *hi;
   vnet_device_class_t *dev_class;
+
+  if (template->sub.eth.flags.two_tags == 1
+      && template->sub.eth.flags.exact_match == 1
+      && (template->sub.eth.flags.inner_vlan_id_any == 1
+	  || template->sub.eth.flags.outer_vlan_id_any == 1))
+    {
+      error = clib_error_return (0,
+				 "inner-dot1q any exact-match is unsupported");
+      return error;
+    }
 
   hi = vnet_get_sup_hw_interface (vnm, template->sup_sw_if_index);
   dev_class = vnet_get_device_class (vnm, hi->dev_class_index);
@@ -1235,6 +1251,16 @@ vnet_sw_interface_is_p2p (vnet_main_t * vnm, u32 sw_if_index)
   return (hc->flags & VNET_HW_INTERFACE_CLASS_FLAG_P2P);
 }
 
+int
+vnet_sw_interface_is_nbma (vnet_main_t * vnm, u32 sw_if_index)
+{
+  vnet_hw_interface_t *hw = vnet_get_sup_hw_interface (vnm, sw_if_index);
+  vnet_hw_interface_class_t *hc =
+    vnet_get_hw_interface_class (vnm, hw->hw_class_index);
+
+  return (hc->flags & VNET_HW_INTERFACE_CLASS_FLAG_NBMA);
+}
+
 clib_error_t *
 vnet_interface_init (vlib_main_t * vm)
 {
@@ -1341,7 +1367,6 @@ vnet_interface_init (vlib_main_t * vm)
       }
   }
 
-  im->gso_interface_count = 0;
   /* init per-thread data */
   vec_validate_aligned (im->per_thread_data, vlib_num_workers (),
 			CLIB_CACHE_LINE_BYTES);
@@ -1424,6 +1449,48 @@ vnet_rename_interface (vnet_main_t * vnm, u32 hw_if_index, char *new_name)
   /* free the old name vector */
   vec_free (old_name);
 
+  return error;
+}
+
+clib_error_t *
+vnet_hw_interface_add_del_mac_address (vnet_main_t * vnm,
+				       u32 hw_if_index,
+				       const u8 * mac_address, u8 is_add)
+{
+  clib_error_t *error = 0;
+  vnet_hw_interface_t *hi = vnet_get_hw_interface (vnm, hw_if_index);
+
+  vnet_device_class_t *dev_class =
+    vnet_get_device_class (vnm, hi->dev_class_index);
+
+  if (!hi->hw_address)
+    {
+      error =
+	clib_error_return
+	(0, "Secondary MAC Addresses not supported for interface index %u",
+	 hw_if_index);
+      goto done;
+    }
+
+  if (dev_class->mac_addr_add_del_function)
+    error = dev_class->mac_addr_add_del_function (hi, mac_address, is_add);
+
+  if (!error)
+    {
+      vnet_hw_interface_class_t *hw_class;
+
+      hw_class = vnet_get_hw_interface_class (vnm, hi->hw_class_index);
+
+      if (NULL != hw_class->mac_addr_add_del_function)
+	error = hw_class->mac_addr_add_del_function (hi, mac_address, is_add);
+    }
+
+  /* If no errors, add to the list of secondary MACs on the ethernet intf */
+  if (!error)
+    ethernet_interface_add_del_address (&ethernet_main, hw_if_index,
+					mac_address, is_add);
+
+done:
   return error;
 }
 

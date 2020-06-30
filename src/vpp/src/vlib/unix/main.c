@@ -180,7 +180,11 @@ unix_signal_handler (int signum, siginfo_t * si, ucontext_t * uc)
       /* have to remove SIGABRT to avoid recursive - os_exit calling abort() */
       unsetup_signal_handlers (SIGABRT);
 
-      os_exit (1);
+      /* os_exit(1) causes core generation, do not do this for SIGINT */
+      if (signum == SIGINT)
+	os_exit (0);
+      else
+	os_exit (1);
     }
   else
     clib_warning ("%s", syslog_msg);
@@ -209,6 +213,7 @@ setup_signal_handlers (unix_main_t * um)
 	case SIGSTOP:
 	case SIGUSR1:
 	case SIGUSR2:
+	case SIGPROF:
 	  continue;
 
 	  /* ignore SIGPIPE, SIGCHLD */
@@ -234,8 +239,8 @@ unix_error_handler (void *arg, u8 * msg, int msg_len)
 {
   unix_main_t *um = arg;
 
-  /* Echo to stderr when interactive. */
-  if (um->flags & UNIX_FLAG_INTERACTIVE)
+  /* Echo to stderr when interactive or syslog is disabled. */
+  if (um->flags & (UNIX_FLAG_INTERACTIVE | UNIX_FLAG_NOSYSLOG))
     {
       CLIB_UNUSED (int r) = write (2, msg, msg_len);
     }
@@ -372,6 +377,7 @@ VLIB_REGISTER_NODE (startup_config_node,static) = {
     .function = startup_config_process,
     .type = VLIB_NODE_TYPE_PROCESS,
     .name = "startup-config-process",
+    .process_log2_n_stack_bytes = 18,
 };
 /* *INDENT-ON* */
 
@@ -394,6 +400,8 @@ unix_config (vlib_main_t * vm, unformat_input_t * input)
 	um->flags |= UNIX_FLAG_INTERACTIVE;
       else if (unformat (input, "nodaemon"))
 	um->flags |= UNIX_FLAG_NODAEMON;
+      else if (unformat (input, "nosyslog"))
+	um->flags |= UNIX_FLAG_NOSYSLOG;
       else if (unformat (input, "cli-prompt %s", &cli_prompt))
 	vlib_unix_cli_set_prompt (cli_prompt);
       else
@@ -500,6 +508,11 @@ unix_config (vlib_main_t * vm, unformat_input_t * input)
 				  vlib_default_runtime_dir, 0);
     }
 
+  /* Ensure the runtime directory is created */
+  error = vlib_unix_recursive_mkdir ((char *) um->runtime_dir);
+  if (error)
+    return error;
+
   error = setup_signal_handlers (um);
   if (error)
     return error;
@@ -518,7 +531,7 @@ unix_config (vlib_main_t * vm, unformat_input_t * input)
 	}
     }
 
-  if (!(um->flags & UNIX_FLAG_INTERACTIVE))
+  if (!(um->flags & (UNIX_FLAG_INTERACTIVE | UNIX_FLAG_NOSYSLOG)))
     {
       openlog (vm->name, LOG_CONS | LOG_PERROR | LOG_PID, LOG_DAEMON);
       clib_error_register_handler (unix_error_handler, um);
@@ -557,6 +570,11 @@ unix_config (vlib_main_t * vm, unformat_input_t * input)
  * @cfgcmd{nodaemon}
  * Do not fork or background the VPP process. Typically used when invoking
  * VPP applications from a process monitor.
+ *
+ * @cfgcmd{nosyslog}
+ * Do not send e.g. clib_warning(...) output to syslog. Used
+ * when invoking VPP applications from a process monitor which
+ * pipe stdout/stderr to a dedicated logger service.
  *
  * @cfgcmd{exec, &lt;filename&gt;}
  * @par <code>startup-config &lt;filename&gt;</code>
@@ -674,6 +692,8 @@ vlib_unix_main (int argc, char *argv[])
   vm->heap_aligned_base = (void *)
     (((uword) vm->heap_base) & ~(VLIB_FRAME_ALIGN - 1));
   ASSERT (vm->heap_base);
+
+  clib_time_init (&vm->clib_time);
 
   unformat_init_command_line (&input, (char **) vm->argv);
   if ((e = vlib_plugin_config (vm, &input)))

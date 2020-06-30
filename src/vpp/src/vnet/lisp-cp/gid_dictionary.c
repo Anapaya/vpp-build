@@ -31,7 +31,7 @@ static u32 ip4_lookup (gid_ip4_table_t * db, u32 vni, ip_prefix_t * key);
 
 static u32 ip6_lookup (gid_ip6_table_t * db, u32 vni, ip_prefix_t * key);
 
-static void
+static int
 foreach_sfib4_subprefix (BVT (clib_bihash_kv) * kvp, void *arg)
 {
   sfib_entry_arg_t *a = arg;
@@ -51,6 +51,7 @@ foreach_sfib4_subprefix (BVT (clib_bihash_kv) * kvp, void *arg)
       /* found sub-prefix of src prefix */
       (a->cb) (kvp->value, a->arg);
     }
+  return (BIHASH_WALK_CONTINUE);
 }
 
 static void
@@ -77,7 +78,7 @@ gid_dict_foreach_ip4_subprefix (gid_dictionary_t * db, u32 vni,
 					   foreach_sfib4_subprefix, &a);
 }
 
-static void
+static int
 foreach_sfib6_subprefix (BVT (clib_bihash_kv) * kvp, void *arg)
 {
   sfib_entry_arg_t *a = arg;
@@ -94,6 +95,7 @@ foreach_sfib6_subprefix (BVT (clib_bihash_kv) * kvp, void *arg)
       /* found sub-prefix of src prefix */
       (a->cb) (kvp->value, a->arg);
     }
+  return (BIHASH_WALK_CONTINUE);
 }
 
 static void
@@ -139,9 +141,9 @@ gid_dict_foreach_subprefix (gid_dictionary_t * db, gid_address_t * eid,
 }
 
 void
-gid_dict_foreach_l2_arp_ndp_entry (gid_dictionary_t * db, void (*cb)
-				   (BVT (clib_bihash_kv) * kvp, void *arg),
-				   void *ht)
+gid_dict_foreach_l2_arp_ndp_entry (gid_dictionary_t * db,
+				   BV (clib_bihash_foreach_key_value_pair_cb)
+				   cb, void *ht)
 {
   gid_l2_arp_ndp_table_t *tab = &db->arp_ndp_table;
   BV (clib_bihash_foreach_key_value_pair) (&tab->arp_ndp_lookup_table, cb,
@@ -344,13 +346,13 @@ make_arp_ndp_key (BVT (clib_bihash_kv) * kv, u32 bd, ip_address_t * addr)
   kv->key[0] = ((u64) bd << 32) | (u32) ip_addr_version (addr);
   if (ip_addr_version (addr) == AF_IP4)
     {
-      kv->key[1] = (u64) addr->ip.v4.as_u32;
+      kv->key[1] = (u64) ip_addr_v4 (addr).as_u32;
       kv->key[2] = (u64) 0;
     }
   else
     {
-      kv->key[1] = (u64) addr->ip.v6.as_u64[0];
-      kv->key[2] = (u64) addr->ip.v6.as_u64[1];
+      kv->key[1] = (u64) ip_addr_v6 (addr).as_u64[0];
+      kv->key[2] = (u64) ip_addr_v6 (addr).as_u64[1];
     }
 }
 

@@ -226,20 +226,26 @@ typedef struct fib_entry_src_vft_t_ {
     }								\
 }
 
-#define FIB_ENTRY_SRC_VFT_INVOKE(esrc, func, args)  \
-{                                                   \
-    const fib_entry_src_vft_t *_vft;                \
-    _vft = fib_entry_src_get_vft(esrc);             \
-    if (_vft->func)                                 \
-        _vft->func args;                            \
+#define FIB_ENTRY_SRC_VFT_INVOKE(_fe, esrc, func, args)        \
+{                                                              \
+    const fib_entry_src_vft_t *_vft;                           \
+    fib_node_index_t _fei = fib_entry_get_index(_fe);          \
+    _vft = fib_entry_src_get_vft(esrc);                        \
+    if (_vft->func) {                                          \
+        (esrc)->fes_flags &= ~FIB_ENTRY_SRC_FLAG_STALE;        \
+        _vft->func args;                                       \
+    }                                                          \
+    _fe = fib_entry_get(_fei);                                 \
 }
 
 #define FIB_ENTRY_SRC_VFT_INVOKE_AND_RETURN(esrc, func, args)  \
-{                                                   \
-    const fib_entry_src_vft_t *_vft;                \
-    _vft = fib_entry_src_get_vft(esrc);             \
-    if (_vft->func)                                 \
-        return (_vft->func args);                   \
+{                                                              \
+    const fib_entry_src_vft_t *_vft;                           \
+    _vft = fib_entry_src_get_vft(esrc);                        \
+    if (_vft->func) {                                          \
+        (esrc)->fes_flags &= ~FIB_ENTRY_SRC_FLAG_STALE;        \
+        return (_vft->func args);                              \
+    }                                                          \
 }
 
 #define FIB_ENTRY_SRC_VFT_EXISTS(esrc, func)        \
@@ -256,8 +262,8 @@ extern u8* fib_entry_src_format(fib_entry_t *entry,
 				fib_source_t source,
 				u8* s);
 
-extern void fib_entry_src_register(fib_source_t source,
-				   const fib_entry_src_vft_t *vft);
+extern void fib_entry_src_behaviour_register (fib_source_behaviour_t source,
+                                              const fib_entry_src_vft_t *vft);
 
 extern fib_entry_src_cover_res_t fib_entry_src_action_cover_change(
     fib_entry_t *entry,
@@ -309,8 +315,8 @@ extern fib_entry_src_flag_t fib_entry_src_action_path_remove(fib_entry_t *fib_en
 							     fib_source_t source,
 							     const fib_route_path_t *path);
 
-extern void fib_entry_src_action_installed(const fib_entry_t *fib_entry,
-					   fib_source_t source);
+extern fib_entry_t* fib_entry_src_action_installed(fib_entry_t *fib_entry,
+                                                   fib_source_t source);
 extern void fib_entry_src_inherit (const fib_entry_t *cover,
                                    fib_entry_t *covered);
 
@@ -344,8 +350,8 @@ extern void fib_entry_src_default_register(void);
 extern void fib_entry_src_rr_register(void);
 extern void fib_entry_src_interface_register(void);
 extern void fib_entry_src_interpose_register(void);
-extern void fib_entry_src_default_route_register(void);
-extern void fib_entry_src_special_register(void);
+extern void fib_entry_src_drop_register(void);
+extern void fib_entry_src_simple_register(void);
 extern void fib_entry_src_api_register(void);
 extern void fib_entry_src_adj_register(void);
 extern void fib_entry_src_mpls_register(void);

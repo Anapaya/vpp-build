@@ -78,7 +78,6 @@ class TestTypedef(unittest.TestCase):
     def setUpClass(cls):
         cls.parser = VPPAPI()
 
-    @unittest.skip('Not yet implemented on 19.08')
     def test_duplicatetype(self):
         test_string = '''
         typedef foo1 { u8 dummy; };

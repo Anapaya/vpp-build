@@ -11,6 +11,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set(CMAKE_VERBOSE_MAKEFILE ON)
+
+add_vpp_library(nat
+  SOURCES
+  lib/alloc.c
+
+  INSTALL_HEADERS
+  lib/alloc.h
+)
+
 add_vpp_plugin(nat
   SOURCES
   nat.c
@@ -23,7 +33,6 @@ add_vpp_plugin(nat
   nat_det.c
   nat_det_in2out.c
   nat_det_out2in.c
-  nat_reass.c
   nat_dpo.c
   nat44_cli.c
   nat44_handoff.c
@@ -34,13 +43,6 @@ add_vpp_plugin(nat
   nat64_in2out.c
   nat64_out2in.c
   nat64_db.c
-  dslite_dpo.c
-  dslite.c
-  dslite_in2out.c
-  dslite_out2in.c
-  dslite_cli.c
-  dslite_ce_encap.c
-  dslite_ce_decap.c
   nat66.c
   nat66_cli.c
   nat66_in2out.c
@@ -51,10 +53,6 @@ add_vpp_plugin(nat
   nat_ha.c
 
   MULTIARCH_SOURCES
-  dslite_ce_decap.c
-  dslite_ce_encap.c
-  dslite_in2out.c
-  dslite_out2in.c
   in2out.c
   in2out_ed.c
   nat44_classify.c
@@ -78,4 +76,28 @@ add_vpp_plugin(nat
   INSTALL_HEADERS
   nat_all_api_h.h
   nat_msg_enum.h
+)
+
+add_vpp_plugin(dslite
+  SOURCES
+  nat_syslog.c
+  dslite/dslite_api.c
+  dslite/dslite_dpo.c
+  dslite/dslite.c
+  dslite/dslite_in2out.c
+  dslite/dslite_out2in.c
+  dslite/dslite_cli.c
+  dslite/dslite_ce_encap.c
+  dslite/dslite_ce_decap.c
+
+  MULTIARCH_SOURCES
+  dslite/dslite_ce_decap.c
+  dslite/dslite_ce_encap.c
+  dslite/dslite_in2out.c
+  dslite/dslite_out2in.c
+
+  API_FILES
+  dslite/dslite.api
+
+  LINK_LIBRARIES nat
 )

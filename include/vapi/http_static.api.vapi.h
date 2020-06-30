@@ -13,12 +13,12 @@ extern "C" {
 #endif
 #include <vapi/vpe.api.vapi.h>
 
-extern vapi_msg_id_t vapi_msg_id_http_static_enable_reply;
 extern vapi_msg_id_t vapi_msg_id_http_static_enable;
+extern vapi_msg_id_t vapi_msg_id_http_static_enable_reply;
 
 #define DEFINE_VAPI_MSG_IDS_HTTP_STATIC_API_JSON\
-  vapi_msg_id_t vapi_msg_id_http_static_enable_reply;\
-  vapi_msg_id_t vapi_msg_id_http_static_enable;
+  vapi_msg_id_t vapi_msg_id_http_static_enable;\
+  vapi_msg_id_t vapi_msg_id_http_static_enable_reply;
 
 
 #ifndef defined_vapi_msg_http_static_enable_reply

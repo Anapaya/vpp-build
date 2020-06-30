@@ -1,5 +1,5 @@
 /*
- * VLIB API definitions 2020-06-13 06:01:52
+ * VLIB API definitions 2020-06-30 12:49:12
  * Input file: udp_ping.api
  * Automatically generated: please edit the input file NOT this file!
  */
@@ -16,6 +16,10 @@
 #endif
 
 #define VL_API_PACKED(x) x __attribute__ ((packed))
+/* Imported API files */
+#ifndef vl_api_version
+#include <vnet/ip/ip_types.api.h>
+#endif
 
 /****** Message ID / handler enum ******/
 
@@ -37,71 +41,28 @@ vl_msg_name(vl_api_udp_ping_export_reply_t, 1)
 
 #ifdef vl_msg_name_crc_list
 #define foreach_vl_msg_name_crc_udp_ping \
-_(VL_API_UDP_PING_ADD_DEL, udp_ping_add_del, 559fcc01) \
+_(VL_API_UDP_PING_ADD_DEL, udp_ping_add_del, c692b188) \
 _(VL_API_UDP_PING_ADD_DEL_REPLY, udp_ping_add_del_reply, e8d4e804) \
-_(VL_API_UDP_PING_EXPORT, udp_ping_export, b142b369) \
+_(VL_API_UDP_PING_EXPORT, udp_ping_export, b3e225d2) \
 _(VL_API_UDP_PING_EXPORT_REPLY, udp_ping_export_reply, e8d4e804) 
 #endif
-
 /****** Typedefs ******/
 
 #ifdef vl_typedefs
-#ifndef included_udp_ping_api
-#define included_udp_ping_api
-#ifndef _vl_api_defined_udp_ping_add_del
-#define _vl_api_defined_udp_ping_add_del
-typedef VL_API_PACKED(struct _vl_api_udp_ping_add_del {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u8 src_ip_address[16];
-    u8 dst_ip_address[16];
-    u16 start_src_port;
-    u16 end_src_port;
-    u16 start_dst_port;
-    u16 end_dst_port;
-    u16 interval;
-    u8 is_ipv4;
-    u8 dis;
-    u8 fault_det;
-    u8 reserve[3];
-}) vl_api_udp_ping_add_del_t;
+#include "udp_ping.api_types.h"
 #endif
-
-#ifndef _vl_api_defined_udp_ping_add_del_reply
-#define _vl_api_defined_udp_ping_add_del_reply
-typedef VL_API_PACKED(struct _vl_api_udp_ping_add_del_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_udp_ping_add_del_reply_t;
-#endif
-
-#ifndef _vl_api_defined_udp_ping_export
-#define _vl_api_defined_udp_ping_export
-typedef VL_API_PACKED(struct _vl_api_udp_ping_export {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u32 enable;
-}) vl_api_udp_ping_export_t;
-#endif
-
-#ifndef _vl_api_defined_udp_ping_export_reply
-#define _vl_api_defined_udp_ping_export_reply
-typedef VL_API_PACKED(struct _vl_api_udp_ping_export_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_udp_ping_export_reply_t;
-#endif
-
-
-#endif
-#endif
-
 /****** Print functions *****/
 #ifdef vl_printfun
+#ifndef included_udp_ping_printfun_types
+#define included_udp_ping_printfun_types
+
+
+#endif
+#endif /* vl_printfun_types */
+/****** Print functions *****/
+#ifdef vl_printfun
+#ifndef included_udp_ping_printfun
+#define included_udp_ping_printfun
 
 #ifdef LP64
 #define _uword_fmt "%lld"
@@ -111,72 +72,79 @@ typedef VL_API_PACKED(struct _vl_api_udp_ping_export_reply {
 #define _uword_cast long
 #endif
 
-#ifndef _vl_api_defined_udp_ping_add_del_t_print
-#define _vl_api_defined_udp_ping_add_del_t_print
-static inline void *vl_api_udp_ping_add_del_t_print (vl_api_udp_ping_add_del_t *a,void *handle)
+static inline void *vl_api_udp_ping_add_del_t_print (vl_api_udp_ping_add_del_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_udp_ping_add_del_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "start_src_port: %u\n", a->start_src_port);
-    vl_print(handle, "end_src_port: %u\n", a->end_src_port);
-    vl_print(handle, "start_dst_port: %u\n", a->start_dst_port);
-    vl_print(handle, "end_dst_port: %u\n", a->end_dst_port);
-    vl_print(handle, "interval: %u\n", a->interval);
-    vl_print(handle, "is_ipv4: %u\n", a->is_ipv4);
-    vl_print(handle, "dis: %u\n", a->dis);
-    vl_print(handle, "fault_det: %u\n", a->fault_det);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_udp_ping_add_del_t: */
+    s = format(s, "vl_api_udp_ping_add_del_t:");
+    s = format(s, "\n%Usrc_ip_address: %U", format_white_space, indent, format_vl_api_address_t, &a->src_ip_address, indent);
+    s = format(s, "\n%Udst_ip_address: %U", format_white_space, indent, format_vl_api_address_t, &a->dst_ip_address, indent);
+    s = format(s, "\n%Ustart_src_port: %u", format_white_space, indent, a->start_src_port);
+    s = format(s, "\n%Uend_src_port: %u", format_white_space, indent, a->end_src_port);
+    s = format(s, "\n%Ustart_dst_port: %u", format_white_space, indent, a->start_dst_port);
+    s = format(s, "\n%Uend_dst_port: %u", format_white_space, indent, a->end_dst_port);
+    s = format(s, "\n%Uinterval: %u", format_white_space, indent, a->interval);
+    s = format(s, "\n%Udis: %u", format_white_space, indent, a->dis);
+    s = format(s, "\n%Ufault_det: %u", format_white_space, indent, a->fault_det);
+    s = format(s, "\n%Ureserve: %U", format_white_space, indent, format_hex_bytes, a, 3);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_udp_ping_add_del_reply_t_print
-#define _vl_api_defined_udp_ping_add_del_reply_t_print
-static inline void *vl_api_udp_ping_add_del_reply_t_print (vl_api_udp_ping_add_del_reply_t *a,void *handle)
+static inline void *vl_api_udp_ping_add_del_reply_t_print (vl_api_udp_ping_add_del_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_udp_ping_add_del_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_udp_ping_add_del_reply_t: */
+    s = format(s, "vl_api_udp_ping_add_del_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_udp_ping_export_t_print
-#define _vl_api_defined_udp_ping_export_t_print
-static inline void *vl_api_udp_ping_export_t_print (vl_api_udp_ping_export_t *a,void *handle)
+static inline void *vl_api_udp_ping_export_t_print (vl_api_udp_ping_export_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_udp_ping_export_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "enable: %u\n", a->enable);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_udp_ping_export_t: */
+    s = format(s, "vl_api_udp_ping_export_t:");
+    s = format(s, "\n%Uenable: %u", format_white_space, indent, a->enable);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_udp_ping_export_reply_t_print
-#define _vl_api_defined_udp_ping_export_reply_t_print
-static inline void *vl_api_udp_ping_export_reply_t_print (vl_api_udp_ping_export_reply_t *a,void *handle)
+static inline void *vl_api_udp_ping_export_reply_t_print (vl_api_udp_ping_export_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_udp_ping_export_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_udp_ping_export_reply_t: */
+    s = format(s, "vl_api_udp_ping_export_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
+
 #endif
-
-
 #endif /* vl_printfun */
 
 /****** Endian swap functions *****/
 #ifdef vl_endianfun
+#ifndef included_udp_ping_endianfun
+#define included_udp_ping_endianfun
 
 #undef clib_net_to_host_uword
 #ifdef LP64
@@ -185,74 +153,65 @@ static inline void *vl_api_udp_ping_export_reply_t_print (vl_api_udp_ping_export
 #define clib_net_to_host_uword clib_net_to_host_u32
 #endif
 
-#ifndef _vl_api_defined_udp_ping_add_del_t_endian
-#define _vl_api_defined_udp_ping_add_del_t_endian
 static inline void vl_api_udp_ping_add_del_t_endian (vl_api_udp_ping_add_del_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
+    vl_api_address_t_endian(&a->src_ip_address);
+    vl_api_address_t_endian(&a->dst_ip_address);
     a->start_src_port = clib_net_to_host_u16(a->start_src_port);
     a->end_src_port = clib_net_to_host_u16(a->end_src_port);
     a->start_dst_port = clib_net_to_host_u16(a->start_dst_port);
     a->end_dst_port = clib_net_to_host_u16(a->end_dst_port);
     a->interval = clib_net_to_host_u16(a->interval);
-    /* a->is_ipv4 = a->is_ipv4 (no-op) */
     /* a->dis = a->dis (no-op) */
     /* a->fault_det = a->fault_det (no-op) */
+    /* a->reserve = a->reserve (no-op) */
 }
 
-#endif
-
-#ifndef _vl_api_defined_udp_ping_add_del_reply_t_endian
-#define _vl_api_defined_udp_ping_add_del_reply_t_endian
 static inline void vl_api_udp_ping_add_del_reply_t_endian (vl_api_udp_ping_add_del_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
-#endif
-
-#ifndef _vl_api_defined_udp_ping_export_t_endian
-#define _vl_api_defined_udp_ping_export_t_endian
 static inline void vl_api_udp_ping_export_t_endian (vl_api_udp_ping_export_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
-    a->enable = clib_net_to_host_u32(a->enable);
+    /* a->enable = a->enable (no-op) */
 }
 
-#endif
-
-#ifndef _vl_api_defined_udp_ping_export_reply_t_endian
-#define _vl_api_defined_udp_ping_export_reply_t_endian
 static inline void vl_api_udp_ping_export_reply_t_endian (vl_api_udp_ping_export_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
+
 #endif
-
-
 #endif /* vl_endianfun */
 
 /****** Version tuple *****/
 
 #ifdef vl_api_version_tuple
 
-vl_api_version_tuple(udp_ping.api, 2, 0, 0)
+vl_api_version_tuple(udp_ping.api, 3, 0, 0)
 
 #endif /* vl_api_version_tuple */
 
 /****** API CRC (whole file) *****/
 
 #ifdef vl_api_version
-vl_api_version(udp_ping.api, 0xc8855f73)
+vl_api_version(udp_ping.api, 0xa88fa111)
 
 #endif
 

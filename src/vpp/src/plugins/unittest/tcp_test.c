@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include <vnet/tcp/tcp.h>
+#include <vnet/tcp/tcp_inlines.h>
 
 #define TCP_TEST_I(_cond, _comment, _args...)			\
 ({								\
@@ -85,6 +86,7 @@ tcp_test_sack_rx (vlib_main_t * vm, unformat_input_t * input)
 
   clib_memset (tc, 0, sizeof (*tc));
 
+  tc->flags |= TCP_CONN_FAST_RECOVERY | TCP_CONN_RECOVERY;
   tc->snd_una = 0;
   tc->snd_una_max = 1000;
   tc->snd_nxt = 1000;
@@ -132,11 +134,12 @@ tcp_test_sack_rx (vlib_main_t * vm, unformat_input_t * input)
   TCP_TEST ((sb->lost_bytes == 300), "lost bytes %u", sb->lost_bytes);
 
   /*
-   * Inject odd blocks
+   * Inject odd blocks except the last
+   *
    */
 
   vec_reset_length (tc->rcv_opts.sacks);
-  for (i = 0; i < 1000 / 200; i++)
+  for (i = 0; i < 800 / 200; i++)
     {
       vec_add1 (tc->rcv_opts.sacks, sacks[i * 2 + 1]);
     }
@@ -148,46 +151,166 @@ tcp_test_sack_rx (vlib_main_t * vm, unformat_input_t * input)
 		     sb, tc);
 
   hole = scoreboard_first_hole (sb);
-  TCP_TEST ((pool_elts (sb->holes) == 1),
+  TCP_TEST ((pool_elts (sb->holes) == 2),
 	    "scoreboard has %d holes", pool_elts (sb->holes));
   TCP_TEST ((hole->start == 0 && hole->end == 100),
 	    "first hole start %u end %u", hole->start, hole->end);
-  TCP_TEST ((sb->sacked_bytes == 900), "sacked bytes %d", sb->sacked_bytes);
+  TCP_TEST ((sb->sacked_bytes == 800), "sacked bytes %d", sb->sacked_bytes);
   TCP_TEST ((!sb->is_reneging), "is not reneging");
-  TCP_TEST ((sb->high_sacked == 1000), "high sacked %u", sb->high_sacked);
-  TCP_TEST ((sb->last_sacked_bytes == 500),
+  TCP_TEST ((sb->high_sacked == 900), "high sacked %u", sb->high_sacked);
+  TCP_TEST ((sb->last_sacked_bytes == 400),
 	    "last sacked bytes %d", sb->last_sacked_bytes);
   TCP_TEST ((sb->lost_bytes == 100), "lost bytes %u", sb->lost_bytes);
 
   /*
-   *  Ack until byte 100 - this is reneging because we should ack until 1000
+   *  Ack until byte 100 - this is reneging because we should ack until 900
    */
   tcp_rcv_sacks (tc, 100);
   if (verbose)
     vlib_cli_output (vm, "\nack until byte 100:\n%U", format_tcp_scoreboard,
 		     sb, tc);
 
-  TCP_TEST ((pool_elts (sb->holes) == 0), "scoreboard has %d elements",
+  TCP_TEST ((pool_elts (sb->holes) == 1), "scoreboard has %d elements",
 	    pool_elts (sb->holes));
   TCP_TEST ((sb->is_reneging), "is reneging");
 
   /*
-   * Sack all up to 1000
+   * Make sure we accept duplicate acks while reneging.
    */
   tc->snd_una = 100;
-  tcp_rcv_sacks (tc, 1000);
-  TCP_TEST ((sb->high_sacked == 1000), "max sacked byte %u", sb->high_sacked);
+  sb->high_rxt = 950;
+
+  block.start = 900;
+  block.end = 950;
+  vec_add1 (tc->rcv_opts.sacks, block);
+
+  tcp_rcv_sacks (tc, 100);
+  TCP_TEST ((pool_elts (sb->holes) == 1), "scoreboard has %d elements",
+	    pool_elts (sb->holes));
+  TCP_TEST ((sb->is_reneging), "is reneging");
+  TCP_TEST ((sb->last_sacked_bytes == 50), "last sacked bytes %d",
+	    sb->last_sacked_bytes);
+  TCP_TEST ((sb->rxt_sacked == 50), "last rxt sacked bytes %d",
+	    sb->rxt_sacked);
+
+  /*
+   * Sack all up to 950
+   */
+  tcp_rcv_sacks (tc, 950);
+  TCP_TEST ((sb->high_sacked == 950), "max sacked byte %u", sb->high_sacked);
   TCP_TEST ((sb->sacked_bytes == 0), "sacked bytes %d", sb->sacked_bytes);
   TCP_TEST ((sb->last_sacked_bytes == 0),
 	    "last sacked bytes %d", sb->last_sacked_bytes);
   TCP_TEST ((sb->lost_bytes == 0), "lost bytes %u", sb->lost_bytes);
   TCP_TEST ((!sb->is_reneging), "is not reneging");
 
+  /*
+   * Sack [960 970] [980 990]
+   */
+  sb->high_rxt = 985;
+
+  tc->snd_una = 950;
+  vec_reset_length (tc->rcv_opts.sacks);
+  block.start = 960;
+  block.end = 970;
+  vec_add1 (tc->rcv_opts.sacks, block);
+
+  block.start = 980;
+  block.end = 990;
+  vec_add1 (tc->rcv_opts.sacks, block);
+
+  tcp_rcv_sacks (tc, 950);
+  TCP_TEST ((sb->high_sacked == 990), "max sacked byte %u", sb->high_sacked);
+  TCP_TEST ((sb->sacked_bytes == 20), "sacked bytes %d", sb->sacked_bytes);
+  TCP_TEST ((sb->last_sacked_bytes == 20),
+	    "last sacked bytes %d", sb->last_sacked_bytes);
+  TCP_TEST ((sb->lost_bytes == 0), "lost bytes %u", sb->lost_bytes);
+  TCP_TEST ((!sb->is_reneging), "is not reneging");
+  TCP_TEST ((sb->rxt_sacked == 15), "last rxt sacked bytes %d",
+	    sb->rxt_sacked);
+
+  /*
+   * Ack up to 960 (reneging) + [961 971]
+   */
+  tc->rcv_opts.sacks[0].start = 961;
+  tc->rcv_opts.sacks[0].end = 971;
+
+  tcp_rcv_sacks (tc, 960);
+
+  TCP_TEST ((sb->is_reneging), "is reneging");
+  TCP_TEST ((sb->sacked_bytes == 21), "sacked bytes %d", sb->sacked_bytes);
+  TCP_TEST ((sb->last_sacked_bytes == 1),
+	    "last sacked bytes %d", sb->last_sacked_bytes);
+  TCP_TEST ((sb->rxt_sacked == 11), "last rxt sacked bytes %d",
+	    sb->rxt_sacked);
+  TCP_TEST ((sb->last_bytes_delivered == 0), "last bytes delivered %d",
+	    sb->last_bytes_delivered);
+
+  /*
+   * Ack up to 960 (reneging) + [961 990]
+   */
+  tc->snd_una = 960;
+  tc->rcv_opts.sacks[0].start = 961;
+  tc->rcv_opts.sacks[0].end = 990;
+
+  tcp_rcv_sacks (tc, 960);
+
+  TCP_TEST ((sb->is_reneging), "is reneging");
+  TCP_TEST ((sb->sacked_bytes == 30), "sacked bytes %d", sb->sacked_bytes);
+  TCP_TEST ((sb->last_sacked_bytes == 9),
+	    "last sacked bytes %d", sb->last_sacked_bytes);
+  TCP_TEST ((sb->rxt_sacked == 9), "last rxt sacked bytes %d",
+	    sb->rxt_sacked);
+
+  /*
+   * Sack remaining bytes [990 1000]
+   */
+  tc->rcv_opts.sacks[0].start = 990;
+  tc->rcv_opts.sacks[0].end = 1000;
+
+  tcp_rcv_sacks (tc, 960);
+
+  TCP_TEST ((sb->is_reneging), "is reneging");
+  TCP_TEST ((sb->sacked_bytes == 40), "sacked bytes %d", sb->sacked_bytes);
+  TCP_TEST ((sb->last_sacked_bytes == 10),
+	    "last sacked bytes %d", sb->last_sacked_bytes);
+  TCP_TEST ((sb->rxt_sacked == 0), "last rxt sacked bytes %d",
+	    sb->rxt_sacked);
+  TCP_TEST (pool_elts (sb->holes) == 0, "no holes left");
+
+  /*
+   * Ack up to 970 no sack blocks
+   */
+  vec_reset_length (tc->rcv_opts.sacks);
+  tc->rcv_opts.flags &= ~TCP_OPTS_FLAG_SACK;
+  tcp_rcv_sacks (tc, 970);
+
+  TCP_TEST ((sb->is_reneging), "is reneging");
+  TCP_TEST ((sb->sacked_bytes == 30), "sacked bytes %d", sb->sacked_bytes);
+  TCP_TEST ((sb->last_sacked_bytes == 0),
+	    "last sacked bytes %d", sb->last_sacked_bytes);
+  TCP_TEST ((sb->rxt_sacked == 0), "last rxt sacked bytes %d",
+	    sb->rxt_sacked);
+
+  /*
+   * Ack all up to 1000
+   */
+  tc->snd_una = 970;
+  tcp_rcv_sacks (tc, 1000);
+  TCP_TEST ((sb->high_sacked == 1000), "max sacked byte %u", sb->high_sacked);
+  TCP_TEST ((sb->sacked_bytes == 0), "sacked bytes %d", sb->sacked_bytes);
+  TCP_TEST (sb->last_bytes_delivered == 30, "last bytes delivered %d",
+	    sb->last_bytes_delivered);
+  TCP_TEST ((sb->last_sacked_bytes == 0),
+	    "last sacked bytes %d", sb->last_sacked_bytes);
+  TCP_TEST ((sb->lost_bytes == 0), "lost bytes %u", sb->lost_bytes);
+  TCP_TEST ((!sb->is_reneging), "is not reneging");
 
   /*
    * Add new block
    */
-
+  tc->flags = 0;
+  tc->rcv_opts.flags |= TCP_OPTS_FLAG_SACK;
   vec_reset_length (tc->rcv_opts.sacks);
 
   block.start = 1200;
@@ -470,6 +593,76 @@ tcp_test_sack_rx (vlib_main_t * vm, unformat_input_t * input)
   TCP_TEST ((sb->lost_bytes == 200), "lost bytes %u", sb->lost_bytes);
   TCP_TEST ((!sb->is_reneging), "is not reneging");
 
+  /*
+   * Restart
+   */
+  scoreboard_clear (sb);
+  vec_reset_length (tc->rcv_opts.sacks);
+
+  /*
+   * Inject [100 500]
+   */
+
+  tc->flags |= TCP_CONN_FAST_RECOVERY | TCP_CONN_RECOVERY;
+  tc->snd_una = 0;
+  tc->snd_una_max = 1000;
+  tc->snd_nxt = 1000;
+  sb->high_rxt = 0;
+
+  block.start = 100;
+  block.end = 500;
+  vec_add1 (tc->rcv_opts.sacks, block);
+  tc->rcv_opts.n_sack_blocks = vec_len (tc->rcv_opts.sacks);
+
+  tcp_rcv_sacks (tc, 0);
+
+  TCP_TEST ((sb->sacked_bytes == 400), "sacked bytes %d", sb->sacked_bytes);
+  TCP_TEST ((sb->last_sacked_bytes == 400), "last sacked bytes %d",
+	    sb->last_sacked_bytes);
+  TCP_TEST ((!sb->is_reneging), "is not reneging");
+
+  /*
+   * Renege, sack all of the remaining bytes and cover some rxt bytes
+   */
+  sb->high_rxt = 700;
+  tc->rcv_opts.sacks[0].start = 500;
+  tc->rcv_opts.sacks[0].end = 1000;
+
+  tcp_rcv_sacks (tc, 100);
+
+  TCP_TEST ((sb->sacked_bytes == 900), "sacked bytes %d", sb->sacked_bytes);
+  TCP_TEST ((sb->last_sacked_bytes == 500), "last sacked bytes %d",
+	    sb->last_sacked_bytes);
+  TCP_TEST (sb->is_reneging, "is reneging");
+  TCP_TEST ((sb->rxt_sacked == 300), "last rxt sacked bytes %d",
+	    sb->rxt_sacked);
+
+  /*
+   * Restart
+   */
+  scoreboard_clear (sb);
+  vec_reset_length (tc->rcv_opts.sacks);
+
+  /*
+   * Broken sacks:
+   * block.start > snd_nxt
+   * && block.start < blk.end
+   * && block.end <= snd_nxt
+   */
+  tc->flags = 0;
+  block.start = 2147483647;
+  block.end = 4294967295;
+  vec_add1 (tc->rcv_opts.sacks, block);
+  tc->snd_una = tc->snd_nxt = 1969067947;
+
+  tcp_rcv_sacks (tc, tc->snd_una);
+
+  /*
+   * Clear
+   */
+  scoreboard_clear (sb);
+  vec_reset_length (tc->rcv_opts.sacks);
+
   return 0;
 }
 
@@ -649,7 +842,6 @@ static int
 tcp_test_lookup (vlib_main_t * vm, unformat_input_t * input)
 {
   session_main_t *smm = &session_main;
-  tcp_main_t *tm = &tcp_main;
   transport_connection_t _tc1, *tc1 = &_tc1, _tc2, *tc2 = &_tc2, *tconn;
   tcp_connection_t *tc;
   session_t *s, *s1;
@@ -663,9 +855,7 @@ tcp_test_lookup (vlib_main_t * vm, unformat_input_t * input)
   clib_memset (s, 0, sizeof (*s));
   s->session_index = sidx = s - smm->wrk[0].sessions;
 
-  pool_get (tm->connections[0], tc);
-  clib_memset (tc, 0, sizeof (*tc));
-  tc->connection.c_index = tc - tm->connections[0];
+  tc = tcp_connection_alloc (0);
   tc->connection.s_index = s->session_index;
   s->connection_index = tc->connection.c_index;
 
@@ -684,9 +874,7 @@ tcp_test_lookup (vlib_main_t * vm, unformat_input_t * input)
   clib_memset (s, 0, sizeof (*s));
   s->session_index = s - smm->wrk[0].sessions;
 
-  pool_get (tm->connections[0], tc);
-  clib_memset (tc, 0, sizeof (*tc));
-  tc->connection.c_index = tc - tm->connections[0];
+  tc = tcp_connection_alloc (0);
   tc->connection.s_index = s->session_index;
   s->connection_index = tc->connection.c_index;
 
@@ -760,7 +948,6 @@ tcp_test_session (vlib_main_t * vm, unformat_input_t * input)
   tcp_connection_t *tc0;
   ip4_address_t local, remote;
   u16 local_port, remote_port;
-  tcp_main_t *tm = vnet_get_tcp_main ();
   int is_add = 1;
 
 
@@ -781,12 +968,10 @@ tcp_test_session (vlib_main_t * vm, unformat_input_t * input)
       local_port = clib_host_to_net_u16 (1234);
       remote_port = clib_host_to_net_u16 (11234);
 
-      pool_get (tm->connections[0], tc0);
-      clib_memset (tc0, 0, sizeof (*tc0));
+      tc0 = tcp_connection_alloc (0);
 
       tc0->state = TCP_STATE_ESTABLISHED;
       tc0->rcv_las = 1;
-      tc0->c_c_index = tc0 - tm->connections[0];
       tc0->c_lcl_port = local_port;
       tc0->c_rmt_port = remote_port;
       tc0->c_is_ip4 = 1;
@@ -849,7 +1034,7 @@ tcp_test_delivery (vlib_main_t * vm, unformat_input_t * input)
   /* Init data structures */
   memset (tc, 0, sizeof (*tc));
   session_main.wrk[thread_index].last_vlib_time = 1;
-  transport_connection_tx_pacer_update (&tc->connection, rate);
+  transport_connection_tx_pacer_update (&tc->connection, rate, 1e6);
 
   tcp_bt_init (tc);
   bt = tc->bt;

@@ -13,24 +13,116 @@ extern "C" {
 #endif
 #include <vapi/vpe.api.vapi.h>
 
-extern vapi_msg_id_t vapi_msg_id_gre_tunnel_details;
 extern vapi_msg_id_t vapi_msg_id_gre_tunnel_add_del;
 extern vapi_msg_id_t vapi_msg_id_gre_tunnel_add_del_reply;
 extern vapi_msg_id_t vapi_msg_id_gre_tunnel_dump;
+extern vapi_msg_id_t vapi_msg_id_gre_tunnel_details;
 
 #define DEFINE_VAPI_MSG_IDS_GRE_API_JSON\
-  vapi_msg_id_t vapi_msg_id_gre_tunnel_details;\
   vapi_msg_id_t vapi_msg_id_gre_tunnel_add_del;\
   vapi_msg_id_t vapi_msg_id_gre_tunnel_add_del_reply;\
-  vapi_msg_id_t vapi_msg_id_gre_tunnel_dump;
+  vapi_msg_id_t vapi_msg_id_gre_tunnel_dump;\
+  vapi_msg_id_t vapi_msg_id_gre_tunnel_details;
 
+
+#ifndef defined_vapi_enum_if_status_flags
+#define defined_vapi_enum_if_status_flags
+typedef enum {
+  IF_STATUS_API_FLAG_ADMIN_UP = 1,
+  IF_STATUS_API_FLAG_LINK_UP = 2,
+}  vapi_enum_if_status_flags;
+
+#endif
+
+#ifndef defined_vapi_enum_mtu_proto
+#define defined_vapi_enum_mtu_proto
+typedef enum {
+  MTU_PROTO_API_L3 = 0,
+  MTU_PROTO_API_IP4 = 1,
+  MTU_PROTO_API_IP6 = 2,
+  MTU_PROTO_API_MPLS = 3,
+}  vapi_enum_mtu_proto;
+
+#endif
+
+#ifndef defined_vapi_enum_link_duplex
+#define defined_vapi_enum_link_duplex
+typedef enum {
+  LINK_DUPLEX_API_UNKNOWN = 0,
+  LINK_DUPLEX_API_HALF = 1,
+  LINK_DUPLEX_API_FULL = 2,
+}  vapi_enum_link_duplex;
+
+#endif
+
+#ifndef defined_vapi_enum_sub_if_flags
+#define defined_vapi_enum_sub_if_flags
+typedef enum {
+  SUB_IF_API_FLAG_NO_TAGS = 1,
+  SUB_IF_API_FLAG_ONE_TAG = 2,
+  SUB_IF_API_FLAG_TWO_TAGS = 4,
+  SUB_IF_API_FLAG_DOT1AD = 8,
+  SUB_IF_API_FLAG_EXACT_MATCH = 16,
+  SUB_IF_API_FLAG_DEFAULT = 32,
+  SUB_IF_API_FLAG_OUTER_VLAN_ID_ANY = 64,
+  SUB_IF_API_FLAG_INNER_VLAN_ID_ANY = 128,
+  SUB_IF_API_FLAG_MASK_VNET = 254,
+  SUB_IF_API_FLAG_DOT1AH = 256,
+}  vapi_enum_sub_if_flags;
+
+#endif
+
+#ifndef defined_vapi_enum_rx_mode
+#define defined_vapi_enum_rx_mode
+typedef enum {
+  RX_MODE_API_UNKNOWN = 0,
+  RX_MODE_API_POLLING = 1,
+  RX_MODE_API_INTERRUPT = 2,
+  RX_MODE_API_ADAPTIVE = 3,
+  RX_MODE_API_DEFAULT = 4,
+}  vapi_enum_rx_mode;
+
+#endif
+
+#ifndef defined_vapi_enum_if_type
+#define defined_vapi_enum_if_type
+typedef enum {
+  IF_API_TYPE_HARDWARE = 0,
+  IF_API_TYPE_SUB = 1,
+  IF_API_TYPE_P2P = 2,
+  IF_API_TYPE_PIPE = 3,
+}  vapi_enum_if_type;
+
+#endif
+
+#ifndef defined_vapi_enum_tunnel_encap_decap_flags
+#define defined_vapi_enum_tunnel_encap_decap_flags
+typedef enum {
+  TUNNEL_API_ENCAP_DECAP_FLAG_NONE = 0,
+  TUNNEL_API_ENCAP_DECAP_FLAG_ENCAP_COPY_DF = 1,
+  TUNNEL_API_ENCAP_DECAP_FLAG_ENCAP_SET_DF = 2,
+  TUNNEL_API_ENCAP_DECAP_FLAG_ENCAP_COPY_DSCP = 4,
+  TUNNEL_API_ENCAP_DECAP_FLAG_ENCAP_COPY_ECN = 8,
+  TUNNEL_API_ENCAP_DECAP_FLAG_DECAP_COPY_ECN = 16,
+} __attribute__((packed)) vapi_enum_tunnel_encap_decap_flags;
+
+#endif
+
+#ifndef defined_vapi_enum_tunnel_mode
+#define defined_vapi_enum_tunnel_mode
+typedef enum {
+  TUNNEL_API_MODE_P2P = 0,
+  TUNNEL_API_MODE_MP = 1,
+} __attribute__((packed)) vapi_enum_tunnel_mode;
+
+#endif
 
 #ifndef defined_vapi_enum_address_family
 #define defined_vapi_enum_address_family
 typedef enum {
   ADDRESS_IP4 = 0,
   ADDRESS_IP6 = 1,
-} vapi_enum_address_family;
+} __attribute__((packed)) vapi_enum_address_family;
 
 #endif
 
@@ -41,7 +133,7 @@ typedef enum {
   IP_API_ECN_ECT0 = 1,
   IP_API_ECN_ECT1 = 2,
   IP_API_ECN_CE = 3,
-} vapi_enum_ip_ecn;
+} __attribute__((packed)) vapi_enum_ip_ecn;
 
 #endif
 
@@ -69,7 +161,7 @@ typedef enum {
   IP_API_DSCP_EF = 46,
   IP_API_DSCP_CS6 = 48,
   IP_API_DSCP_CS7 = 50,
-} vapi_enum_ip_dscp;
+} __attribute__((packed)) vapi_enum_ip_dscp;
 
 #endif
 
@@ -82,13 +174,14 @@ typedef enum {
   IP_API_PROTO_TCP = 6,
   IP_API_PROTO_UDP = 17,
   IP_API_PROTO_GRE = 47,
-  IP_API_PROTO_AH = 50,
-  IP_API_PROTO_ESP = 51,
+  IP_API_PROTO_ESP = 50,
+  IP_API_PROTO_AH = 51,
+  IP_API_PROTO_ICMP6 = 58,
   IP_API_PROTO_EIGRP = 88,
   IP_API_PROTO_OSPF = 89,
   IP_API_PROTO_SCTP = 132,
   IP_API_PROTO_RESERVED = 255,
-} vapi_enum_ip_proto;
+} __attribute__((packed)) vapi_enum_ip_proto;
 
 #endif
 
@@ -98,7 +191,7 @@ typedef enum {
   GRE_API_TUNNEL_TYPE_L3 = 0,
   GRE_API_TUNNEL_TYPE_TEB = 1,
   GRE_API_TUNNEL_TYPE_ERSPAN = 2,
-} vapi_enum_gre_tunnel_type;
+} __attribute__((packed)) vapi_enum_gre_tunnel_type;
 
 #endif
 
@@ -150,12 +243,12 @@ typedef struct __attribute__((__packed__)) {
 
 static inline void vapi_type_address_hton(vapi_type_address *msg)
 {
-  msg->af = (vapi_enum_address_family)htobe32(msg->af);
+
 }
 
 static inline void vapi_type_address_ntoh(vapi_type_address *msg)
 {
-  msg->af = (vapi_enum_address_family)be32toh(msg->af);
+
 }
 #endif
 
@@ -168,12 +261,12 @@ typedef struct __attribute__((__packed__)) {
 
 static inline void vapi_type_prefix_hton(vapi_type_prefix *msg)
 {
-  vapi_type_address_hton(&msg->address);
+
 }
 
 static inline void vapi_type_prefix_ntoh(vapi_type_prefix *msg)
 {
-  vapi_type_address_ntoh(&msg->address);
+
 }
 #endif
 
@@ -188,13 +281,11 @@ typedef struct __attribute__((__packed__)) {
 
 static inline void vapi_type_mprefix_hton(vapi_type_mprefix *msg)
 {
-  msg->af = (vapi_enum_address_family)htobe32(msg->af);
   msg->grp_address_length = htobe16(msg->grp_address_length);
 }
 
 static inline void vapi_type_mprefix_ntoh(vapi_type_mprefix *msg)
 {
-  msg->af = (vapi_enum_address_family)be32toh(msg->af);
   msg->grp_address_length = be16toh(msg->grp_address_length);
 }
 #endif
@@ -244,12 +335,12 @@ typedef u32 vapi_type_interface_index;
 #ifndef defined_vapi_type_gre_tunnel
 #define defined_vapi_type_gre_tunnel
 typedef struct __attribute__((__packed__)) {
-  u32 client_index;
-  u32 context;
-  u16 session_id;
   vapi_enum_gre_tunnel_type type;
+  vapi_enum_tunnel_mode mode;
+  vapi_enum_tunnel_encap_decap_flags flags;
+  u16 session_id;
   u32 instance;
-  u32 outer_fib_id;
+  u32 outer_table_id;
   vapi_type_interface_index sw_if_index;
   vapi_type_address src;
   vapi_type_address dst;
@@ -257,28 +348,18 @@ typedef struct __attribute__((__packed__)) {
 
 static inline void vapi_type_gre_tunnel_hton(vapi_type_gre_tunnel *msg)
 {
-  msg->client_index = htobe32(msg->client_index);
-  msg->context = htobe32(msg->context);
   msg->session_id = htobe16(msg->session_id);
-  msg->type = (vapi_enum_gre_tunnel_type)htobe32(msg->type);
   msg->instance = htobe32(msg->instance);
-  msg->outer_fib_id = htobe32(msg->outer_fib_id);
+  msg->outer_table_id = htobe32(msg->outer_table_id);
   msg->sw_if_index = htobe32(msg->sw_if_index);
-  vapi_type_address_hton(&msg->src);
-  vapi_type_address_hton(&msg->dst);
 }
 
 static inline void vapi_type_gre_tunnel_ntoh(vapi_type_gre_tunnel *msg)
 {
-  msg->client_index = be32toh(msg->client_index);
-  msg->context = be32toh(msg->context);
   msg->session_id = be16toh(msg->session_id);
-  msg->type = (vapi_enum_gre_tunnel_type)be32toh(msg->type);
   msg->instance = be32toh(msg->instance);
-  msg->outer_fib_id = be32toh(msg->outer_fib_id);
+  msg->outer_table_id = be32toh(msg->outer_table_id);
   msg->sw_if_index = be32toh(msg->sw_if_index);
-  vapi_type_address_ntoh(&msg->src);
-  vapi_type_address_ntoh(&msg->dst);
 }
 #endif
 
@@ -288,87 +369,16 @@ typedef vapi_type_prefix vapi_type_address_with_prefix;
 
 #endif
 
-#ifndef defined_vapi_type_ip6_address_with_prefix
-#define defined_vapi_type_ip6_address_with_prefix
-typedef vapi_type_ip6_prefix vapi_type_ip6_address_with_prefix;
-
-#endif
-
 #ifndef defined_vapi_type_ip4_address_with_prefix
 #define defined_vapi_type_ip4_address_with_prefix
 typedef vapi_type_ip4_prefix vapi_type_ip4_address_with_prefix;
 
 #endif
 
-#ifndef defined_vapi_msg_gre_tunnel_details
-#define defined_vapi_msg_gre_tunnel_details
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_gre_tunnel tunnel; 
-} vapi_payload_gre_tunnel_details;
+#ifndef defined_vapi_type_ip6_address_with_prefix
+#define defined_vapi_type_ip6_address_with_prefix
+typedef vapi_type_ip6_prefix vapi_type_ip6_address_with_prefix;
 
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header1_t header;
-  vapi_payload_gre_tunnel_details payload;
-} vapi_msg_gre_tunnel_details;
-
-static inline void vapi_msg_gre_tunnel_details_payload_hton(vapi_payload_gre_tunnel_details *payload)
-{
-  vapi_type_gre_tunnel_hton(&payload->tunnel);
-}
-
-static inline void vapi_msg_gre_tunnel_details_payload_ntoh(vapi_payload_gre_tunnel_details *payload)
-{
-  vapi_type_gre_tunnel_ntoh(&payload->tunnel);
-}
-
-static inline void vapi_msg_gre_tunnel_details_hton(vapi_msg_gre_tunnel_details *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_gre_tunnel_details'@%p to big endian", msg);
-  vapi_type_msg_header1_t_hton(&msg->header);
-  vapi_msg_gre_tunnel_details_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_gre_tunnel_details_ntoh(vapi_msg_gre_tunnel_details *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_gre_tunnel_details'@%p to host byte order", msg);
-  vapi_type_msg_header1_t_ntoh(&msg->header);
-  vapi_msg_gre_tunnel_details_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_gre_tunnel_details_msg_size(vapi_msg_gre_tunnel_details *msg)
-{
-  return sizeof(*msg);
-}
-
-static void __attribute__((constructor)) __vapi_constructor_gre_tunnel_details()
-{
-  static const char name[] = "gre_tunnel_details";
-  static const char name_with_crc[] = "gre_tunnel_details_1c6696b1";
-  static vapi_message_desc_t __vapi_metadata_gre_tunnel_details = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header1_t, context),
-    offsetof(vapi_msg_gre_tunnel_details, payload),
-    sizeof(vapi_msg_gre_tunnel_details),
-    (generic_swap_fn_t)vapi_msg_gre_tunnel_details_hton,
-    (generic_swap_fn_t)vapi_msg_gre_tunnel_details_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_gre_tunnel_details = vapi_register_msg(&__vapi_metadata_gre_tunnel_details);
-  VAPI_DBG("Assigned msg id %d to gre_tunnel_details", vapi_msg_id_gre_tunnel_details);
-}
-
-static inline void vapi_set_vapi_msg_gre_tunnel_details_event_cb (
-  struct vapi_ctx_s *ctx, 
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_gre_tunnel_details *payload),
-  void *callback_ctx)
-{
-  vapi_set_event_cb(ctx, vapi_msg_id_gre_tunnel_details, (vapi_event_cb)callback, callback_ctx);
-};
 #endif
 
 #ifndef defined_vapi_msg_gre_tunnel_add_del_reply
@@ -547,7 +557,7 @@ static inline vapi_error_e vapi_gre_tunnel_add_del(struct vapi_ctx_s *ctx,
 static void __attribute__((constructor)) __vapi_constructor_gre_tunnel_add_del()
 {
   static const char name[] = "gre_tunnel_add_del";
-  static const char name_with_crc[] = "gre_tunnel_add_del_4bf7bdec";
+  static const char name_with_crc[] = "gre_tunnel_add_del_6efc9c22";
   static vapi_message_desc_t __vapi_metadata_gre_tunnel_add_del = {
     name,
     sizeof(name) - 1,
@@ -565,6 +575,77 @@ static void __attribute__((constructor)) __vapi_constructor_gre_tunnel_add_del()
   vapi_msg_id_gre_tunnel_add_del = vapi_register_msg(&__vapi_metadata_gre_tunnel_add_del);
   VAPI_DBG("Assigned msg id %d to gre_tunnel_add_del", vapi_msg_id_gre_tunnel_add_del);
 }
+#endif
+
+#ifndef defined_vapi_msg_gre_tunnel_details
+#define defined_vapi_msg_gre_tunnel_details
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_gre_tunnel tunnel; 
+} vapi_payload_gre_tunnel_details;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header1_t header;
+  vapi_payload_gre_tunnel_details payload;
+} vapi_msg_gre_tunnel_details;
+
+static inline void vapi_msg_gre_tunnel_details_payload_hton(vapi_payload_gre_tunnel_details *payload)
+{
+  vapi_type_gre_tunnel_hton(&payload->tunnel);
+}
+
+static inline void vapi_msg_gre_tunnel_details_payload_ntoh(vapi_payload_gre_tunnel_details *payload)
+{
+  vapi_type_gre_tunnel_ntoh(&payload->tunnel);
+}
+
+static inline void vapi_msg_gre_tunnel_details_hton(vapi_msg_gre_tunnel_details *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_gre_tunnel_details'@%p to big endian", msg);
+  vapi_type_msg_header1_t_hton(&msg->header);
+  vapi_msg_gre_tunnel_details_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_gre_tunnel_details_ntoh(vapi_msg_gre_tunnel_details *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_gre_tunnel_details'@%p to host byte order", msg);
+  vapi_type_msg_header1_t_ntoh(&msg->header);
+  vapi_msg_gre_tunnel_details_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_gre_tunnel_details_msg_size(vapi_msg_gre_tunnel_details *msg)
+{
+  return sizeof(*msg);
+}
+
+static void __attribute__((constructor)) __vapi_constructor_gre_tunnel_details()
+{
+  static const char name[] = "gre_tunnel_details";
+  static const char name_with_crc[] = "gre_tunnel_details_003bfbf1";
+  static vapi_message_desc_t __vapi_metadata_gre_tunnel_details = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header1_t, context),
+    offsetof(vapi_msg_gre_tunnel_details, payload),
+    sizeof(vapi_msg_gre_tunnel_details),
+    (generic_swap_fn_t)vapi_msg_gre_tunnel_details_hton,
+    (generic_swap_fn_t)vapi_msg_gre_tunnel_details_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_gre_tunnel_details = vapi_register_msg(&__vapi_metadata_gre_tunnel_details);
+  VAPI_DBG("Assigned msg id %d to gre_tunnel_details", vapi_msg_id_gre_tunnel_details);
+}
+
+static inline void vapi_set_vapi_msg_gre_tunnel_details_event_cb (
+  struct vapi_ctx_s *ctx, 
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_gre_tunnel_details *payload),
+  void *callback_ctx)
+{
+  vapi_set_event_cb(ctx, vapi_msg_id_gre_tunnel_details, (vapi_event_cb)callback, callback_ctx);
+};
 #endif
 
 #ifndef defined_vapi_msg_gre_tunnel_dump

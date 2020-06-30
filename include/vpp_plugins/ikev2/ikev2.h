@@ -222,7 +222,7 @@ typedef enum
   _(11, NULL,      "null")     \
   _(12, AES_CBC,   "aes-cbc")  \
   _(13, AES_CTR,   "aes-ctr")  \
-  _(14, AES_GCM,   "aes-gcm")
+  _(20, AES_GCM_16, "aes-gcm-16")
 
 typedef enum
 {
@@ -392,6 +392,12 @@ clib_error_t *ikev2_set_profile_esp_transforms (vlib_main_t * vm, u8 * name,
 clib_error_t *ikev2_set_profile_sa_lifetime (vlib_main_t * vm, u8 * name,
 					     u64 lifetime, u32 jitter,
 					     u32 handover, u64 maxdata);
+clib_error_t *ikev2_set_profile_tunnel_interface (vlib_main_t * vm, u8 * name,
+						  u32 sw_if_index);
+vnet_api_error_t ikev2_set_profile_ipsec_udp_port (vlib_main_t * vm,
+						   u8 * name, u16 port,
+						   u8 is_set);
+clib_error_t *ikev2_set_profile_udp_encap (vlib_main_t * vm, u8 * name);
 clib_error_t *ikev2_initiate_sa_init (vlib_main_t * vm, u8 * name);
 clib_error_t *ikev2_initiate_delete_child_sa (vlib_main_t * vm, u32 ispi);
 clib_error_t *ikev2_initiate_delete_ike_sa (vlib_main_t * vm, u64 ispi);
@@ -424,6 +430,8 @@ uword unformat_ikev2_transform_dh_type (unformat_input_t * input,
 uword unformat_ikev2_transform_esn_type (unformat_input_t * input,
 					 va_list * args);
 void ikev2_cli_reference (void);
+
+clib_error_t *ikev2_set_liveness_params (u32 period, u32 max_retries);
 
 #endif /* __included_ikev2_h__ */
 

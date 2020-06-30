@@ -85,6 +85,7 @@ format_nat_det_in2out_trace (u8 * s, va_list * args)
  * @param[in,out] node           NAT node runtime
  * @param[in] thread_index       thread index
  * @param[in,out] b0             buffer containing packet to be translated
+ * @param[in,out] ip0            ip header
  * @param[out] p_proto           protocol used for matching
  * @param[out] p_value           address and port after NAT translation
  * @param[out] p_dont_translate  if packet should not be translated
@@ -95,9 +96,10 @@ u32
 icmp_match_in2out_det (snat_main_t * sm, vlib_node_runtime_t * node,
 		       u32 thread_index, vlib_buffer_t * b0,
 		       ip4_header_t * ip0, u8 * p_proto,
-		       snat_session_key_t * p_value,
-		       u8 * p_dont_translate, void *d, void *e)
+		       snat_session_key_t * p_value, u8 * p_dont_translate,
+		       void *d, void *e)
 {
+  vlib_main_t *vm = vlib_get_main ();
   icmp46_header_t *icmp0;
   u32 sw_if_index0;
   u32 rx_fib_index0;
@@ -121,27 +123,29 @@ icmp_match_in2out_det (snat_main_t * sm, vlib_node_runtime_t * node,
   sw_if_index0 = vnet_buffer (b0)->sw_if_index[VLIB_RX];
   rx_fib_index0 = ip4_fib_table_get_index_for_sw_if_index (sw_if_index0);
 
-  if (!icmp_is_error_message (icmp0))
+  if (!icmp_type_is_error_message
+      (vnet_buffer (b0)->ip.reass.icmp_type_or_tcp_flags))
     {
-      protocol = SNAT_PROTOCOL_ICMP;
+      protocol = NAT_PROTOCOL_ICMP;
       in_addr = ip0->src_address;
-      in_port = echo0->identifier;
+      in_port = vnet_buffer (b0)->ip.reass.l4_src_port;
     }
   else
     {
+      /* if error message, then it's not fragmented and we can access it */
       inner_ip0 = (ip4_header_t *) (echo0 + 1);
       l4_header = ip4_next_header (inner_ip0);
-      protocol = ip_proto_to_snat_proto (inner_ip0->protocol);
+      protocol = ip_proto_to_nat_proto (inner_ip0->protocol);
       in_addr = inner_ip0->dst_address;
       switch (protocol)
 	{
-	case SNAT_PROTOCOL_ICMP:
+	case NAT_PROTOCOL_ICMP:
 	  inner_icmp0 = (icmp46_header_t *) l4_header;
 	  inner_echo0 = (icmp_echo_header_t *) (inner_icmp0 + 1);
 	  in_port = inner_echo0->identifier;
 	  break;
-	case SNAT_PROTOCOL_UDP:
-	case SNAT_PROTOCOL_TCP:
+	case NAT_PROTOCOL_UDP:
+	case NAT_PROTOCOL_TCP:
 	  in_port = ((tcp_udp_header_t *) l4_header)->dst_port;
 	  break;
 	default:
@@ -213,15 +217,17 @@ icmp_match_in2out_det (snat_main_t * sm, vlib_node_runtime_t * node,
 	}
     }
 
-  if (PREDICT_FALSE (icmp0->type != ICMP4_echo_request &&
-		     !icmp_is_error_message (icmp0)))
+  if (PREDICT_FALSE
+      (vnet_buffer (b0)->ip.reass.icmp_type_or_tcp_flags != ICMP4_echo_request
+       && !icmp_type_is_error_message (vnet_buffer (b0)->ip.
+				       reass.icmp_type_or_tcp_flags)))
     {
       b0->error = node->errors[NAT_DET_IN2OUT_ERROR_BAD_ICMP_TYPE];
       next0 = NAT_DET_IN2OUT_NEXT_DROP;
       goto out;
     }
 
-  u32 now = (u32) vlib_time_now (sm->vlib_main);
+  u32 now = (u32) vlib_time_now (vm);
 
   ses0->state = SNAT_SESSION_ICMP_ACTIVE;
   ses0->expire = now + sm->icmp_timeout;
@@ -328,9 +334,9 @@ VLIB_NODE_FN (snat_det_in2out_node) (vlib_main_t * vm,
 	      goto trace0;
 	    }
 
-	  proto0 = ip_proto_to_snat_proto (ip0->protocol);
+	  proto0 = ip_proto_to_nat_proto (ip0->protocol);
 
-	  if (PREDICT_FALSE (proto0 == SNAT_PROTOCOL_ICMP))
+	  if (PREDICT_FALSE (proto0 == NAT_PROTOCOL_ICMP))
 	    {
 	      rx_fib_index0 =
 		ip4_fib_table_get_index_for_sw_if_index (sw_if_index0);
@@ -405,7 +411,7 @@ VLIB_NODE_FN (snat_det_in2out_node) (vlib_main_t * vm,
 				 src_address /* changed member */ );
 	  ip0->checksum = ip_csum_fold (sum0);
 
-	  if (PREDICT_TRUE (proto0 == SNAT_PROTOCOL_TCP))
+	  if (PREDICT_TRUE (proto0 == NAT_PROTOCOL_TCP))
 	    {
 	      if (tcp0->flags & TCP_FLAG_SYN)
 		ses0->state = SNAT_SESSION_TCP_SYN_SENT;
@@ -501,9 +507,9 @@ VLIB_NODE_FN (snat_det_in2out_node) (vlib_main_t * vm,
 	      goto trace1;
 	    }
 
-	  proto1 = ip_proto_to_snat_proto (ip1->protocol);
+	  proto1 = ip_proto_to_nat_proto (ip1->protocol);
 
-	  if (PREDICT_FALSE (proto1 == SNAT_PROTOCOL_ICMP))
+	  if (PREDICT_FALSE (proto1 == NAT_PROTOCOL_ICMP))
 	    {
 	      rx_fib_index1 =
 		ip4_fib_table_get_index_for_sw_if_index (sw_if_index1);
@@ -578,7 +584,7 @@ VLIB_NODE_FN (snat_det_in2out_node) (vlib_main_t * vm,
 				 src_address /* changed member */ );
 	  ip1->checksum = ip_csum_fold (sum1);
 
-	  if (PREDICT_TRUE (proto1 == SNAT_PROTOCOL_TCP))
+	  if (PREDICT_TRUE (proto1 == NAT_PROTOCOL_TCP))
 	    {
 	      if (tcp1->flags & TCP_FLAG_SYN)
 		ses1->state = SNAT_SESSION_TCP_SYN_SENT;
@@ -710,9 +716,9 @@ VLIB_NODE_FN (snat_det_in2out_node) (vlib_main_t * vm,
 	      goto trace00;
 	    }
 
-	  proto0 = ip_proto_to_snat_proto (ip0->protocol);
+	  proto0 = ip_proto_to_nat_proto (ip0->protocol);
 
-	  if (PREDICT_FALSE (proto0 == SNAT_PROTOCOL_ICMP))
+	  if (PREDICT_FALSE (proto0 == NAT_PROTOCOL_ICMP))
 	    {
 	      rx_fib_index0 =
 		ip4_fib_table_get_index_for_sw_if_index (sw_if_index0);
@@ -787,7 +793,7 @@ VLIB_NODE_FN (snat_det_in2out_node) (vlib_main_t * vm,
 				 src_address /* changed member */ );
 	  ip0->checksum = ip_csum_fold (sum0);
 
-	  if (PREDICT_TRUE (proto0 == SNAT_PROTOCOL_TCP))
+	  if (PREDICT_TRUE (proto0 == NAT_PROTOCOL_TCP))
 	    {
 	      if (tcp0->flags & TCP_FLAG_SYN)
 		ses0->state = SNAT_SESSION_TCP_SYN_SENT;

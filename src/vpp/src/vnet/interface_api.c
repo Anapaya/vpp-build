@@ -31,6 +31,11 @@
 #include <vnet/fib/fib_api.h>
 #include <vnet/mfib/mfib_table.h>
 
+#include <vlibapi/api_types.h>
+
+#include <vnet/ip/ip_types_api.h>
+#include <vnet/ethernet/ethernet_types_api.h>
+
 #define vl_typedefs		/* define message structures */
 #include <vnet/vnet_all_api_h.h>
 #undef vl_typedefs
@@ -63,6 +68,7 @@ _(SW_INTERFACE_GET_TABLE, sw_interface_get_table)               \
 _(SW_INTERFACE_SET_UNNUMBERED, sw_interface_set_unnumbered)     \
 _(SW_INTERFACE_CLEAR_STATS, sw_interface_clear_stats)           \
 _(SW_INTERFACE_TAG_ADD_DEL, sw_interface_tag_add_del)           \
+_(SW_INTERFACE_ADD_DEL_MAC_ADDRESS, sw_interface_add_del_mac_address) \
 _(SW_INTERFACE_SET_MAC_ADDRESS, sw_interface_set_mac_address)   \
 _(SW_INTERFACE_GET_MAC_ADDRESS, sw_interface_get_mac_address)   \
 _(CREATE_VLAN_SUBIF, create_vlan_subif)                         \
@@ -73,8 +79,12 @@ _(CREATE_LOOPBACK_INSTANCE, create_loopback_instance)		\
 _(DELETE_LOOPBACK, delete_loopback)                             \
 _(INTERFACE_NAME_RENUMBER, interface_name_renumber)             \
 _(COLLECT_DETAILED_INTERFACE_STATS, collect_detailed_interface_stats) \
-_(SW_INTERFACE_SET_IP_DIRECTED_BROADCAST,                            \
-  sw_interface_set_ip_directed_broadcast)
+_(SW_INTERFACE_SET_IP_DIRECTED_BROADCAST,                       \
+  sw_interface_set_ip_directed_broadcast)                       \
+_(SW_INTERFACE_ADDRESS_REPLACE_BEGIN,                           \
+  sw_interface_address_replace_begin)                           \
+_(SW_INTERFACE_ADDRESS_REPLACE_END,                             \
+  sw_interface_address_replace_end)
 
 static void
 vl_api_sw_interface_set_flags_t_handler (vl_api_sw_interface_set_flags_t * mp)
@@ -87,7 +97,9 @@ vl_api_sw_interface_set_flags_t_handler (vl_api_sw_interface_set_flags_t * mp)
 
   VALIDATE_SW_IF_INDEX (mp);
 
-  flags = mp->admin_up_down ? VNET_SW_INTERFACE_FLAG_ADMIN_UP : 0;
+  flags =
+    ((ntohl (mp->flags)) & IF_STATUS_API_FLAG_ADMIN_UP) ?
+    VNET_SW_INTERFACE_FLAG_ADMIN_UP : 0;
 
   error = vnet_sw_interface_set_flags (vnm, ntohl (mp->sw_if_index), flags);
   if (error)
@@ -159,8 +171,9 @@ vl_api_sw_interface_set_mtu_t_handler (vl_api_sw_interface_set_mtu_t * mp)
   VALIDATE_SW_IF_INDEX (mp);
 
   for (i = 0; i < VNET_N_MTU; i++)
-    per_protocol_mtu[i] = ntohl (mp->mtu[i]);
-
+    {
+      per_protocol_mtu[i] = ntohl (mp->mtu[i]);
+    }
   vnet_sw_interface_set_protocol_mtu (vnm, sw_if_index, per_protocol_mtu);
 
   BAD_SW_IF_INDEX_LABEL;
@@ -192,14 +205,37 @@ send_sw_interface_details (vpe_api_main_t * am,
 {
   vnet_hw_interface_t *hi =
     vnet_get_sup_hw_interface (am->vnet_main, swif->sw_if_index);
+  vnet_device_class_t *dev_class =
+    vnet_get_device_class (am->vnet_main, hi->dev_class_index);
 
   vl_api_sw_interface_details_t *mp = vl_msg_api_alloc (sizeof (*mp));
   clib_memset (mp, 0, sizeof (*mp));
   mp->_vl_msg_id = ntohs (VL_API_SW_INTERFACE_DETAILS);
   mp->sw_if_index = ntohl (swif->sw_if_index);
   mp->sup_sw_if_index = ntohl (swif->sup_sw_if_index);
-  mp->admin_up_down = (swif->flags & VNET_SW_INTERFACE_FLAG_ADMIN_UP) ? 1 : 0;
-  mp->link_up_down = (hi->flags & VNET_HW_INTERFACE_FLAG_LINK_UP) ? 1 : 0;
+
+  mp->flags |= (swif->flags & VNET_SW_INTERFACE_FLAG_ADMIN_UP) ?
+    IF_STATUS_API_FLAG_ADMIN_UP : 0;
+  mp->flags |= (hi->flags & VNET_HW_INTERFACE_FLAG_LINK_UP) ?
+    IF_STATUS_API_FLAG_LINK_UP : 0;
+  mp->flags = ntohl (mp->flags);
+
+  switch (swif->type)
+    {
+    case VNET_SW_INTERFACE_TYPE_SUB:
+      mp->type = IF_API_TYPE_SUB;
+      break;
+    case VNET_SW_INTERFACE_TYPE_P2P:
+      mp->type = IF_API_TYPE_P2P;
+      break;
+    case VNET_SW_INTERFACE_TYPE_PIPE:
+      mp->type = IF_API_TYPE_PIPE;
+      break;
+    default:
+      mp->type = IF_API_TYPE_HARDWARE;
+    }
+  mp->type = ntohl (mp->type);
+
   mp->link_duplex = ((hi->flags & VNET_HW_INTERFACE_FLAG_DUPLEX_MASK) >>
 		     VNET_HW_INTERFACE_FLAG_DUPLEX_SHIFT);
   mp->link_speed = ntohl (hi->link_speed);
@@ -214,6 +250,10 @@ send_sw_interface_details (vpe_api_main_t * am,
   strncpy ((char *) mp->interface_name,
 	   (char *) interface_name, ARRAY_LEN (mp->interface_name) - 1);
 
+  if (dev_class && dev_class->name)
+    strncpy ((char *) mp->interface_dev_type, (char *) dev_class->name,
+	     ARRAY_LEN (mp->interface_dev_type) - 1);
+
   /* Send the L2 address for ethernet physical intfcs */
   if (swif->sup_sw_if_index == swif->sw_if_index
       && hi->hw_class_index == ethernet_hw_interface_class.index)
@@ -223,22 +263,18 @@ send_sw_interface_details (vpe_api_main_t * am,
 
       ei = pool_elt_at_index (em->interfaces, hi->hw_instance);
       ASSERT (sizeof (mp->l2_address) >= sizeof (ei->address));
-      clib_memcpy (mp->l2_address, ei->address, sizeof (ei->address));
-      mp->l2_address_length = ntohl (sizeof (ei->address));
+      mac_address_encode ((mac_address_t *) ei->address, mp->l2_address);
     }
   else if (swif->sup_sw_if_index != swif->sw_if_index)
     {
       vnet_sub_interface_t *sub = &swif->sub;
       mp->sub_id = ntohl (sub->id);
-      mp->sub_dot1ad = sub->eth.flags.dot1ad;
       mp->sub_number_of_tags =
 	sub->eth.flags.one_tag + sub->eth.flags.two_tags * 2;
       mp->sub_outer_vlan_id = ntohs (sub->eth.outer_vlan_id);
       mp->sub_inner_vlan_id = ntohs (sub->eth.inner_vlan_id);
-      mp->sub_exact_match = sub->eth.flags.exact_match;
-      mp->sub_default = sub->eth.flags.default_sub;
-      mp->sub_outer_vlan_id_any = sub->eth.flags.outer_vlan_id_any;
-      mp->sub_inner_vlan_id_any = sub->eth.flags.inner_vlan_id_any;
+      mp->sub_if_flags =
+	ntohl (sub->eth.raw_flags & SUB_IF_API_FLAG_MASK_VNET);
     }
 
   /* vlan tag rewrite data */
@@ -272,11 +308,9 @@ send_sw_interface_details (vpe_api_main_t * am,
   if (!l2pbb_get (am->vlib_main, am->vnet_main, swif->sw_if_index,
 		  &pbb_vtr_op, &outer_tag, &eth_hdr, &b_vlanid, &i_sid))
     {
-      mp->sub_dot1ah = 1;
-      clib_memcpy (mp->b_dmac, eth_hdr.dst_address,
-		   sizeof (eth_hdr.dst_address));
-      clib_memcpy (mp->b_smac, eth_hdr.src_address,
-		   sizeof (eth_hdr.src_address));
+      mp->sub_if_flags |= ntohl (SUB_IF_API_FLAG_DOT1AH);
+      mac_address_encode ((mac_address_t *) eth_hdr.dst_address, mp->b_dmac);
+      mac_address_encode ((mac_address_t *) eth_hdr.src_address, mp->b_smac);
       mp->b_vlanid = b_vlanid;
       mp->i_sid = i_sid;
     }
@@ -327,9 +361,8 @@ vl_api_sw_interface_dump_t_handler (vl_api_sw_interface_dump_t * mp)
 
   if (mp->name_filter_valid)
     {
-      filter =
-	format (0, ".*%s", vl_api_string_len (&mp->name_filter),
-		vl_api_from_api_string (&mp->name_filter), 0);
+      filter = vl_api_from_api_to_new_vec (mp, &mp->name_filter);
+      vec_add1 (filter, 0);	/* Ensure it's a C string for strcasecmp() */
     }
 
   char *strcasestr (char *, char *);	/* lnx hdr file botch */
@@ -363,6 +396,7 @@ static void
   int rv = 0;
   u32 is_del;
   clib_error_t *error = 0;
+  ip46_address_t address;
 
   VALIDATE_SW_IF_INDEX (mp);
 
@@ -371,14 +405,14 @@ static void
 
   if (mp->del_all)
     ip_del_all_interface_addresses (vm, ntohl (mp->sw_if_index));
-  else if (mp->is_ipv6)
+  else if (ip_address_decode (&mp->prefix.address, &address) == IP46_TYPE_IP6)
     error = ip6_add_del_interface_address (vm, ntohl (mp->sw_if_index),
-					   (void *) mp->address,
-					   mp->address_length, is_del);
+					   (void *) &address.ip6,
+					   mp->prefix.len, is_del);
   else
     error = ip4_add_del_interface_address (vm, ntohl (mp->sw_if_index),
-					   (void *) mp->address,
-					   mp->address_length, is_del);
+					   (void *) &address.ip4,
+					   mp->prefix.len, is_del);
 
   if (error)
     {
@@ -708,9 +742,13 @@ send_sw_interface_event (vpe_api_main_t * am,
   mp->sw_if_index = ntohl (sw_if_index);
   mp->client_index = reg->client_index;
   mp->pid = reg->client_pid;
-  mp->admin_up_down = events & API_ADMIN_UP_EVENT ? 1 : 0;
-  mp->link_up_down = events & API_LINK_STATE_UP_EVENT ? 1 : 0;
-  mp->deleted = events & API_SW_INTERFACE_DEL_EVENT ? 1 : 0;
+  mp->flags = 0;
+  mp->flags |= (events & API_ADMIN_UP_EVENT) ?
+    IF_STATUS_API_FLAG_ADMIN_UP : 0;
+  mp->flags |= (events & API_LINK_STATE_UP_EVENT) ?
+    IF_STATUS_API_FLAG_LINK_UP : 0;
+  mp->flags = ntohl (mp->flags);
+  mp->deleted = events & API_SW_INTERFACE_DEL_EVENT ? true : false;
   vl_api_send_msg (vl_reg, (u8 *) mp);
 }
 
@@ -871,6 +909,34 @@ out:
   REPLY_MACRO (VL_API_SW_INTERFACE_TAG_ADD_DEL_REPLY);
 }
 
+static void vl_api_sw_interface_add_del_mac_address_t_handler
+  (vl_api_sw_interface_add_del_mac_address_t * mp)
+{
+  vl_api_sw_interface_add_del_mac_address_reply_t *rmp;
+  vnet_main_t *vnm = vnet_get_main ();
+  u32 sw_if_index = ntohl (mp->sw_if_index);
+  vnet_hw_interface_t *hi;
+  clib_error_t *error;
+  int rv = 0;
+
+  VALIDATE_SW_IF_INDEX (mp);
+
+  /* for subifs, the MAC should be changed on the actual hw if */
+  hi = vnet_get_sup_hw_interface (vnm, sw_if_index);
+  error = vnet_hw_interface_add_del_mac_address (vnm, hi->hw_if_index,
+						 mp->addr, mp->is_add);
+  if (error)
+    {
+      rv = VNET_API_ERROR_UNIMPLEMENTED;
+      clib_error_report (error);
+      goto out;
+    }
+
+  BAD_SW_IF_INDEX_LABEL;
+out:
+  REPLY_MACRO (VL_API_SW_INTERFACE_ADD_DEL_MAC_ADDRESS_REPLY);
+}
+
 static void vl_api_sw_interface_set_mac_address_t_handler
   (vl_api_sw_interface_set_mac_address_t * mp)
 {
@@ -880,12 +946,14 @@ static void vl_api_sw_interface_set_mac_address_t_handler
   vnet_sw_interface_t *si;
   clib_error_t *error;
   int rv = 0;
+  mac_address_t mac;
 
   VALIDATE_SW_IF_INDEX (mp);
 
   si = vnet_get_sw_interface (vnm, sw_if_index);
-  error = vnet_hw_interface_change_mac_address (vnm, si->hw_if_index,
-						mp->mac_address);
+  mac_address_decode (mp->mac_address, &mac);
+  error =
+    vnet_hw_interface_change_mac_address (vnm, si->hw_if_index, (u8 *) & mac);
   if (error)
     {
       rv = VNET_API_ERROR_UNIMPLEMENTED;
@@ -925,7 +993,7 @@ static void vl_api_sw_interface_get_mac_address_t_handler
   rmp->context = mp->context;
   rmp->retval = htonl (rv);
   if (!rv && eth_if)
-    memcpy (rmp->mac_address, eth_if->address, 6);
+    mac_address_encode ((mac_address_t *) eth_if->address, rmp->mac_address);
   vl_api_send_msg (reg, (u8 *) rmp);
 }
 
@@ -938,6 +1006,7 @@ static void vl_api_sw_interface_set_rx_mode_t_handler
   vnet_sw_interface_t *si;
   clib_error_t *error;
   int rv = 0;
+  vnet_hw_interface_rx_mode rx_mode;
 
   VALIDATE_SW_IF_INDEX (mp);
 
@@ -948,9 +1017,13 @@ static void vl_api_sw_interface_set_rx_mode_t_handler
       goto bad_sw_if_index;
     }
 
+  rx_mode = (vnet_hw_interface_rx_mode) ntohl (mp->mode);
   error = set_hw_interface_change_rx_mode (vnm, si->hw_if_index,
 					   mp->queue_id_valid,
-					   ntohl (mp->queue_id), mp->mode);
+					   ntohl (mp->queue_id),
+					   (vnet_hw_interface_rx_mode)
+					   rx_mode);
+
   if (error)
     {
       rv = VNET_API_ERROR_UNIMPLEMENTED;
@@ -977,7 +1050,7 @@ send_interface_rx_placement_details (vpe_api_main_t * am,
   mp->sw_if_index = htonl (sw_if_index);
   mp->queue_id = htonl (queue_id);
   mp->worker_id = htonl (worker_id);
-  mp->mode = mode;
+  mp->mode = htonl (mode);
   mp->context = context;
 
   vl_api_send_msg (rp, (u8 *) mp);
@@ -1175,81 +1248,30 @@ vl_api_create_subif_t_handler (vl_api_create_subif_t * mp)
 {
   vl_api_create_subif_reply_t *rmp;
   vnet_main_t *vnm = vnet_get_main ();
-  u32 sw_if_index = ~0;
-  int rv = 0;
-  u32 sub_id;
-  vnet_sw_interface_t *si;
+  u32 sub_sw_if_index = ~0;
   vnet_hw_interface_t *hi;
-  vnet_sw_interface_t template;
-  uword *p;
-  vnet_interface_main_t *im = &vnm->interface_main;
-  u64 sup_and_sub_key;
-  clib_error_t *error;
+  int rv = 0;
 
   VALIDATE_SW_IF_INDEX (mp);
 
-  si = vnet_get_sup_sw_interface (vnm, ntohl (mp->sw_if_index));
   hi = vnet_get_sup_hw_interface (vnm, ntohl (mp->sw_if_index));
 
   if (hi->bond_info == VNET_HW_INTERFACE_BOND_INFO_SLAVE)
-    {
-      rv = VNET_API_ERROR_BOND_SLAVE_NOT_ALLOWED;
-      goto out;
-    }
-
-  sw_if_index = si->sw_if_index;
-  sub_id = ntohl (mp->sub_id);
-
-  sup_and_sub_key = ((u64) (sw_if_index) << 32) | (u64) sub_id;
-
-  p = hash_get_mem (im->sw_if_index_by_sup_and_sub, &sup_and_sub_key);
-  if (p)
-    {
-      if (CLIB_DEBUG > 0)
-	clib_warning ("sup sw_if_index %d, sub id %d already exists\n",
-		      sw_if_index, sub_id);
-      rv = VNET_API_ERROR_SUBIF_ALREADY_EXISTS;
-      goto out;
-    }
-
-  clib_memset (&template, 0, sizeof (template));
-  template.type = VNET_SW_INTERFACE_TYPE_SUB;
-  template.flood_class = VNET_FLOOD_CLASS_NORMAL;
-  template.sup_sw_if_index = sw_if_index;
-  template.sub.id = sub_id;
-  template.sub.eth.flags.no_tags = mp->no_tags;
-  template.sub.eth.flags.one_tag = mp->one_tag;
-  template.sub.eth.flags.two_tags = mp->two_tags;
-  template.sub.eth.flags.dot1ad = mp->dot1ad;
-  template.sub.eth.flags.exact_match = mp->exact_match;
-  template.sub.eth.flags.default_sub = mp->default_sub;
-  template.sub.eth.flags.outer_vlan_id_any = mp->outer_vlan_id_any;
-  template.sub.eth.flags.inner_vlan_id_any = mp->inner_vlan_id_any;
-  template.sub.eth.outer_vlan_id = ntohs (mp->outer_vlan_id);
-  template.sub.eth.inner_vlan_id = ntohs (mp->inner_vlan_id);
-
-  error = vnet_create_sw_interface (vnm, &template, &sw_if_index);
-  if (error)
-    {
-      clib_error_report (error);
-      rv = VNET_API_ERROR_SUBIF_CREATE_FAILED;
-      goto out;
-    }
-
-  u64 *kp = clib_mem_alloc (sizeof (*kp));
-  *kp = sup_and_sub_key;
-
-  hash_set (hi->sub_interface_sw_if_index_by_id, sub_id, sw_if_index);
-  hash_set_mem (im->sw_if_index_by_sup_and_sub, kp, sw_if_index);
+    rv = VNET_API_ERROR_BOND_SLAVE_NOT_ALLOWED;
+  else
+    rv = vnet_create_sub_interface (ntohl (mp->sw_if_index),
+				    ntohl (mp->sub_id),
+				    ntohl (mp->sub_if_flags),
+				    ntohs (mp->inner_vlan_id),
+				    ntohs (mp->outer_vlan_id),
+				    &sub_sw_if_index);
 
   BAD_SW_IF_INDEX_LABEL;
-
-out:
 
   /* *INDENT-OFF* */
   REPLY_MACRO2(VL_API_CREATE_SUBIF_REPLY,
   ({
-    rmp->sw_if_index = ntohl(sw_if_index);
+    rmp->sw_if_index = ntohl(sub_sw_if_index);
   }));
   /* *INDENT-ON* */
 }
@@ -1288,8 +1310,10 @@ vl_api_create_loopback_t_handler (vl_api_create_loopback_t * mp)
   vl_api_create_loopback_reply_t *rmp;
   u32 sw_if_index;
   int rv;
+  mac_address_t mac;
 
-  rv = vnet_create_loopback_interface (&sw_if_index, mp->mac_address, 0, 0);
+  mac_address_decode (mp->mac_address, &mac);
+  rv = vnet_create_loopback_interface (&sw_if_index, (u8 *) & mac, 0, 0);
 
   /* *INDENT-OFF* */
   REPLY_MACRO2(VL_API_CREATE_LOOPBACK_REPLY,
@@ -1307,8 +1331,10 @@ static void vl_api_create_loopback_instance_t_handler
   u8 is_specified = mp->is_specified;
   u32 user_instance = ntohl (mp->user_instance);
   int rv;
+  mac_address_t mac;
 
-  rv = vnet_create_loopback_interface (&sw_if_index, mp->mac_address,
+  mac_address_decode (mp->mac_address, &mac);
+  rv = vnet_create_loopback_interface (&sw_if_index, (u8 *) & mac,
 				       is_specified, user_instance);
 
   /* *INDENT-OFF* */
@@ -1346,6 +1372,30 @@ static void
   REPLY_MACRO (VL_API_COLLECT_DETAILED_INTERFACE_STATS_REPLY);
 }
 
+static void
+  vl_api_sw_interface_address_replace_begin_t_handler
+  (vl_api_sw_interface_address_replace_begin_t * mp)
+{
+  vl_api_sw_interface_address_replace_begin_reply_t *rmp;
+  int rv = 0;
+
+  ip_interface_address_mark ();
+
+  REPLY_MACRO (VL_API_SW_INTERFACE_ADDRESS_REPLACE_BEGIN_REPLY);
+}
+
+static void
+  vl_api_sw_interface_address_replace_end_t_handler
+  (vl_api_sw_interface_address_replace_end_t * mp)
+{
+  vl_api_sw_interface_address_replace_end_reply_t *rmp;
+  int rv = 0;
+
+  ip_interface_address_sweep ();
+
+  REPLY_MACRO (VL_API_SW_INTERFACE_ADDRESS_REPLACE_END_REPLY);
+}
+
 /*
  * vpe_api_hookup
  * Add vpe's API message handlers to the table.
@@ -1370,7 +1420,7 @@ pub_sub_handler (interface_events, INTERFACE_EVENTS);
 static clib_error_t *
 interface_api_hookup (vlib_main_t * vm)
 {
-  api_main_t *am = &api_main;
+  api_main_t *am = vlibapi_get_main ();
 
 #define _(N,n)                                                  \
     vl_msg_api_set_handlers(VL_API_##N, #n,                     \

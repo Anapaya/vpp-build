@@ -20,7 +20,7 @@
 #define CLIB_LOG2_CACHE_LINE_BYTES 6
 #endif
 
-#define USE_DLMALLOC 1
-
 #define CLIB_TARGET_TRIPLET "x86_64-linux-gnu"
+#define CLIB_VECTOR_GROW_BY_ONE 0
+
 #endif

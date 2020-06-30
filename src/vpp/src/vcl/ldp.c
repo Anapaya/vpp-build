@@ -109,7 +109,11 @@ typedef struct
 
 #define LDBG(_lvl, _fmt, _args...) 					\
   if (ldp->debug > _lvl)						\
-    clib_warning ("ldp<%d>: " _fmt, getpid(), ##_args)
+    {									\
+      int errno_saved = errno;						\
+      clib_warning ("ldp<%d>: " _fmt, getpid(), ##_args);		\
+      errno = errno_saved;						\
+    }
 
 static ldp_main_t ldp_main = {
   .vlsh_bit_val = (1 << LDP_SID_BIT_MIN),
@@ -376,24 +380,19 @@ readv (int fd, const struct iovec * iov, int iovcnt)
   vlsh = ldp_fd_to_vlsh (fd);
   if (vlsh != VLS_INVALID_HANDLE)
     {
-      do
+      for (i = 0; i < iovcnt; ++i)
 	{
-	  for (i = 0; i < iovcnt; ++i)
+	  rv = vls_read (vlsh, iov[i].iov_base, iov[i].iov_len);
+	  if (rv <= 0)
+	    break;
+	  else
 	    {
-	      rv = vls_read (vlsh, iov[i].iov_base, iov[i].iov_len);
-	      if (rv < 0)
+	      total += rv;
+	      if (rv < iov[i].iov_len)
 		break;
-	      else
-		{
-		  total += rv;
-		  if (rv < iov[i].iov_len)
-		    break;
-		}
 	    }
 	}
-      while ((rv >= 0) && (total == 0));
-
-      if (rv < 0)
+      if (rv < 0 && total == 0)
 	{
 	  errno = -rv;
 	  size = -1;
@@ -449,24 +448,20 @@ writev (int fd, const struct iovec * iov, int iovcnt)
   vlsh = ldp_fd_to_vlsh (fd);
   if (vlsh != VLS_INVALID_HANDLE)
     {
-      do
+      for (i = 0; i < iovcnt; ++i)
 	{
-	  for (i = 0; i < iovcnt; ++i)
+	  rv = vls_write_msg (vlsh, iov[i].iov_base, iov[i].iov_len);
+	  if (rv < 0)
+	    break;
+	  else
 	    {
-	      rv = vls_write_msg (vlsh, iov[i].iov_base, iov[i].iov_len);
-	      if (rv < 0)
+	      total += rv;
+	      if (rv < iov[i].iov_len)
 		break;
-	      else
-		{
-		  total += rv;
-		  if (rv < iov[i].iov_len)
-		    break;
-		}
 	    }
 	}
-      while ((rv >= 0) && (total == 0));
 
-      if (rv < 0)
+      if (rv < 0 && total == 0)
 	{
 	  errno = -rv;
 	  size = -1;
@@ -482,22 +477,11 @@ writev (int fd, const struct iovec * iov, int iovcnt)
   return size;
 }
 
-#ifdef HAVE_FCNTL64
-int
-fcntl64 (int fd, int cmd, ...)
-#else
-int
-fcntl (int fd, int cmd, ...)
-#endif
+static int
+fcntl_internal (int fd, int cmd, va_list ap)
 {
   vls_handle_t vlsh;
   int rv = 0;
-  va_list ap;
-
-  if ((errno = -ldp_init ()))
-    return -1;
-
-  va_start (ap, cmd);
 
   vlsh = ldp_fd_to_vlsh (fd);
   LDBG (0, "fd %u vlsh %d, cmd %u", fd, vlsh, cmd);
@@ -543,8 +527,37 @@ fcntl (int fd, int cmd, ...)
 #endif
     }
 
+  return rv;
+}
+
+int
+fcntl (int fd, int cmd, ...)
+{
+  va_list ap;
+  int rv;
+
+  if ((errno = -ldp_init ()))
+    return -1;
+
+  va_start (ap, cmd);
+  rv = fcntl_internal (fd, cmd, ap);
   va_end (ap);
 
+  return rv;
+}
+
+int
+fcntl64 (int fd, int cmd, ...)
+{
+  va_list ap;
+  int rv;
+
+  if ((errno = -ldp_init ()))
+    return -1;
+
+  va_start (ap, cmd);
+  rv = fcntl_internal (fd, cmd, ap);
+  va_end (ap);
   return rv;
 }
 
@@ -625,12 +638,13 @@ ldp_select_init_maps (fd_set * __restrict original,
     if (vlsh == VLS_INVALID_HANDLE)
       clib_bitmap_set_no_check (*libcb, fd, 1);
     else
-      clib_bitmap_set_no_check (*vclb, vlsh_to_session_index (vlsh), 1);
+      *vclb = clib_bitmap_set (*vclb, vlsh_to_session_index (vlsh), 1);
   }));
   /* *INDENT-ON* */
 
   si_bits_set = clib_bitmap_last_set (*vclb) + 1;
   *si_bits = (si_bits_set > *si_bits) ? si_bits_set : *si_bits;
+  clib_bitmap_validate (*resultb, *si_bits);
 
   libc_bits_set = clib_bitmap_last_set (*libcb) + 1;
   *libc_bits = (libc_bits_set > *libc_bits) ? libc_bits_set : *libc_bits;
@@ -649,6 +663,7 @@ ldp_select_vcl_map_to_libc (clib_bitmap_t * vclb, fd_set * __restrict libcb)
   /* *INDENT-OFF* */
   clib_bitmap_foreach (si, vclb, ({
     vlsh = vls_session_index_to_vlsh (si);
+    ASSERT (vlsh != VLS_INVALID_HANDLE);
     fd = ldp_vlsh_to_fd (vlsh);
     if (PREDICT_FALSE (fd < 0))
       {
@@ -761,15 +776,15 @@ ldp_pselect (int nfds, fd_set * __restrict readfds,
 	{
 	  if (readfds)
 	    clib_memcpy_fast (ldpw->rd_bitmap, ldpw->si_rd_bitmap,
-			      vec_len (ldpw->rd_bitmap) *
+			      vec_len (ldpw->si_rd_bitmap) *
 			      sizeof (clib_bitmap_t));
 	  if (writefds)
 	    clib_memcpy_fast (ldpw->wr_bitmap, ldpw->si_wr_bitmap,
-			      vec_len (ldpw->wr_bitmap) *
+			      vec_len (ldpw->si_wr_bitmap) *
 			      sizeof (clib_bitmap_t));
 	  if (exceptfds)
 	    clib_memcpy_fast (ldpw->ex_bitmap, ldpw->si_ex_bitmap,
-			      vec_len (ldpw->ex_bitmap) *
+			      vec_len (ldpw->si_ex_bitmap) *
 			      sizeof (clib_bitmap_t));
 
 	  rv = vls_select (si_bits, readfds ? ldpw->rd_bitmap : NULL,
@@ -779,6 +794,7 @@ ldp_pselect (int nfds, fd_set * __restrict readfds,
 	    {
 	      errno = -rv;
 	      rv = -1;
+	      goto done;
 	    }
 	  else if (rv > 0)
 	    {
@@ -1506,7 +1522,10 @@ recv (int fd, void *buf, size_t n, int flags)
     {
       size = vls_recvfrom (vlsh, buf, n, flags, NULL);
       if (size < 0)
-	errno = -size;
+	{
+	  errno = -size;
+	  size = -1;
+	}
     }
   else
     {
@@ -1815,8 +1834,8 @@ getsockopt (int fd, int level, int optname,
 		rv = -EFAULT;
 	      break;
 	    case TCP_CONGESTION:
-	      strcpy (optval, "cubic");
 	      *optlen = strlen ("cubic");
+	      strncpy (optval, "cubic", *optlen + 1);
 	      rv = 0;
 	      break;
 	    default:

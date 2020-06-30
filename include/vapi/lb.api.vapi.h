@@ -13,32 +13,40 @@ extern "C" {
 #endif
 #include <vapi/vpe.api.vapi.h>
 
+extern vapi_msg_id_t vapi_msg_id_lb_conf;
+extern vapi_msg_id_t vapi_msg_id_lb_conf_reply;
+extern vapi_msg_id_t vapi_msg_id_lb_add_del_vip;
 extern vapi_msg_id_t vapi_msg_id_lb_add_del_vip_reply;
 extern vapi_msg_id_t vapi_msg_id_lb_add_del_as;
-extern vapi_msg_id_t vapi_msg_id_lb_conf_reply;
-extern vapi_msg_id_t vapi_msg_id_lb_vip_dump;
 extern vapi_msg_id_t vapi_msg_id_lb_add_del_as_reply;
-extern vapi_msg_id_t vapi_msg_id_lb_flush_vip_reply;
-extern vapi_msg_id_t vapi_msg_id_lb_vip_details;
-extern vapi_msg_id_t vapi_msg_id_lb_conf;
 extern vapi_msg_id_t vapi_msg_id_lb_flush_vip;
-extern vapi_msg_id_t vapi_msg_id_lb_as_details;
+extern vapi_msg_id_t vapi_msg_id_lb_flush_vip_reply;
+extern vapi_msg_id_t vapi_msg_id_lb_vip_dump;
+extern vapi_msg_id_t vapi_msg_id_lb_vip_details;
 extern vapi_msg_id_t vapi_msg_id_lb_as_dump;
-extern vapi_msg_id_t vapi_msg_id_lb_add_del_vip;
+extern vapi_msg_id_t vapi_msg_id_lb_as_details;
+extern vapi_msg_id_t vapi_msg_id_lb_add_del_intf_nat4;
+extern vapi_msg_id_t vapi_msg_id_lb_add_del_intf_nat4_reply;
+extern vapi_msg_id_t vapi_msg_id_lb_add_del_intf_nat6;
+extern vapi_msg_id_t vapi_msg_id_lb_add_del_intf_nat6_reply;
 
 #define DEFINE_VAPI_MSG_IDS_LB_API_JSON\
+  vapi_msg_id_t vapi_msg_id_lb_conf;\
+  vapi_msg_id_t vapi_msg_id_lb_conf_reply;\
+  vapi_msg_id_t vapi_msg_id_lb_add_del_vip;\
   vapi_msg_id_t vapi_msg_id_lb_add_del_vip_reply;\
   vapi_msg_id_t vapi_msg_id_lb_add_del_as;\
-  vapi_msg_id_t vapi_msg_id_lb_conf_reply;\
-  vapi_msg_id_t vapi_msg_id_lb_vip_dump;\
   vapi_msg_id_t vapi_msg_id_lb_add_del_as_reply;\
-  vapi_msg_id_t vapi_msg_id_lb_flush_vip_reply;\
-  vapi_msg_id_t vapi_msg_id_lb_vip_details;\
-  vapi_msg_id_t vapi_msg_id_lb_conf;\
   vapi_msg_id_t vapi_msg_id_lb_flush_vip;\
-  vapi_msg_id_t vapi_msg_id_lb_as_details;\
+  vapi_msg_id_t vapi_msg_id_lb_flush_vip_reply;\
+  vapi_msg_id_t vapi_msg_id_lb_vip_dump;\
+  vapi_msg_id_t vapi_msg_id_lb_vip_details;\
   vapi_msg_id_t vapi_msg_id_lb_as_dump;\
-  vapi_msg_id_t vapi_msg_id_lb_add_del_vip;
+  vapi_msg_id_t vapi_msg_id_lb_as_details;\
+  vapi_msg_id_t vapi_msg_id_lb_add_del_intf_nat4;\
+  vapi_msg_id_t vapi_msg_id_lb_add_del_intf_nat4_reply;\
+  vapi_msg_id_t vapi_msg_id_lb_add_del_intf_nat6;\
+  vapi_msg_id_t vapi_msg_id_lb_add_del_intf_nat6_reply;
 
 
 #ifndef defined_vapi_enum_address_family
@@ -46,7 +54,7 @@ extern vapi_msg_id_t vapi_msg_id_lb_add_del_vip;
 typedef enum {
   ADDRESS_IP4 = 0,
   ADDRESS_IP6 = 1,
-} vapi_enum_address_family;
+} __attribute__((packed)) vapi_enum_address_family;
 
 #endif
 
@@ -57,7 +65,7 @@ typedef enum {
   IP_API_ECN_ECT0 = 1,
   IP_API_ECN_ECT1 = 2,
   IP_API_ECN_CE = 3,
-} vapi_enum_ip_ecn;
+} __attribute__((packed)) vapi_enum_ip_ecn;
 
 #endif
 
@@ -85,7 +93,7 @@ typedef enum {
   IP_API_DSCP_EF = 46,
   IP_API_DSCP_CS6 = 48,
   IP_API_DSCP_CS7 = 50,
-} vapi_enum_ip_dscp;
+} __attribute__((packed)) vapi_enum_ip_dscp;
 
 #endif
 
@@ -98,13 +106,14 @@ typedef enum {
   IP_API_PROTO_TCP = 6,
   IP_API_PROTO_UDP = 17,
   IP_API_PROTO_GRE = 47,
-  IP_API_PROTO_AH = 50,
-  IP_API_PROTO_ESP = 51,
+  IP_API_PROTO_ESP = 50,
+  IP_API_PROTO_AH = 51,
+  IP_API_PROTO_ICMP6 = 58,
   IP_API_PROTO_EIGRP = 88,
   IP_API_PROTO_OSPF = 89,
   IP_API_PROTO_SCTP = 132,
   IP_API_PROTO_RESERVED = 255,
-} vapi_enum_ip_proto;
+} __attribute__((packed)) vapi_enum_ip_proto;
 
 #endif
 
@@ -114,7 +123,7 @@ typedef enum {
   LB_API_SRV_TYPE_CLUSTERIP = 0,
   LB_API_SRV_TYPE_NODEPORT = 1,
   LB_API_SRV_N_TYPES = 2,
-} vapi_enum_lb_srv_type;
+}  vapi_enum_lb_srv_type;
 
 #endif
 
@@ -127,7 +136,7 @@ typedef enum {
   LB_API_ENCAP_TYPE_NAT4 = 3,
   LB_API_ENCAP_TYPE_NAT6 = 4,
   LB_API_ENCAP_N_TYPES = 5,
-} vapi_enum_lb_encap_type;
+}  vapi_enum_lb_encap_type;
 
 #endif
 
@@ -138,7 +147,7 @@ typedef enum {
   LB_API_LKP_DIFF_IP_PORT = 1,
   LB_API_LKP_ALL_PORT_IP = 2,
   LB_API_LKP_N_TYPES = 3,
-} vapi_enum_lb_lkp_type_t;
+}  vapi_enum_lb_lkp_type_t;
 
 #endif
 
@@ -153,7 +162,7 @@ typedef enum {
   LB_API_VIP_TYPE_IP4_NAT4 = 5,
   LB_API_VIP_TYPE_IP6_NAT6 = 6,
   LB_API_VIP_N_TYPES = 7,
-} vapi_enum_lb_vip_type;
+}  vapi_enum_lb_vip_type;
 
 #endif
 
@@ -163,7 +172,77 @@ typedef enum {
   LB_API_NAT_PROTOCOL_UDP = 6,
   LB_API_NAT_PROTOCOL_TCP = 23,
   LB_API_NAT_PROTOCOL_ANY = 4294967295,
-} vapi_enum_lb_nat_protocol;
+}  vapi_enum_lb_nat_protocol;
+
+#endif
+
+#ifndef defined_vapi_enum_if_status_flags
+#define defined_vapi_enum_if_status_flags
+typedef enum {
+  IF_STATUS_API_FLAG_ADMIN_UP = 1,
+  IF_STATUS_API_FLAG_LINK_UP = 2,
+}  vapi_enum_if_status_flags;
+
+#endif
+
+#ifndef defined_vapi_enum_mtu_proto
+#define defined_vapi_enum_mtu_proto
+typedef enum {
+  MTU_PROTO_API_L3 = 0,
+  MTU_PROTO_API_IP4 = 1,
+  MTU_PROTO_API_IP6 = 2,
+  MTU_PROTO_API_MPLS = 3,
+}  vapi_enum_mtu_proto;
+
+#endif
+
+#ifndef defined_vapi_enum_link_duplex
+#define defined_vapi_enum_link_duplex
+typedef enum {
+  LINK_DUPLEX_API_UNKNOWN = 0,
+  LINK_DUPLEX_API_HALF = 1,
+  LINK_DUPLEX_API_FULL = 2,
+}  vapi_enum_link_duplex;
+
+#endif
+
+#ifndef defined_vapi_enum_sub_if_flags
+#define defined_vapi_enum_sub_if_flags
+typedef enum {
+  SUB_IF_API_FLAG_NO_TAGS = 1,
+  SUB_IF_API_FLAG_ONE_TAG = 2,
+  SUB_IF_API_FLAG_TWO_TAGS = 4,
+  SUB_IF_API_FLAG_DOT1AD = 8,
+  SUB_IF_API_FLAG_EXACT_MATCH = 16,
+  SUB_IF_API_FLAG_DEFAULT = 32,
+  SUB_IF_API_FLAG_OUTER_VLAN_ID_ANY = 64,
+  SUB_IF_API_FLAG_INNER_VLAN_ID_ANY = 128,
+  SUB_IF_API_FLAG_MASK_VNET = 254,
+  SUB_IF_API_FLAG_DOT1AH = 256,
+}  vapi_enum_sub_if_flags;
+
+#endif
+
+#ifndef defined_vapi_enum_rx_mode
+#define defined_vapi_enum_rx_mode
+typedef enum {
+  RX_MODE_API_UNKNOWN = 0,
+  RX_MODE_API_POLLING = 1,
+  RX_MODE_API_INTERRUPT = 2,
+  RX_MODE_API_ADAPTIVE = 3,
+  RX_MODE_API_DEFAULT = 4,
+}  vapi_enum_rx_mode;
+
+#endif
+
+#ifndef defined_vapi_enum_if_type
+#define defined_vapi_enum_if_type
+typedef enum {
+  IF_API_TYPE_HARDWARE = 0,
+  IF_API_TYPE_SUB = 1,
+  IF_API_TYPE_P2P = 2,
+  IF_API_TYPE_PIPE = 3,
+}  vapi_enum_if_type;
 
 #endif
 
@@ -215,12 +294,12 @@ typedef struct __attribute__((__packed__)) {
 
 static inline void vapi_type_address_hton(vapi_type_address *msg)
 {
-  msg->af = (vapi_enum_address_family)htobe32(msg->af);
+
 }
 
 static inline void vapi_type_address_ntoh(vapi_type_address *msg)
 {
-  msg->af = (vapi_enum_address_family)be32toh(msg->af);
+
 }
 #endif
 
@@ -233,12 +312,12 @@ typedef struct __attribute__((__packed__)) {
 
 static inline void vapi_type_prefix_hton(vapi_type_prefix *msg)
 {
-  vapi_type_address_hton(&msg->address);
+
 }
 
 static inline void vapi_type_prefix_ntoh(vapi_type_prefix *msg)
 {
-  vapi_type_address_ntoh(&msg->address);
+
 }
 #endif
 
@@ -253,13 +332,11 @@ typedef struct __attribute__((__packed__)) {
 
 static inline void vapi_type_mprefix_hton(vapi_type_mprefix *msg)
 {
-  msg->af = (vapi_enum_address_family)htobe32(msg->af);
   msg->grp_address_length = htobe16(msg->grp_address_length);
 }
 
 static inline void vapi_type_mprefix_ntoh(vapi_type_mprefix *msg)
 {
-  msg->af = (vapi_enum_address_family)be32toh(msg->af);
   msg->grp_address_length = be16toh(msg->grp_address_length);
 }
 #endif
@@ -316,22 +393,18 @@ typedef struct __attribute__((__packed__)) {
 
 static inline void vapi_type_lb_vip_hton(vapi_type_lb_vip *msg)
 {
-  vapi_type_prefix_hton(&msg->pfx);
-  msg->protocol = (vapi_enum_ip_proto)htobe32(msg->protocol);
   msg->port = htobe16(msg->port);
 }
 
 static inline void vapi_type_lb_vip_ntoh(vapi_type_lb_vip *msg)
 {
-  vapi_type_prefix_ntoh(&msg->pfx);
-  msg->protocol = (vapi_enum_ip_proto)be32toh(msg->protocol);
   msg->port = be16toh(msg->port);
 }
 #endif
 
-#ifndef defined_vapi_type_ip6_address_with_prefix
-#define defined_vapi_type_ip6_address_with_prefix
-typedef vapi_type_ip6_prefix vapi_type_ip6_address_with_prefix;
+#ifndef defined_vapi_type_interface_index
+#define defined_vapi_type_interface_index
+typedef u32 vapi_type_interface_index;
 
 #endif
 
@@ -341,276 +414,10 @@ typedef vapi_type_ip4_prefix vapi_type_ip4_address_with_prefix;
 
 #endif
 
-#ifndef defined_vapi_msg_lb_add_del_vip_reply
-#define defined_vapi_msg_lb_add_del_vip_reply
-typedef struct __attribute__ ((__packed__)) {
-  i32 retval; 
-} vapi_payload_lb_add_del_vip_reply;
+#ifndef defined_vapi_type_ip6_address_with_prefix
+#define defined_vapi_type_ip6_address_with_prefix
+typedef vapi_type_ip6_prefix vapi_type_ip6_address_with_prefix;
 
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header1_t header;
-  vapi_payload_lb_add_del_vip_reply payload;
-} vapi_msg_lb_add_del_vip_reply;
-
-static inline void vapi_msg_lb_add_del_vip_reply_payload_hton(vapi_payload_lb_add_del_vip_reply *payload)
-{
-  payload->retval = htobe32(payload->retval);
-}
-
-static inline void vapi_msg_lb_add_del_vip_reply_payload_ntoh(vapi_payload_lb_add_del_vip_reply *payload)
-{
-  payload->retval = be32toh(payload->retval);
-}
-
-static inline void vapi_msg_lb_add_del_vip_reply_hton(vapi_msg_lb_add_del_vip_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_lb_add_del_vip_reply'@%p to big endian", msg);
-  vapi_type_msg_header1_t_hton(&msg->header);
-  vapi_msg_lb_add_del_vip_reply_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_lb_add_del_vip_reply_ntoh(vapi_msg_lb_add_del_vip_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_lb_add_del_vip_reply'@%p to host byte order", msg);
-  vapi_type_msg_header1_t_ntoh(&msg->header);
-  vapi_msg_lb_add_del_vip_reply_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_lb_add_del_vip_reply_msg_size(vapi_msg_lb_add_del_vip_reply *msg)
-{
-  return sizeof(*msg);
-}
-
-static void __attribute__((constructor)) __vapi_constructor_lb_add_del_vip_reply()
-{
-  static const char name[] = "lb_add_del_vip_reply";
-  static const char name_with_crc[] = "lb_add_del_vip_reply_e8d4e804";
-  static vapi_message_desc_t __vapi_metadata_lb_add_del_vip_reply = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header1_t, context),
-    offsetof(vapi_msg_lb_add_del_vip_reply, payload),
-    sizeof(vapi_msg_lb_add_del_vip_reply),
-    (generic_swap_fn_t)vapi_msg_lb_add_del_vip_reply_hton,
-    (generic_swap_fn_t)vapi_msg_lb_add_del_vip_reply_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_lb_add_del_vip_reply = vapi_register_msg(&__vapi_metadata_lb_add_del_vip_reply);
-  VAPI_DBG("Assigned msg id %d to lb_add_del_vip_reply", vapi_msg_id_lb_add_del_vip_reply);
-}
-
-static inline void vapi_set_vapi_msg_lb_add_del_vip_reply_event_cb (
-  struct vapi_ctx_s *ctx, 
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_lb_add_del_vip_reply *payload),
-  void *callback_ctx)
-{
-  vapi_set_event_cb(ctx, vapi_msg_id_lb_add_del_vip_reply, (vapi_event_cb)callback, callback_ctx);
-};
-#endif
-
-#ifndef defined_vapi_msg_lb_add_del_as_reply
-#define defined_vapi_msg_lb_add_del_as_reply
-typedef struct __attribute__ ((__packed__)) {
-  i32 retval; 
-} vapi_payload_lb_add_del_as_reply;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header1_t header;
-  vapi_payload_lb_add_del_as_reply payload;
-} vapi_msg_lb_add_del_as_reply;
-
-static inline void vapi_msg_lb_add_del_as_reply_payload_hton(vapi_payload_lb_add_del_as_reply *payload)
-{
-  payload->retval = htobe32(payload->retval);
-}
-
-static inline void vapi_msg_lb_add_del_as_reply_payload_ntoh(vapi_payload_lb_add_del_as_reply *payload)
-{
-  payload->retval = be32toh(payload->retval);
-}
-
-static inline void vapi_msg_lb_add_del_as_reply_hton(vapi_msg_lb_add_del_as_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_lb_add_del_as_reply'@%p to big endian", msg);
-  vapi_type_msg_header1_t_hton(&msg->header);
-  vapi_msg_lb_add_del_as_reply_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_lb_add_del_as_reply_ntoh(vapi_msg_lb_add_del_as_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_lb_add_del_as_reply'@%p to host byte order", msg);
-  vapi_type_msg_header1_t_ntoh(&msg->header);
-  vapi_msg_lb_add_del_as_reply_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_lb_add_del_as_reply_msg_size(vapi_msg_lb_add_del_as_reply *msg)
-{
-  return sizeof(*msg);
-}
-
-static void __attribute__((constructor)) __vapi_constructor_lb_add_del_as_reply()
-{
-  static const char name[] = "lb_add_del_as_reply";
-  static const char name_with_crc[] = "lb_add_del_as_reply_e8d4e804";
-  static vapi_message_desc_t __vapi_metadata_lb_add_del_as_reply = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header1_t, context),
-    offsetof(vapi_msg_lb_add_del_as_reply, payload),
-    sizeof(vapi_msg_lb_add_del_as_reply),
-    (generic_swap_fn_t)vapi_msg_lb_add_del_as_reply_hton,
-    (generic_swap_fn_t)vapi_msg_lb_add_del_as_reply_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_lb_add_del_as_reply = vapi_register_msg(&__vapi_metadata_lb_add_del_as_reply);
-  VAPI_DBG("Assigned msg id %d to lb_add_del_as_reply", vapi_msg_id_lb_add_del_as_reply);
-}
-
-static inline void vapi_set_vapi_msg_lb_add_del_as_reply_event_cb (
-  struct vapi_ctx_s *ctx, 
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_lb_add_del_as_reply *payload),
-  void *callback_ctx)
-{
-  vapi_set_event_cb(ctx, vapi_msg_id_lb_add_del_as_reply, (vapi_event_cb)callback, callback_ctx);
-};
-#endif
-
-#ifndef defined_vapi_msg_lb_add_del_as
-#define defined_vapi_msg_lb_add_del_as
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_address_with_prefix pfx;
-  u8 protocol;
-  u16 port;
-  vapi_type_address as_address;
-  bool is_del;
-  bool is_flush; 
-} vapi_payload_lb_add_del_as;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header2_t header;
-  vapi_payload_lb_add_del_as payload;
-} vapi_msg_lb_add_del_as;
-
-static inline void vapi_msg_lb_add_del_as_payload_hton(vapi_payload_lb_add_del_as *payload)
-{
-  vapi_type_prefix_hton(&payload->pfx);
-  payload->port = htobe16(payload->port);
-  vapi_type_address_hton(&payload->as_address);
-}
-
-static inline void vapi_msg_lb_add_del_as_payload_ntoh(vapi_payload_lb_add_del_as *payload)
-{
-  vapi_type_prefix_ntoh(&payload->pfx);
-  payload->port = be16toh(payload->port);
-  vapi_type_address_ntoh(&payload->as_address);
-}
-
-static inline void vapi_msg_lb_add_del_as_hton(vapi_msg_lb_add_del_as *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_lb_add_del_as'@%p to big endian", msg);
-  vapi_type_msg_header2_t_hton(&msg->header);
-  vapi_msg_lb_add_del_as_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_lb_add_del_as_ntoh(vapi_msg_lb_add_del_as *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_lb_add_del_as'@%p to host byte order", msg);
-  vapi_type_msg_header2_t_ntoh(&msg->header);
-  vapi_msg_lb_add_del_as_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_lb_add_del_as_msg_size(vapi_msg_lb_add_del_as *msg)
-{
-  return sizeof(*msg);
-}
-
-static inline vapi_msg_lb_add_del_as* vapi_alloc_lb_add_del_as(struct vapi_ctx_s *ctx)
-{
-  vapi_msg_lb_add_del_as *msg = NULL;
-  const size_t size = sizeof(vapi_msg_lb_add_del_as);
-  /* cast here required to play nicely with C++ world ... */
-  msg = (vapi_msg_lb_add_del_as*)vapi_msg_alloc(ctx, size);
-  if (!msg) {
-    return NULL;
-  }
-  msg->header.client_index = vapi_get_client_index(ctx);
-  msg->header.context = 0;
-  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_lb_add_del_as);
-
-  return msg;
-}
-
-static inline vapi_error_e vapi_lb_add_del_as(struct vapi_ctx_s *ctx,
-  vapi_msg_lb_add_del_as *msg,
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
-                           void *callback_ctx,
-                           vapi_error_e rv,
-                           bool is_last,
-                           vapi_payload_lb_add_del_as_reply *reply),
-  void *callback_ctx)
-{
-  if (!msg || !callback) {
-    return VAPI_EINVAL;
-  }
-  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
-    return VAPI_EAGAIN;
-  }
-  vapi_error_e rv;
-  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
-    return rv;
-  }
-  u32 req_context = vapi_gen_req_context(ctx);
-  msg->header.context = req_context;
-  vapi_msg_lb_add_del_as_hton(msg);
-  if (VAPI_OK == (rv = vapi_send (ctx, msg))) {
-    vapi_store_request(ctx, req_context, false, (vapi_cb_t)callback, callback_ctx);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-    if (vapi_is_nonblocking(ctx)) {
-      rv = VAPI_OK;
-    } else {
-      rv = vapi_dispatch(ctx);
-    }
-  } else {
-    vapi_msg_lb_add_del_as_ntoh(msg);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-  }
-  return rv;
-}
-
-
-static void __attribute__((constructor)) __vapi_constructor_lb_add_del_as()
-{
-  static const char name[] = "lb_add_del_as";
-  static const char name_with_crc[] = "lb_add_del_as_78628987";
-  static vapi_message_desc_t __vapi_metadata_lb_add_del_as = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header2_t, context),
-    offsetof(vapi_msg_lb_add_del_as, payload),
-    sizeof(vapi_msg_lb_add_del_as),
-    (generic_swap_fn_t)vapi_msg_lb_add_del_as_hton,
-    (generic_swap_fn_t)vapi_msg_lb_add_del_as_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_lb_add_del_as = vapi_register_msg(&__vapi_metadata_lb_add_del_as);
-  VAPI_DBG("Assigned msg id %d to lb_add_del_as", vapi_msg_id_lb_add_del_as);
-}
 #endif
 
 #ifndef defined_vapi_msg_lb_conf_reply
@@ -681,287 +488,6 @@ static inline void vapi_set_vapi_msg_lb_conf_reply_event_cb (
   void *callback_ctx)
 {
   vapi_set_event_cb(ctx, vapi_msg_id_lb_conf_reply, (vapi_event_cb)callback, callback_ctx);
-};
-#endif
-
-#ifndef defined_vapi_msg_lb_vip_details
-#define defined_vapi_msg_lb_vip_details
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_lb_vip vip;
-  vapi_enum_lb_encap_type encap;
-  vapi_enum_ip_dscp dscp;
-  vapi_enum_lb_srv_type srv_type;
-  u16 target_port;
-  u16 flow_table_length; 
-} vapi_payload_lb_vip_details;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header1_t header;
-  vapi_payload_lb_vip_details payload;
-} vapi_msg_lb_vip_details;
-
-static inline void vapi_msg_lb_vip_details_payload_hton(vapi_payload_lb_vip_details *payload)
-{
-  vapi_type_lb_vip_hton(&payload->vip);
-  payload->encap = (vapi_enum_lb_encap_type)htobe32(payload->encap);
-  payload->srv_type = (vapi_enum_lb_srv_type)htobe32(payload->srv_type);
-  payload->target_port = htobe16(payload->target_port);
-  payload->flow_table_length = htobe16(payload->flow_table_length);
-}
-
-static inline void vapi_msg_lb_vip_details_payload_ntoh(vapi_payload_lb_vip_details *payload)
-{
-  vapi_type_lb_vip_ntoh(&payload->vip);
-  payload->encap = (vapi_enum_lb_encap_type)be32toh(payload->encap);
-  payload->srv_type = (vapi_enum_lb_srv_type)be32toh(payload->srv_type);
-  payload->target_port = be16toh(payload->target_port);
-  payload->flow_table_length = be16toh(payload->flow_table_length);
-}
-
-static inline void vapi_msg_lb_vip_details_hton(vapi_msg_lb_vip_details *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_lb_vip_details'@%p to big endian", msg);
-  vapi_type_msg_header1_t_hton(&msg->header);
-  vapi_msg_lb_vip_details_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_lb_vip_details_ntoh(vapi_msg_lb_vip_details *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_lb_vip_details'@%p to host byte order", msg);
-  vapi_type_msg_header1_t_ntoh(&msg->header);
-  vapi_msg_lb_vip_details_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_lb_vip_details_msg_size(vapi_msg_lb_vip_details *msg)
-{
-  return sizeof(*msg);
-}
-
-static void __attribute__((constructor)) __vapi_constructor_lb_vip_details()
-{
-  static const char name[] = "lb_vip_details";
-  static const char name_with_crc[] = "lb_vip_details_08f39bed";
-  static vapi_message_desc_t __vapi_metadata_lb_vip_details = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header1_t, context),
-    offsetof(vapi_msg_lb_vip_details, payload),
-    sizeof(vapi_msg_lb_vip_details),
-    (generic_swap_fn_t)vapi_msg_lb_vip_details_hton,
-    (generic_swap_fn_t)vapi_msg_lb_vip_details_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_lb_vip_details = vapi_register_msg(&__vapi_metadata_lb_vip_details);
-  VAPI_DBG("Assigned msg id %d to lb_vip_details", vapi_msg_id_lb_vip_details);
-}
-
-static inline void vapi_set_vapi_msg_lb_vip_details_event_cb (
-  struct vapi_ctx_s *ctx, 
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_lb_vip_details *payload),
-  void *callback_ctx)
-{
-  vapi_set_event_cb(ctx, vapi_msg_id_lb_vip_details, (vapi_event_cb)callback, callback_ctx);
-};
-#endif
-
-#ifndef defined_vapi_msg_lb_vip_dump
-#define defined_vapi_msg_lb_vip_dump
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_address_with_prefix pfx;
-  vapi_type_prefix_matcher pfx_matcher;
-  u8 protocol;
-  u16 port; 
-} vapi_payload_lb_vip_dump;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header2_t header;
-  vapi_payload_lb_vip_dump payload;
-} vapi_msg_lb_vip_dump;
-
-static inline void vapi_msg_lb_vip_dump_payload_hton(vapi_payload_lb_vip_dump *payload)
-{
-  vapi_type_prefix_hton(&payload->pfx);
-  payload->port = htobe16(payload->port);
-}
-
-static inline void vapi_msg_lb_vip_dump_payload_ntoh(vapi_payload_lb_vip_dump *payload)
-{
-  vapi_type_prefix_ntoh(&payload->pfx);
-  payload->port = be16toh(payload->port);
-}
-
-static inline void vapi_msg_lb_vip_dump_hton(vapi_msg_lb_vip_dump *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_lb_vip_dump'@%p to big endian", msg);
-  vapi_type_msg_header2_t_hton(&msg->header);
-  vapi_msg_lb_vip_dump_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_lb_vip_dump_ntoh(vapi_msg_lb_vip_dump *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_lb_vip_dump'@%p to host byte order", msg);
-  vapi_type_msg_header2_t_ntoh(&msg->header);
-  vapi_msg_lb_vip_dump_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_lb_vip_dump_msg_size(vapi_msg_lb_vip_dump *msg)
-{
-  return sizeof(*msg);
-}
-
-static inline vapi_msg_lb_vip_dump* vapi_alloc_lb_vip_dump(struct vapi_ctx_s *ctx)
-{
-  vapi_msg_lb_vip_dump *msg = NULL;
-  const size_t size = sizeof(vapi_msg_lb_vip_dump);
-  /* cast here required to play nicely with C++ world ... */
-  msg = (vapi_msg_lb_vip_dump*)vapi_msg_alloc(ctx, size);
-  if (!msg) {
-    return NULL;
-  }
-  msg->header.client_index = vapi_get_client_index(ctx);
-  msg->header.context = 0;
-  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_lb_vip_dump);
-
-  return msg;
-}
-
-static inline vapi_error_e vapi_lb_vip_dump(struct vapi_ctx_s *ctx,
-  vapi_msg_lb_vip_dump *msg,
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
-                           void *callback_ctx,
-                           vapi_error_e rv,
-                           bool is_last,
-                           vapi_payload_lb_vip_details *reply),
-  void *callback_ctx)
-{
-  if (!msg || !callback) {
-    return VAPI_EINVAL;
-  }
-  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
-    return VAPI_EAGAIN;
-  }
-  vapi_error_e rv;
-  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
-    return rv;
-  }
-  u32 req_context = vapi_gen_req_context(ctx);
-  msg->header.context = req_context;
-  vapi_msg_lb_vip_dump_hton(msg);
-  if (VAPI_OK == (rv = vapi_send_with_control_ping (ctx, msg, req_context))) {
-    vapi_store_request(ctx, req_context, true, (vapi_cb_t)callback, callback_ctx);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-    if (vapi_is_nonblocking(ctx)) {
-      rv = VAPI_OK;
-    } else {
-      rv = vapi_dispatch(ctx);
-    }
-  } else {
-    vapi_msg_lb_vip_dump_ntoh(msg);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-  }
-  return rv;
-}
-
-
-static void __attribute__((constructor)) __vapi_constructor_lb_vip_dump()
-{
-  static const char name[] = "lb_vip_dump";
-  static const char name_with_crc[] = "lb_vip_dump_c7bcb124";
-  static vapi_message_desc_t __vapi_metadata_lb_vip_dump = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header2_t, context),
-    offsetof(vapi_msg_lb_vip_dump, payload),
-    sizeof(vapi_msg_lb_vip_dump),
-    (generic_swap_fn_t)vapi_msg_lb_vip_dump_hton,
-    (generic_swap_fn_t)vapi_msg_lb_vip_dump_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_lb_vip_dump = vapi_register_msg(&__vapi_metadata_lb_vip_dump);
-  VAPI_DBG("Assigned msg id %d to lb_vip_dump", vapi_msg_id_lb_vip_dump);
-}
-#endif
-
-#ifndef defined_vapi_msg_lb_flush_vip_reply
-#define defined_vapi_msg_lb_flush_vip_reply
-typedef struct __attribute__ ((__packed__)) {
-  i32 retval; 
-} vapi_payload_lb_flush_vip_reply;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header1_t header;
-  vapi_payload_lb_flush_vip_reply payload;
-} vapi_msg_lb_flush_vip_reply;
-
-static inline void vapi_msg_lb_flush_vip_reply_payload_hton(vapi_payload_lb_flush_vip_reply *payload)
-{
-  payload->retval = htobe32(payload->retval);
-}
-
-static inline void vapi_msg_lb_flush_vip_reply_payload_ntoh(vapi_payload_lb_flush_vip_reply *payload)
-{
-  payload->retval = be32toh(payload->retval);
-}
-
-static inline void vapi_msg_lb_flush_vip_reply_hton(vapi_msg_lb_flush_vip_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_lb_flush_vip_reply'@%p to big endian", msg);
-  vapi_type_msg_header1_t_hton(&msg->header);
-  vapi_msg_lb_flush_vip_reply_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_lb_flush_vip_reply_ntoh(vapi_msg_lb_flush_vip_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_lb_flush_vip_reply'@%p to host byte order", msg);
-  vapi_type_msg_header1_t_ntoh(&msg->header);
-  vapi_msg_lb_flush_vip_reply_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_lb_flush_vip_reply_msg_size(vapi_msg_lb_flush_vip_reply *msg)
-{
-  return sizeof(*msg);
-}
-
-static void __attribute__((constructor)) __vapi_constructor_lb_flush_vip_reply()
-{
-  static const char name[] = "lb_flush_vip_reply";
-  static const char name_with_crc[] = "lb_flush_vip_reply_e8d4e804";
-  static vapi_message_desc_t __vapi_metadata_lb_flush_vip_reply = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header1_t, context),
-    offsetof(vapi_msg_lb_flush_vip_reply, payload),
-    sizeof(vapi_msg_lb_flush_vip_reply),
-    (generic_swap_fn_t)vapi_msg_lb_flush_vip_reply_hton,
-    (generic_swap_fn_t)vapi_msg_lb_flush_vip_reply_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_lb_flush_vip_reply = vapi_register_msg(&__vapi_metadata_lb_flush_vip_reply);
-  VAPI_DBG("Assigned msg id %d to lb_flush_vip_reply", vapi_msg_id_lb_flush_vip_reply);
-}
-
-static inline void vapi_set_vapi_msg_lb_flush_vip_reply_event_cb (
-  struct vapi_ctx_s *ctx, 
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_lb_flush_vip_reply *payload),
-  void *callback_ctx)
-{
-  vapi_set_event_cb(ctx, vapi_msg_id_lb_flush_vip_reply, (vapi_event_cb)callback, callback_ctx);
 };
 #endif
 
@@ -1091,332 +617,75 @@ static void __attribute__((constructor)) __vapi_constructor_lb_conf()
 }
 #endif
 
-#ifndef defined_vapi_msg_lb_flush_vip
-#define defined_vapi_msg_lb_flush_vip
+#ifndef defined_vapi_msg_lb_add_del_vip_reply
+#define defined_vapi_msg_lb_add_del_vip_reply
 typedef struct __attribute__ ((__packed__)) {
-  vapi_type_address_with_prefix pfx;
-  u8 protocol;
-  u16 port; 
-} vapi_payload_lb_flush_vip;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header2_t header;
-  vapi_payload_lb_flush_vip payload;
-} vapi_msg_lb_flush_vip;
-
-static inline void vapi_msg_lb_flush_vip_payload_hton(vapi_payload_lb_flush_vip *payload)
-{
-  vapi_type_prefix_hton(&payload->pfx);
-  payload->port = htobe16(payload->port);
-}
-
-static inline void vapi_msg_lb_flush_vip_payload_ntoh(vapi_payload_lb_flush_vip *payload)
-{
-  vapi_type_prefix_ntoh(&payload->pfx);
-  payload->port = be16toh(payload->port);
-}
-
-static inline void vapi_msg_lb_flush_vip_hton(vapi_msg_lb_flush_vip *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_lb_flush_vip'@%p to big endian", msg);
-  vapi_type_msg_header2_t_hton(&msg->header);
-  vapi_msg_lb_flush_vip_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_lb_flush_vip_ntoh(vapi_msg_lb_flush_vip *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_lb_flush_vip'@%p to host byte order", msg);
-  vapi_type_msg_header2_t_ntoh(&msg->header);
-  vapi_msg_lb_flush_vip_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_lb_flush_vip_msg_size(vapi_msg_lb_flush_vip *msg)
-{
-  return sizeof(*msg);
-}
-
-static inline vapi_msg_lb_flush_vip* vapi_alloc_lb_flush_vip(struct vapi_ctx_s *ctx)
-{
-  vapi_msg_lb_flush_vip *msg = NULL;
-  const size_t size = sizeof(vapi_msg_lb_flush_vip);
-  /* cast here required to play nicely with C++ world ... */
-  msg = (vapi_msg_lb_flush_vip*)vapi_msg_alloc(ctx, size);
-  if (!msg) {
-    return NULL;
-  }
-  msg->header.client_index = vapi_get_client_index(ctx);
-  msg->header.context = 0;
-  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_lb_flush_vip);
-
-  return msg;
-}
-
-static inline vapi_error_e vapi_lb_flush_vip(struct vapi_ctx_s *ctx,
-  vapi_msg_lb_flush_vip *msg,
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
-                           void *callback_ctx,
-                           vapi_error_e rv,
-                           bool is_last,
-                           vapi_payload_lb_flush_vip_reply *reply),
-  void *callback_ctx)
-{
-  if (!msg || !callback) {
-    return VAPI_EINVAL;
-  }
-  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
-    return VAPI_EAGAIN;
-  }
-  vapi_error_e rv;
-  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
-    return rv;
-  }
-  u32 req_context = vapi_gen_req_context(ctx);
-  msg->header.context = req_context;
-  vapi_msg_lb_flush_vip_hton(msg);
-  if (VAPI_OK == (rv = vapi_send (ctx, msg))) {
-    vapi_store_request(ctx, req_context, false, (vapi_cb_t)callback, callback_ctx);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-    if (vapi_is_nonblocking(ctx)) {
-      rv = VAPI_OK;
-    } else {
-      rv = vapi_dispatch(ctx);
-    }
-  } else {
-    vapi_msg_lb_flush_vip_ntoh(msg);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-  }
-  return rv;
-}
-
-
-static void __attribute__((constructor)) __vapi_constructor_lb_flush_vip()
-{
-  static const char name[] = "lb_flush_vip";
-  static const char name_with_crc[] = "lb_flush_vip_1063f819";
-  static vapi_message_desc_t __vapi_metadata_lb_flush_vip = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header2_t, context),
-    offsetof(vapi_msg_lb_flush_vip, payload),
-    sizeof(vapi_msg_lb_flush_vip),
-    (generic_swap_fn_t)vapi_msg_lb_flush_vip_hton,
-    (generic_swap_fn_t)vapi_msg_lb_flush_vip_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_lb_flush_vip = vapi_register_msg(&__vapi_metadata_lb_flush_vip);
-  VAPI_DBG("Assigned msg id %d to lb_flush_vip", vapi_msg_id_lb_flush_vip);
-}
-#endif
-
-#ifndef defined_vapi_msg_lb_as_details
-#define defined_vapi_msg_lb_as_details
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_lb_vip vip;
-  vapi_type_address app_srv;
-  u8 flags;
-  u32 in_use_since; 
-} vapi_payload_lb_as_details;
+  i32 retval; 
+} vapi_payload_lb_add_del_vip_reply;
 
 typedef struct __attribute__ ((__packed__)) {
   vapi_type_msg_header1_t header;
-  vapi_payload_lb_as_details payload;
-} vapi_msg_lb_as_details;
+  vapi_payload_lb_add_del_vip_reply payload;
+} vapi_msg_lb_add_del_vip_reply;
 
-static inline void vapi_msg_lb_as_details_payload_hton(vapi_payload_lb_as_details *payload)
+static inline void vapi_msg_lb_add_del_vip_reply_payload_hton(vapi_payload_lb_add_del_vip_reply *payload)
 {
-  vapi_type_lb_vip_hton(&payload->vip);
-  vapi_type_address_hton(&payload->app_srv);
-  payload->in_use_since = htobe32(payload->in_use_since);
+  payload->retval = htobe32(payload->retval);
 }
 
-static inline void vapi_msg_lb_as_details_payload_ntoh(vapi_payload_lb_as_details *payload)
+static inline void vapi_msg_lb_add_del_vip_reply_payload_ntoh(vapi_payload_lb_add_del_vip_reply *payload)
 {
-  vapi_type_lb_vip_ntoh(&payload->vip);
-  vapi_type_address_ntoh(&payload->app_srv);
-  payload->in_use_since = be32toh(payload->in_use_since);
+  payload->retval = be32toh(payload->retval);
 }
 
-static inline void vapi_msg_lb_as_details_hton(vapi_msg_lb_as_details *msg)
+static inline void vapi_msg_lb_add_del_vip_reply_hton(vapi_msg_lb_add_del_vip_reply *msg)
 {
-  VAPI_DBG("Swapping `vapi_msg_lb_as_details'@%p to big endian", msg);
+  VAPI_DBG("Swapping `vapi_msg_lb_add_del_vip_reply'@%p to big endian", msg);
   vapi_type_msg_header1_t_hton(&msg->header);
-  vapi_msg_lb_as_details_payload_hton(&msg->payload);
+  vapi_msg_lb_add_del_vip_reply_payload_hton(&msg->payload);
 }
 
-static inline void vapi_msg_lb_as_details_ntoh(vapi_msg_lb_as_details *msg)
+static inline void vapi_msg_lb_add_del_vip_reply_ntoh(vapi_msg_lb_add_del_vip_reply *msg)
 {
-  VAPI_DBG("Swapping `vapi_msg_lb_as_details'@%p to host byte order", msg);
+  VAPI_DBG("Swapping `vapi_msg_lb_add_del_vip_reply'@%p to host byte order", msg);
   vapi_type_msg_header1_t_ntoh(&msg->header);
-  vapi_msg_lb_as_details_payload_ntoh(&msg->payload);
+  vapi_msg_lb_add_del_vip_reply_payload_ntoh(&msg->payload);
 }
 
-static inline uword vapi_calc_lb_as_details_msg_size(vapi_msg_lb_as_details *msg)
+static inline uword vapi_calc_lb_add_del_vip_reply_msg_size(vapi_msg_lb_add_del_vip_reply *msg)
 {
   return sizeof(*msg);
 }
 
-static void __attribute__((constructor)) __vapi_constructor_lb_as_details()
+static void __attribute__((constructor)) __vapi_constructor_lb_add_del_vip_reply()
 {
-  static const char name[] = "lb_as_details";
-  static const char name_with_crc[] = "lb_as_details_9c39f60e";
-  static vapi_message_desc_t __vapi_metadata_lb_as_details = {
+  static const char name[] = "lb_add_del_vip_reply";
+  static const char name_with_crc[] = "lb_add_del_vip_reply_e8d4e804";
+  static vapi_message_desc_t __vapi_metadata_lb_add_del_vip_reply = {
     name,
     sizeof(name) - 1,
     name_with_crc,
     sizeof(name_with_crc) - 1,
     true,
     offsetof(vapi_type_msg_header1_t, context),
-    offsetof(vapi_msg_lb_as_details, payload),
-    sizeof(vapi_msg_lb_as_details),
-    (generic_swap_fn_t)vapi_msg_lb_as_details_hton,
-    (generic_swap_fn_t)vapi_msg_lb_as_details_ntoh,
+    offsetof(vapi_msg_lb_add_del_vip_reply, payload),
+    sizeof(vapi_msg_lb_add_del_vip_reply),
+    (generic_swap_fn_t)vapi_msg_lb_add_del_vip_reply_hton,
+    (generic_swap_fn_t)vapi_msg_lb_add_del_vip_reply_ntoh,
     VAPI_INVALID_MSG_ID,
   };
 
-  vapi_msg_id_lb_as_details = vapi_register_msg(&__vapi_metadata_lb_as_details);
-  VAPI_DBG("Assigned msg id %d to lb_as_details", vapi_msg_id_lb_as_details);
+  vapi_msg_id_lb_add_del_vip_reply = vapi_register_msg(&__vapi_metadata_lb_add_del_vip_reply);
+  VAPI_DBG("Assigned msg id %d to lb_add_del_vip_reply", vapi_msg_id_lb_add_del_vip_reply);
 }
 
-static inline void vapi_set_vapi_msg_lb_as_details_event_cb (
+static inline void vapi_set_vapi_msg_lb_add_del_vip_reply_event_cb (
   struct vapi_ctx_s *ctx, 
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_lb_as_details *payload),
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_lb_add_del_vip_reply *payload),
   void *callback_ctx)
 {
-  vapi_set_event_cb(ctx, vapi_msg_id_lb_as_details, (vapi_event_cb)callback, callback_ctx);
+  vapi_set_event_cb(ctx, vapi_msg_id_lb_add_del_vip_reply, (vapi_event_cb)callback, callback_ctx);
 };
-#endif
-
-#ifndef defined_vapi_msg_lb_as_dump
-#define defined_vapi_msg_lb_as_dump
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_address_with_prefix pfx;
-  u8 protocol;
-  u16 port; 
-} vapi_payload_lb_as_dump;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header2_t header;
-  vapi_payload_lb_as_dump payload;
-} vapi_msg_lb_as_dump;
-
-static inline void vapi_msg_lb_as_dump_payload_hton(vapi_payload_lb_as_dump *payload)
-{
-  vapi_type_prefix_hton(&payload->pfx);
-  payload->port = htobe16(payload->port);
-}
-
-static inline void vapi_msg_lb_as_dump_payload_ntoh(vapi_payload_lb_as_dump *payload)
-{
-  vapi_type_prefix_ntoh(&payload->pfx);
-  payload->port = be16toh(payload->port);
-}
-
-static inline void vapi_msg_lb_as_dump_hton(vapi_msg_lb_as_dump *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_lb_as_dump'@%p to big endian", msg);
-  vapi_type_msg_header2_t_hton(&msg->header);
-  vapi_msg_lb_as_dump_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_lb_as_dump_ntoh(vapi_msg_lb_as_dump *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_lb_as_dump'@%p to host byte order", msg);
-  vapi_type_msg_header2_t_ntoh(&msg->header);
-  vapi_msg_lb_as_dump_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_lb_as_dump_msg_size(vapi_msg_lb_as_dump *msg)
-{
-  return sizeof(*msg);
-}
-
-static inline vapi_msg_lb_as_dump* vapi_alloc_lb_as_dump(struct vapi_ctx_s *ctx)
-{
-  vapi_msg_lb_as_dump *msg = NULL;
-  const size_t size = sizeof(vapi_msg_lb_as_dump);
-  /* cast here required to play nicely with C++ world ... */
-  msg = (vapi_msg_lb_as_dump*)vapi_msg_alloc(ctx, size);
-  if (!msg) {
-    return NULL;
-  }
-  msg->header.client_index = vapi_get_client_index(ctx);
-  msg->header.context = 0;
-  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_lb_as_dump);
-
-  return msg;
-}
-
-static inline vapi_error_e vapi_lb_as_dump(struct vapi_ctx_s *ctx,
-  vapi_msg_lb_as_dump *msg,
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
-                           void *callback_ctx,
-                           vapi_error_e rv,
-                           bool is_last,
-                           vapi_payload_lb_as_details *reply),
-  void *callback_ctx)
-{
-  if (!msg || !callback) {
-    return VAPI_EINVAL;
-  }
-  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
-    return VAPI_EAGAIN;
-  }
-  vapi_error_e rv;
-  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
-    return rv;
-  }
-  u32 req_context = vapi_gen_req_context(ctx);
-  msg->header.context = req_context;
-  vapi_msg_lb_as_dump_hton(msg);
-  if (VAPI_OK == (rv = vapi_send_with_control_ping (ctx, msg, req_context))) {
-    vapi_store_request(ctx, req_context, true, (vapi_cb_t)callback, callback_ctx);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-    if (vapi_is_nonblocking(ctx)) {
-      rv = VAPI_OK;
-    } else {
-      rv = vapi_dispatch(ctx);
-    }
-  } else {
-    vapi_msg_lb_as_dump_ntoh(msg);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-  }
-  return rv;
-}
-
-
-static void __attribute__((constructor)) __vapi_constructor_lb_as_dump()
-{
-  static const char name[] = "lb_as_dump";
-  static const char name_with_crc[] = "lb_as_dump_1063f819";
-  static vapi_message_desc_t __vapi_metadata_lb_as_dump = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header2_t, context),
-    offsetof(vapi_msg_lb_as_dump, payload),
-    sizeof(vapi_msg_lb_as_dump),
-    (generic_swap_fn_t)vapi_msg_lb_as_dump_hton,
-    (generic_swap_fn_t)vapi_msg_lb_as_dump_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_lb_as_dump = vapi_register_msg(&__vapi_metadata_lb_as_dump);
-  VAPI_DBG("Assigned msg id %d to lb_as_dump", vapi_msg_id_lb_as_dump);
-}
 #endif
 
 #ifndef defined_vapi_msg_lb_add_del_vip
@@ -1441,7 +710,6 @@ typedef struct __attribute__ ((__packed__)) {
 
 static inline void vapi_msg_lb_add_del_vip_payload_hton(vapi_payload_lb_add_del_vip *payload)
 {
-  vapi_type_prefix_hton(&payload->pfx);
   payload->port = htobe16(payload->port);
   payload->encap = (vapi_enum_lb_encap_type)htobe32(payload->encap);
   payload->type = (vapi_enum_lb_srv_type)htobe32(payload->type);
@@ -1452,7 +720,6 @@ static inline void vapi_msg_lb_add_del_vip_payload_hton(vapi_payload_lb_add_del_
 
 static inline void vapi_msg_lb_add_del_vip_payload_ntoh(vapi_payload_lb_add_del_vip *payload)
 {
-  vapi_type_prefix_ntoh(&payload->pfx);
   payload->port = be16toh(payload->port);
   payload->encap = (vapi_enum_lb_encap_type)be32toh(payload->encap);
   payload->type = (vapi_enum_lb_srv_type)be32toh(payload->type);
@@ -1558,6 +825,1190 @@ static void __attribute__((constructor)) __vapi_constructor_lb_add_del_vip()
 
   vapi_msg_id_lb_add_del_vip = vapi_register_msg(&__vapi_metadata_lb_add_del_vip);
   VAPI_DBG("Assigned msg id %d to lb_add_del_vip", vapi_msg_id_lb_add_del_vip);
+}
+#endif
+
+#ifndef defined_vapi_msg_lb_add_del_as_reply
+#define defined_vapi_msg_lb_add_del_as_reply
+typedef struct __attribute__ ((__packed__)) {
+  i32 retval; 
+} vapi_payload_lb_add_del_as_reply;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header1_t header;
+  vapi_payload_lb_add_del_as_reply payload;
+} vapi_msg_lb_add_del_as_reply;
+
+static inline void vapi_msg_lb_add_del_as_reply_payload_hton(vapi_payload_lb_add_del_as_reply *payload)
+{
+  payload->retval = htobe32(payload->retval);
+}
+
+static inline void vapi_msg_lb_add_del_as_reply_payload_ntoh(vapi_payload_lb_add_del_as_reply *payload)
+{
+  payload->retval = be32toh(payload->retval);
+}
+
+static inline void vapi_msg_lb_add_del_as_reply_hton(vapi_msg_lb_add_del_as_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_lb_add_del_as_reply'@%p to big endian", msg);
+  vapi_type_msg_header1_t_hton(&msg->header);
+  vapi_msg_lb_add_del_as_reply_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_lb_add_del_as_reply_ntoh(vapi_msg_lb_add_del_as_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_lb_add_del_as_reply'@%p to host byte order", msg);
+  vapi_type_msg_header1_t_ntoh(&msg->header);
+  vapi_msg_lb_add_del_as_reply_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_lb_add_del_as_reply_msg_size(vapi_msg_lb_add_del_as_reply *msg)
+{
+  return sizeof(*msg);
+}
+
+static void __attribute__((constructor)) __vapi_constructor_lb_add_del_as_reply()
+{
+  static const char name[] = "lb_add_del_as_reply";
+  static const char name_with_crc[] = "lb_add_del_as_reply_e8d4e804";
+  static vapi_message_desc_t __vapi_metadata_lb_add_del_as_reply = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header1_t, context),
+    offsetof(vapi_msg_lb_add_del_as_reply, payload),
+    sizeof(vapi_msg_lb_add_del_as_reply),
+    (generic_swap_fn_t)vapi_msg_lb_add_del_as_reply_hton,
+    (generic_swap_fn_t)vapi_msg_lb_add_del_as_reply_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_lb_add_del_as_reply = vapi_register_msg(&__vapi_metadata_lb_add_del_as_reply);
+  VAPI_DBG("Assigned msg id %d to lb_add_del_as_reply", vapi_msg_id_lb_add_del_as_reply);
+}
+
+static inline void vapi_set_vapi_msg_lb_add_del_as_reply_event_cb (
+  struct vapi_ctx_s *ctx, 
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_lb_add_del_as_reply *payload),
+  void *callback_ctx)
+{
+  vapi_set_event_cb(ctx, vapi_msg_id_lb_add_del_as_reply, (vapi_event_cb)callback, callback_ctx);
+};
+#endif
+
+#ifndef defined_vapi_msg_lb_add_del_as
+#define defined_vapi_msg_lb_add_del_as
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_address_with_prefix pfx;
+  u8 protocol;
+  u16 port;
+  vapi_type_address as_address;
+  bool is_del;
+  bool is_flush; 
+} vapi_payload_lb_add_del_as;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header2_t header;
+  vapi_payload_lb_add_del_as payload;
+} vapi_msg_lb_add_del_as;
+
+static inline void vapi_msg_lb_add_del_as_payload_hton(vapi_payload_lb_add_del_as *payload)
+{
+  payload->port = htobe16(payload->port);
+}
+
+static inline void vapi_msg_lb_add_del_as_payload_ntoh(vapi_payload_lb_add_del_as *payload)
+{
+  payload->port = be16toh(payload->port);
+}
+
+static inline void vapi_msg_lb_add_del_as_hton(vapi_msg_lb_add_del_as *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_lb_add_del_as'@%p to big endian", msg);
+  vapi_type_msg_header2_t_hton(&msg->header);
+  vapi_msg_lb_add_del_as_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_lb_add_del_as_ntoh(vapi_msg_lb_add_del_as *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_lb_add_del_as'@%p to host byte order", msg);
+  vapi_type_msg_header2_t_ntoh(&msg->header);
+  vapi_msg_lb_add_del_as_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_lb_add_del_as_msg_size(vapi_msg_lb_add_del_as *msg)
+{
+  return sizeof(*msg);
+}
+
+static inline vapi_msg_lb_add_del_as* vapi_alloc_lb_add_del_as(struct vapi_ctx_s *ctx)
+{
+  vapi_msg_lb_add_del_as *msg = NULL;
+  const size_t size = sizeof(vapi_msg_lb_add_del_as);
+  /* cast here required to play nicely with C++ world ... */
+  msg = (vapi_msg_lb_add_del_as*)vapi_msg_alloc(ctx, size);
+  if (!msg) {
+    return NULL;
+  }
+  msg->header.client_index = vapi_get_client_index(ctx);
+  msg->header.context = 0;
+  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_lb_add_del_as);
+
+  return msg;
+}
+
+static inline vapi_error_e vapi_lb_add_del_as(struct vapi_ctx_s *ctx,
+  vapi_msg_lb_add_del_as *msg,
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
+                           void *callback_ctx,
+                           vapi_error_e rv,
+                           bool is_last,
+                           vapi_payload_lb_add_del_as_reply *reply),
+  void *callback_ctx)
+{
+  if (!msg || !callback) {
+    return VAPI_EINVAL;
+  }
+  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
+    return VAPI_EAGAIN;
+  }
+  vapi_error_e rv;
+  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
+    return rv;
+  }
+  u32 req_context = vapi_gen_req_context(ctx);
+  msg->header.context = req_context;
+  vapi_msg_lb_add_del_as_hton(msg);
+  if (VAPI_OK == (rv = vapi_send (ctx, msg))) {
+    vapi_store_request(ctx, req_context, false, (vapi_cb_t)callback, callback_ctx);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+    if (vapi_is_nonblocking(ctx)) {
+      rv = VAPI_OK;
+    } else {
+      rv = vapi_dispatch(ctx);
+    }
+  } else {
+    vapi_msg_lb_add_del_as_ntoh(msg);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+  }
+  return rv;
+}
+
+
+static void __attribute__((constructor)) __vapi_constructor_lb_add_del_as()
+{
+  static const char name[] = "lb_add_del_as";
+  static const char name_with_crc[] = "lb_add_del_as_78628987";
+  static vapi_message_desc_t __vapi_metadata_lb_add_del_as = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header2_t, context),
+    offsetof(vapi_msg_lb_add_del_as, payload),
+    sizeof(vapi_msg_lb_add_del_as),
+    (generic_swap_fn_t)vapi_msg_lb_add_del_as_hton,
+    (generic_swap_fn_t)vapi_msg_lb_add_del_as_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_lb_add_del_as = vapi_register_msg(&__vapi_metadata_lb_add_del_as);
+  VAPI_DBG("Assigned msg id %d to lb_add_del_as", vapi_msg_id_lb_add_del_as);
+}
+#endif
+
+#ifndef defined_vapi_msg_lb_flush_vip_reply
+#define defined_vapi_msg_lb_flush_vip_reply
+typedef struct __attribute__ ((__packed__)) {
+  i32 retval; 
+} vapi_payload_lb_flush_vip_reply;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header1_t header;
+  vapi_payload_lb_flush_vip_reply payload;
+} vapi_msg_lb_flush_vip_reply;
+
+static inline void vapi_msg_lb_flush_vip_reply_payload_hton(vapi_payload_lb_flush_vip_reply *payload)
+{
+  payload->retval = htobe32(payload->retval);
+}
+
+static inline void vapi_msg_lb_flush_vip_reply_payload_ntoh(vapi_payload_lb_flush_vip_reply *payload)
+{
+  payload->retval = be32toh(payload->retval);
+}
+
+static inline void vapi_msg_lb_flush_vip_reply_hton(vapi_msg_lb_flush_vip_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_lb_flush_vip_reply'@%p to big endian", msg);
+  vapi_type_msg_header1_t_hton(&msg->header);
+  vapi_msg_lb_flush_vip_reply_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_lb_flush_vip_reply_ntoh(vapi_msg_lb_flush_vip_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_lb_flush_vip_reply'@%p to host byte order", msg);
+  vapi_type_msg_header1_t_ntoh(&msg->header);
+  vapi_msg_lb_flush_vip_reply_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_lb_flush_vip_reply_msg_size(vapi_msg_lb_flush_vip_reply *msg)
+{
+  return sizeof(*msg);
+}
+
+static void __attribute__((constructor)) __vapi_constructor_lb_flush_vip_reply()
+{
+  static const char name[] = "lb_flush_vip_reply";
+  static const char name_with_crc[] = "lb_flush_vip_reply_e8d4e804";
+  static vapi_message_desc_t __vapi_metadata_lb_flush_vip_reply = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header1_t, context),
+    offsetof(vapi_msg_lb_flush_vip_reply, payload),
+    sizeof(vapi_msg_lb_flush_vip_reply),
+    (generic_swap_fn_t)vapi_msg_lb_flush_vip_reply_hton,
+    (generic_swap_fn_t)vapi_msg_lb_flush_vip_reply_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_lb_flush_vip_reply = vapi_register_msg(&__vapi_metadata_lb_flush_vip_reply);
+  VAPI_DBG("Assigned msg id %d to lb_flush_vip_reply", vapi_msg_id_lb_flush_vip_reply);
+}
+
+static inline void vapi_set_vapi_msg_lb_flush_vip_reply_event_cb (
+  struct vapi_ctx_s *ctx, 
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_lb_flush_vip_reply *payload),
+  void *callback_ctx)
+{
+  vapi_set_event_cb(ctx, vapi_msg_id_lb_flush_vip_reply, (vapi_event_cb)callback, callback_ctx);
+};
+#endif
+
+#ifndef defined_vapi_msg_lb_flush_vip
+#define defined_vapi_msg_lb_flush_vip
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_address_with_prefix pfx;
+  u8 protocol;
+  u16 port; 
+} vapi_payload_lb_flush_vip;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header2_t header;
+  vapi_payload_lb_flush_vip payload;
+} vapi_msg_lb_flush_vip;
+
+static inline void vapi_msg_lb_flush_vip_payload_hton(vapi_payload_lb_flush_vip *payload)
+{
+  payload->port = htobe16(payload->port);
+}
+
+static inline void vapi_msg_lb_flush_vip_payload_ntoh(vapi_payload_lb_flush_vip *payload)
+{
+  payload->port = be16toh(payload->port);
+}
+
+static inline void vapi_msg_lb_flush_vip_hton(vapi_msg_lb_flush_vip *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_lb_flush_vip'@%p to big endian", msg);
+  vapi_type_msg_header2_t_hton(&msg->header);
+  vapi_msg_lb_flush_vip_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_lb_flush_vip_ntoh(vapi_msg_lb_flush_vip *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_lb_flush_vip'@%p to host byte order", msg);
+  vapi_type_msg_header2_t_ntoh(&msg->header);
+  vapi_msg_lb_flush_vip_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_lb_flush_vip_msg_size(vapi_msg_lb_flush_vip *msg)
+{
+  return sizeof(*msg);
+}
+
+static inline vapi_msg_lb_flush_vip* vapi_alloc_lb_flush_vip(struct vapi_ctx_s *ctx)
+{
+  vapi_msg_lb_flush_vip *msg = NULL;
+  const size_t size = sizeof(vapi_msg_lb_flush_vip);
+  /* cast here required to play nicely with C++ world ... */
+  msg = (vapi_msg_lb_flush_vip*)vapi_msg_alloc(ctx, size);
+  if (!msg) {
+    return NULL;
+  }
+  msg->header.client_index = vapi_get_client_index(ctx);
+  msg->header.context = 0;
+  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_lb_flush_vip);
+
+  return msg;
+}
+
+static inline vapi_error_e vapi_lb_flush_vip(struct vapi_ctx_s *ctx,
+  vapi_msg_lb_flush_vip *msg,
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
+                           void *callback_ctx,
+                           vapi_error_e rv,
+                           bool is_last,
+                           vapi_payload_lb_flush_vip_reply *reply),
+  void *callback_ctx)
+{
+  if (!msg || !callback) {
+    return VAPI_EINVAL;
+  }
+  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
+    return VAPI_EAGAIN;
+  }
+  vapi_error_e rv;
+  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
+    return rv;
+  }
+  u32 req_context = vapi_gen_req_context(ctx);
+  msg->header.context = req_context;
+  vapi_msg_lb_flush_vip_hton(msg);
+  if (VAPI_OK == (rv = vapi_send (ctx, msg))) {
+    vapi_store_request(ctx, req_context, false, (vapi_cb_t)callback, callback_ctx);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+    if (vapi_is_nonblocking(ctx)) {
+      rv = VAPI_OK;
+    } else {
+      rv = vapi_dispatch(ctx);
+    }
+  } else {
+    vapi_msg_lb_flush_vip_ntoh(msg);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+  }
+  return rv;
+}
+
+
+static void __attribute__((constructor)) __vapi_constructor_lb_flush_vip()
+{
+  static const char name[] = "lb_flush_vip";
+  static const char name_with_crc[] = "lb_flush_vip_1063f819";
+  static vapi_message_desc_t __vapi_metadata_lb_flush_vip = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header2_t, context),
+    offsetof(vapi_msg_lb_flush_vip, payload),
+    sizeof(vapi_msg_lb_flush_vip),
+    (generic_swap_fn_t)vapi_msg_lb_flush_vip_hton,
+    (generic_swap_fn_t)vapi_msg_lb_flush_vip_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_lb_flush_vip = vapi_register_msg(&__vapi_metadata_lb_flush_vip);
+  VAPI_DBG("Assigned msg id %d to lb_flush_vip", vapi_msg_id_lb_flush_vip);
+}
+#endif
+
+#ifndef defined_vapi_msg_lb_vip_details
+#define defined_vapi_msg_lb_vip_details
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_lb_vip vip;
+  vapi_enum_lb_encap_type encap;
+  vapi_enum_ip_dscp dscp;
+  vapi_enum_lb_srv_type srv_type;
+  u16 target_port;
+  u16 flow_table_length; 
+} vapi_payload_lb_vip_details;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header1_t header;
+  vapi_payload_lb_vip_details payload;
+} vapi_msg_lb_vip_details;
+
+static inline void vapi_msg_lb_vip_details_payload_hton(vapi_payload_lb_vip_details *payload)
+{
+  vapi_type_lb_vip_hton(&payload->vip);
+  payload->encap = (vapi_enum_lb_encap_type)htobe32(payload->encap);
+  payload->srv_type = (vapi_enum_lb_srv_type)htobe32(payload->srv_type);
+  payload->target_port = htobe16(payload->target_port);
+  payload->flow_table_length = htobe16(payload->flow_table_length);
+}
+
+static inline void vapi_msg_lb_vip_details_payload_ntoh(vapi_payload_lb_vip_details *payload)
+{
+  vapi_type_lb_vip_ntoh(&payload->vip);
+  payload->encap = (vapi_enum_lb_encap_type)be32toh(payload->encap);
+  payload->srv_type = (vapi_enum_lb_srv_type)be32toh(payload->srv_type);
+  payload->target_port = be16toh(payload->target_port);
+  payload->flow_table_length = be16toh(payload->flow_table_length);
+}
+
+static inline void vapi_msg_lb_vip_details_hton(vapi_msg_lb_vip_details *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_lb_vip_details'@%p to big endian", msg);
+  vapi_type_msg_header1_t_hton(&msg->header);
+  vapi_msg_lb_vip_details_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_lb_vip_details_ntoh(vapi_msg_lb_vip_details *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_lb_vip_details'@%p to host byte order", msg);
+  vapi_type_msg_header1_t_ntoh(&msg->header);
+  vapi_msg_lb_vip_details_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_lb_vip_details_msg_size(vapi_msg_lb_vip_details *msg)
+{
+  return sizeof(*msg);
+}
+
+static void __attribute__((constructor)) __vapi_constructor_lb_vip_details()
+{
+  static const char name[] = "lb_vip_details";
+  static const char name_with_crc[] = "lb_vip_details_08f39bed";
+  static vapi_message_desc_t __vapi_metadata_lb_vip_details = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header1_t, context),
+    offsetof(vapi_msg_lb_vip_details, payload),
+    sizeof(vapi_msg_lb_vip_details),
+    (generic_swap_fn_t)vapi_msg_lb_vip_details_hton,
+    (generic_swap_fn_t)vapi_msg_lb_vip_details_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_lb_vip_details = vapi_register_msg(&__vapi_metadata_lb_vip_details);
+  VAPI_DBG("Assigned msg id %d to lb_vip_details", vapi_msg_id_lb_vip_details);
+}
+
+static inline void vapi_set_vapi_msg_lb_vip_details_event_cb (
+  struct vapi_ctx_s *ctx, 
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_lb_vip_details *payload),
+  void *callback_ctx)
+{
+  vapi_set_event_cb(ctx, vapi_msg_id_lb_vip_details, (vapi_event_cb)callback, callback_ctx);
+};
+#endif
+
+#ifndef defined_vapi_msg_lb_vip_dump
+#define defined_vapi_msg_lb_vip_dump
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_address_with_prefix pfx;
+  vapi_type_prefix_matcher pfx_matcher;
+  u8 protocol;
+  u16 port; 
+} vapi_payload_lb_vip_dump;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header2_t header;
+  vapi_payload_lb_vip_dump payload;
+} vapi_msg_lb_vip_dump;
+
+static inline void vapi_msg_lb_vip_dump_payload_hton(vapi_payload_lb_vip_dump *payload)
+{
+  payload->port = htobe16(payload->port);
+}
+
+static inline void vapi_msg_lb_vip_dump_payload_ntoh(vapi_payload_lb_vip_dump *payload)
+{
+  payload->port = be16toh(payload->port);
+}
+
+static inline void vapi_msg_lb_vip_dump_hton(vapi_msg_lb_vip_dump *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_lb_vip_dump'@%p to big endian", msg);
+  vapi_type_msg_header2_t_hton(&msg->header);
+  vapi_msg_lb_vip_dump_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_lb_vip_dump_ntoh(vapi_msg_lb_vip_dump *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_lb_vip_dump'@%p to host byte order", msg);
+  vapi_type_msg_header2_t_ntoh(&msg->header);
+  vapi_msg_lb_vip_dump_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_lb_vip_dump_msg_size(vapi_msg_lb_vip_dump *msg)
+{
+  return sizeof(*msg);
+}
+
+static inline vapi_msg_lb_vip_dump* vapi_alloc_lb_vip_dump(struct vapi_ctx_s *ctx)
+{
+  vapi_msg_lb_vip_dump *msg = NULL;
+  const size_t size = sizeof(vapi_msg_lb_vip_dump);
+  /* cast here required to play nicely with C++ world ... */
+  msg = (vapi_msg_lb_vip_dump*)vapi_msg_alloc(ctx, size);
+  if (!msg) {
+    return NULL;
+  }
+  msg->header.client_index = vapi_get_client_index(ctx);
+  msg->header.context = 0;
+  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_lb_vip_dump);
+
+  return msg;
+}
+
+static inline vapi_error_e vapi_lb_vip_dump(struct vapi_ctx_s *ctx,
+  vapi_msg_lb_vip_dump *msg,
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
+                           void *callback_ctx,
+                           vapi_error_e rv,
+                           bool is_last,
+                           vapi_payload_lb_vip_details *reply),
+  void *callback_ctx)
+{
+  if (!msg || !callback) {
+    return VAPI_EINVAL;
+  }
+  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
+    return VAPI_EAGAIN;
+  }
+  vapi_error_e rv;
+  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
+    return rv;
+  }
+  u32 req_context = vapi_gen_req_context(ctx);
+  msg->header.context = req_context;
+  vapi_msg_lb_vip_dump_hton(msg);
+  if (VAPI_OK == (rv = vapi_send_with_control_ping (ctx, msg, req_context))) {
+    vapi_store_request(ctx, req_context, true, (vapi_cb_t)callback, callback_ctx);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+    if (vapi_is_nonblocking(ctx)) {
+      rv = VAPI_OK;
+    } else {
+      rv = vapi_dispatch(ctx);
+    }
+  } else {
+    vapi_msg_lb_vip_dump_ntoh(msg);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+  }
+  return rv;
+}
+
+
+static void __attribute__((constructor)) __vapi_constructor_lb_vip_dump()
+{
+  static const char name[] = "lb_vip_dump";
+  static const char name_with_crc[] = "lb_vip_dump_c7bcb124";
+  static vapi_message_desc_t __vapi_metadata_lb_vip_dump = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header2_t, context),
+    offsetof(vapi_msg_lb_vip_dump, payload),
+    sizeof(vapi_msg_lb_vip_dump),
+    (generic_swap_fn_t)vapi_msg_lb_vip_dump_hton,
+    (generic_swap_fn_t)vapi_msg_lb_vip_dump_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_lb_vip_dump = vapi_register_msg(&__vapi_metadata_lb_vip_dump);
+  VAPI_DBG("Assigned msg id %d to lb_vip_dump", vapi_msg_id_lb_vip_dump);
+}
+#endif
+
+#ifndef defined_vapi_msg_lb_as_details
+#define defined_vapi_msg_lb_as_details
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_lb_vip vip;
+  vapi_type_address app_srv;
+  u8 flags;
+  u32 in_use_since; 
+} vapi_payload_lb_as_details;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header1_t header;
+  vapi_payload_lb_as_details payload;
+} vapi_msg_lb_as_details;
+
+static inline void vapi_msg_lb_as_details_payload_hton(vapi_payload_lb_as_details *payload)
+{
+  vapi_type_lb_vip_hton(&payload->vip);
+  payload->in_use_since = htobe32(payload->in_use_since);
+}
+
+static inline void vapi_msg_lb_as_details_payload_ntoh(vapi_payload_lb_as_details *payload)
+{
+  vapi_type_lb_vip_ntoh(&payload->vip);
+  payload->in_use_since = be32toh(payload->in_use_since);
+}
+
+static inline void vapi_msg_lb_as_details_hton(vapi_msg_lb_as_details *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_lb_as_details'@%p to big endian", msg);
+  vapi_type_msg_header1_t_hton(&msg->header);
+  vapi_msg_lb_as_details_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_lb_as_details_ntoh(vapi_msg_lb_as_details *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_lb_as_details'@%p to host byte order", msg);
+  vapi_type_msg_header1_t_ntoh(&msg->header);
+  vapi_msg_lb_as_details_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_lb_as_details_msg_size(vapi_msg_lb_as_details *msg)
+{
+  return sizeof(*msg);
+}
+
+static void __attribute__((constructor)) __vapi_constructor_lb_as_details()
+{
+  static const char name[] = "lb_as_details";
+  static const char name_with_crc[] = "lb_as_details_9c39f60e";
+  static vapi_message_desc_t __vapi_metadata_lb_as_details = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header1_t, context),
+    offsetof(vapi_msg_lb_as_details, payload),
+    sizeof(vapi_msg_lb_as_details),
+    (generic_swap_fn_t)vapi_msg_lb_as_details_hton,
+    (generic_swap_fn_t)vapi_msg_lb_as_details_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_lb_as_details = vapi_register_msg(&__vapi_metadata_lb_as_details);
+  VAPI_DBG("Assigned msg id %d to lb_as_details", vapi_msg_id_lb_as_details);
+}
+
+static inline void vapi_set_vapi_msg_lb_as_details_event_cb (
+  struct vapi_ctx_s *ctx, 
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_lb_as_details *payload),
+  void *callback_ctx)
+{
+  vapi_set_event_cb(ctx, vapi_msg_id_lb_as_details, (vapi_event_cb)callback, callback_ctx);
+};
+#endif
+
+#ifndef defined_vapi_msg_lb_as_dump
+#define defined_vapi_msg_lb_as_dump
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_address_with_prefix pfx;
+  u8 protocol;
+  u16 port; 
+} vapi_payload_lb_as_dump;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header2_t header;
+  vapi_payload_lb_as_dump payload;
+} vapi_msg_lb_as_dump;
+
+static inline void vapi_msg_lb_as_dump_payload_hton(vapi_payload_lb_as_dump *payload)
+{
+  payload->port = htobe16(payload->port);
+}
+
+static inline void vapi_msg_lb_as_dump_payload_ntoh(vapi_payload_lb_as_dump *payload)
+{
+  payload->port = be16toh(payload->port);
+}
+
+static inline void vapi_msg_lb_as_dump_hton(vapi_msg_lb_as_dump *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_lb_as_dump'@%p to big endian", msg);
+  vapi_type_msg_header2_t_hton(&msg->header);
+  vapi_msg_lb_as_dump_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_lb_as_dump_ntoh(vapi_msg_lb_as_dump *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_lb_as_dump'@%p to host byte order", msg);
+  vapi_type_msg_header2_t_ntoh(&msg->header);
+  vapi_msg_lb_as_dump_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_lb_as_dump_msg_size(vapi_msg_lb_as_dump *msg)
+{
+  return sizeof(*msg);
+}
+
+static inline vapi_msg_lb_as_dump* vapi_alloc_lb_as_dump(struct vapi_ctx_s *ctx)
+{
+  vapi_msg_lb_as_dump *msg = NULL;
+  const size_t size = sizeof(vapi_msg_lb_as_dump);
+  /* cast here required to play nicely with C++ world ... */
+  msg = (vapi_msg_lb_as_dump*)vapi_msg_alloc(ctx, size);
+  if (!msg) {
+    return NULL;
+  }
+  msg->header.client_index = vapi_get_client_index(ctx);
+  msg->header.context = 0;
+  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_lb_as_dump);
+
+  return msg;
+}
+
+static inline vapi_error_e vapi_lb_as_dump(struct vapi_ctx_s *ctx,
+  vapi_msg_lb_as_dump *msg,
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
+                           void *callback_ctx,
+                           vapi_error_e rv,
+                           bool is_last,
+                           vapi_payload_lb_as_details *reply),
+  void *callback_ctx)
+{
+  if (!msg || !callback) {
+    return VAPI_EINVAL;
+  }
+  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
+    return VAPI_EAGAIN;
+  }
+  vapi_error_e rv;
+  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
+    return rv;
+  }
+  u32 req_context = vapi_gen_req_context(ctx);
+  msg->header.context = req_context;
+  vapi_msg_lb_as_dump_hton(msg);
+  if (VAPI_OK == (rv = vapi_send_with_control_ping (ctx, msg, req_context))) {
+    vapi_store_request(ctx, req_context, true, (vapi_cb_t)callback, callback_ctx);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+    if (vapi_is_nonblocking(ctx)) {
+      rv = VAPI_OK;
+    } else {
+      rv = vapi_dispatch(ctx);
+    }
+  } else {
+    vapi_msg_lb_as_dump_ntoh(msg);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+  }
+  return rv;
+}
+
+
+static void __attribute__((constructor)) __vapi_constructor_lb_as_dump()
+{
+  static const char name[] = "lb_as_dump";
+  static const char name_with_crc[] = "lb_as_dump_1063f819";
+  static vapi_message_desc_t __vapi_metadata_lb_as_dump = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header2_t, context),
+    offsetof(vapi_msg_lb_as_dump, payload),
+    sizeof(vapi_msg_lb_as_dump),
+    (generic_swap_fn_t)vapi_msg_lb_as_dump_hton,
+    (generic_swap_fn_t)vapi_msg_lb_as_dump_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_lb_as_dump = vapi_register_msg(&__vapi_metadata_lb_as_dump);
+  VAPI_DBG("Assigned msg id %d to lb_as_dump", vapi_msg_id_lb_as_dump);
+}
+#endif
+
+#ifndef defined_vapi_msg_lb_add_del_intf_nat4_reply
+#define defined_vapi_msg_lb_add_del_intf_nat4_reply
+typedef struct __attribute__ ((__packed__)) {
+  i32 retval; 
+} vapi_payload_lb_add_del_intf_nat4_reply;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header1_t header;
+  vapi_payload_lb_add_del_intf_nat4_reply payload;
+} vapi_msg_lb_add_del_intf_nat4_reply;
+
+static inline void vapi_msg_lb_add_del_intf_nat4_reply_payload_hton(vapi_payload_lb_add_del_intf_nat4_reply *payload)
+{
+  payload->retval = htobe32(payload->retval);
+}
+
+static inline void vapi_msg_lb_add_del_intf_nat4_reply_payload_ntoh(vapi_payload_lb_add_del_intf_nat4_reply *payload)
+{
+  payload->retval = be32toh(payload->retval);
+}
+
+static inline void vapi_msg_lb_add_del_intf_nat4_reply_hton(vapi_msg_lb_add_del_intf_nat4_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_lb_add_del_intf_nat4_reply'@%p to big endian", msg);
+  vapi_type_msg_header1_t_hton(&msg->header);
+  vapi_msg_lb_add_del_intf_nat4_reply_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_lb_add_del_intf_nat4_reply_ntoh(vapi_msg_lb_add_del_intf_nat4_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_lb_add_del_intf_nat4_reply'@%p to host byte order", msg);
+  vapi_type_msg_header1_t_ntoh(&msg->header);
+  vapi_msg_lb_add_del_intf_nat4_reply_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_lb_add_del_intf_nat4_reply_msg_size(vapi_msg_lb_add_del_intf_nat4_reply *msg)
+{
+  return sizeof(*msg);
+}
+
+static void __attribute__((constructor)) __vapi_constructor_lb_add_del_intf_nat4_reply()
+{
+  static const char name[] = "lb_add_del_intf_nat4_reply";
+  static const char name_with_crc[] = "lb_add_del_intf_nat4_reply_e8d4e804";
+  static vapi_message_desc_t __vapi_metadata_lb_add_del_intf_nat4_reply = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header1_t, context),
+    offsetof(vapi_msg_lb_add_del_intf_nat4_reply, payload),
+    sizeof(vapi_msg_lb_add_del_intf_nat4_reply),
+    (generic_swap_fn_t)vapi_msg_lb_add_del_intf_nat4_reply_hton,
+    (generic_swap_fn_t)vapi_msg_lb_add_del_intf_nat4_reply_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_lb_add_del_intf_nat4_reply = vapi_register_msg(&__vapi_metadata_lb_add_del_intf_nat4_reply);
+  VAPI_DBG("Assigned msg id %d to lb_add_del_intf_nat4_reply", vapi_msg_id_lb_add_del_intf_nat4_reply);
+}
+
+static inline void vapi_set_vapi_msg_lb_add_del_intf_nat4_reply_event_cb (
+  struct vapi_ctx_s *ctx, 
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_lb_add_del_intf_nat4_reply *payload),
+  void *callback_ctx)
+{
+  vapi_set_event_cb(ctx, vapi_msg_id_lb_add_del_intf_nat4_reply, (vapi_event_cb)callback, callback_ctx);
+};
+#endif
+
+#ifndef defined_vapi_msg_lb_add_del_intf_nat4
+#define defined_vapi_msg_lb_add_del_intf_nat4
+typedef struct __attribute__ ((__packed__)) {
+  bool is_add;
+  vapi_type_interface_index sw_if_index; 
+} vapi_payload_lb_add_del_intf_nat4;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header2_t header;
+  vapi_payload_lb_add_del_intf_nat4 payload;
+} vapi_msg_lb_add_del_intf_nat4;
+
+static inline void vapi_msg_lb_add_del_intf_nat4_payload_hton(vapi_payload_lb_add_del_intf_nat4 *payload)
+{
+  payload->sw_if_index = htobe32(payload->sw_if_index);
+}
+
+static inline void vapi_msg_lb_add_del_intf_nat4_payload_ntoh(vapi_payload_lb_add_del_intf_nat4 *payload)
+{
+  payload->sw_if_index = be32toh(payload->sw_if_index);
+}
+
+static inline void vapi_msg_lb_add_del_intf_nat4_hton(vapi_msg_lb_add_del_intf_nat4 *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_lb_add_del_intf_nat4'@%p to big endian", msg);
+  vapi_type_msg_header2_t_hton(&msg->header);
+  vapi_msg_lb_add_del_intf_nat4_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_lb_add_del_intf_nat4_ntoh(vapi_msg_lb_add_del_intf_nat4 *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_lb_add_del_intf_nat4'@%p to host byte order", msg);
+  vapi_type_msg_header2_t_ntoh(&msg->header);
+  vapi_msg_lb_add_del_intf_nat4_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_lb_add_del_intf_nat4_msg_size(vapi_msg_lb_add_del_intf_nat4 *msg)
+{
+  return sizeof(*msg);
+}
+
+static inline vapi_msg_lb_add_del_intf_nat4* vapi_alloc_lb_add_del_intf_nat4(struct vapi_ctx_s *ctx)
+{
+  vapi_msg_lb_add_del_intf_nat4 *msg = NULL;
+  const size_t size = sizeof(vapi_msg_lb_add_del_intf_nat4);
+  /* cast here required to play nicely with C++ world ... */
+  msg = (vapi_msg_lb_add_del_intf_nat4*)vapi_msg_alloc(ctx, size);
+  if (!msg) {
+    return NULL;
+  }
+  msg->header.client_index = vapi_get_client_index(ctx);
+  msg->header.context = 0;
+  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_lb_add_del_intf_nat4);
+
+  return msg;
+}
+
+static inline vapi_error_e vapi_lb_add_del_intf_nat4(struct vapi_ctx_s *ctx,
+  vapi_msg_lb_add_del_intf_nat4 *msg,
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
+                           void *callback_ctx,
+                           vapi_error_e rv,
+                           bool is_last,
+                           vapi_payload_lb_add_del_intf_nat4_reply *reply),
+  void *callback_ctx)
+{
+  if (!msg || !callback) {
+    return VAPI_EINVAL;
+  }
+  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
+    return VAPI_EAGAIN;
+  }
+  vapi_error_e rv;
+  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
+    return rv;
+  }
+  u32 req_context = vapi_gen_req_context(ctx);
+  msg->header.context = req_context;
+  vapi_msg_lb_add_del_intf_nat4_hton(msg);
+  if (VAPI_OK == (rv = vapi_send (ctx, msg))) {
+    vapi_store_request(ctx, req_context, false, (vapi_cb_t)callback, callback_ctx);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+    if (vapi_is_nonblocking(ctx)) {
+      rv = VAPI_OK;
+    } else {
+      rv = vapi_dispatch(ctx);
+    }
+  } else {
+    vapi_msg_lb_add_del_intf_nat4_ntoh(msg);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+  }
+  return rv;
+}
+
+
+static void __attribute__((constructor)) __vapi_constructor_lb_add_del_intf_nat4()
+{
+  static const char name[] = "lb_add_del_intf_nat4";
+  static const char name_with_crc[] = "lb_add_del_intf_nat4_47d6e753";
+  static vapi_message_desc_t __vapi_metadata_lb_add_del_intf_nat4 = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header2_t, context),
+    offsetof(vapi_msg_lb_add_del_intf_nat4, payload),
+    sizeof(vapi_msg_lb_add_del_intf_nat4),
+    (generic_swap_fn_t)vapi_msg_lb_add_del_intf_nat4_hton,
+    (generic_swap_fn_t)vapi_msg_lb_add_del_intf_nat4_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_lb_add_del_intf_nat4 = vapi_register_msg(&__vapi_metadata_lb_add_del_intf_nat4);
+  VAPI_DBG("Assigned msg id %d to lb_add_del_intf_nat4", vapi_msg_id_lb_add_del_intf_nat4);
+}
+#endif
+
+#ifndef defined_vapi_msg_lb_add_del_intf_nat6_reply
+#define defined_vapi_msg_lb_add_del_intf_nat6_reply
+typedef struct __attribute__ ((__packed__)) {
+  i32 retval; 
+} vapi_payload_lb_add_del_intf_nat6_reply;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header1_t header;
+  vapi_payload_lb_add_del_intf_nat6_reply payload;
+} vapi_msg_lb_add_del_intf_nat6_reply;
+
+static inline void vapi_msg_lb_add_del_intf_nat6_reply_payload_hton(vapi_payload_lb_add_del_intf_nat6_reply *payload)
+{
+  payload->retval = htobe32(payload->retval);
+}
+
+static inline void vapi_msg_lb_add_del_intf_nat6_reply_payload_ntoh(vapi_payload_lb_add_del_intf_nat6_reply *payload)
+{
+  payload->retval = be32toh(payload->retval);
+}
+
+static inline void vapi_msg_lb_add_del_intf_nat6_reply_hton(vapi_msg_lb_add_del_intf_nat6_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_lb_add_del_intf_nat6_reply'@%p to big endian", msg);
+  vapi_type_msg_header1_t_hton(&msg->header);
+  vapi_msg_lb_add_del_intf_nat6_reply_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_lb_add_del_intf_nat6_reply_ntoh(vapi_msg_lb_add_del_intf_nat6_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_lb_add_del_intf_nat6_reply'@%p to host byte order", msg);
+  vapi_type_msg_header1_t_ntoh(&msg->header);
+  vapi_msg_lb_add_del_intf_nat6_reply_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_lb_add_del_intf_nat6_reply_msg_size(vapi_msg_lb_add_del_intf_nat6_reply *msg)
+{
+  return sizeof(*msg);
+}
+
+static void __attribute__((constructor)) __vapi_constructor_lb_add_del_intf_nat6_reply()
+{
+  static const char name[] = "lb_add_del_intf_nat6_reply";
+  static const char name_with_crc[] = "lb_add_del_intf_nat6_reply_e8d4e804";
+  static vapi_message_desc_t __vapi_metadata_lb_add_del_intf_nat6_reply = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header1_t, context),
+    offsetof(vapi_msg_lb_add_del_intf_nat6_reply, payload),
+    sizeof(vapi_msg_lb_add_del_intf_nat6_reply),
+    (generic_swap_fn_t)vapi_msg_lb_add_del_intf_nat6_reply_hton,
+    (generic_swap_fn_t)vapi_msg_lb_add_del_intf_nat6_reply_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_lb_add_del_intf_nat6_reply = vapi_register_msg(&__vapi_metadata_lb_add_del_intf_nat6_reply);
+  VAPI_DBG("Assigned msg id %d to lb_add_del_intf_nat6_reply", vapi_msg_id_lb_add_del_intf_nat6_reply);
+}
+
+static inline void vapi_set_vapi_msg_lb_add_del_intf_nat6_reply_event_cb (
+  struct vapi_ctx_s *ctx, 
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_lb_add_del_intf_nat6_reply *payload),
+  void *callback_ctx)
+{
+  vapi_set_event_cb(ctx, vapi_msg_id_lb_add_del_intf_nat6_reply, (vapi_event_cb)callback, callback_ctx);
+};
+#endif
+
+#ifndef defined_vapi_msg_lb_add_del_intf_nat6
+#define defined_vapi_msg_lb_add_del_intf_nat6
+typedef struct __attribute__ ((__packed__)) {
+  bool is_add;
+  vapi_type_interface_index sw_if_index; 
+} vapi_payload_lb_add_del_intf_nat6;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header2_t header;
+  vapi_payload_lb_add_del_intf_nat6 payload;
+} vapi_msg_lb_add_del_intf_nat6;
+
+static inline void vapi_msg_lb_add_del_intf_nat6_payload_hton(vapi_payload_lb_add_del_intf_nat6 *payload)
+{
+  payload->sw_if_index = htobe32(payload->sw_if_index);
+}
+
+static inline void vapi_msg_lb_add_del_intf_nat6_payload_ntoh(vapi_payload_lb_add_del_intf_nat6 *payload)
+{
+  payload->sw_if_index = be32toh(payload->sw_if_index);
+}
+
+static inline void vapi_msg_lb_add_del_intf_nat6_hton(vapi_msg_lb_add_del_intf_nat6 *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_lb_add_del_intf_nat6'@%p to big endian", msg);
+  vapi_type_msg_header2_t_hton(&msg->header);
+  vapi_msg_lb_add_del_intf_nat6_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_lb_add_del_intf_nat6_ntoh(vapi_msg_lb_add_del_intf_nat6 *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_lb_add_del_intf_nat6'@%p to host byte order", msg);
+  vapi_type_msg_header2_t_ntoh(&msg->header);
+  vapi_msg_lb_add_del_intf_nat6_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_lb_add_del_intf_nat6_msg_size(vapi_msg_lb_add_del_intf_nat6 *msg)
+{
+  return sizeof(*msg);
+}
+
+static inline vapi_msg_lb_add_del_intf_nat6* vapi_alloc_lb_add_del_intf_nat6(struct vapi_ctx_s *ctx)
+{
+  vapi_msg_lb_add_del_intf_nat6 *msg = NULL;
+  const size_t size = sizeof(vapi_msg_lb_add_del_intf_nat6);
+  /* cast here required to play nicely with C++ world ... */
+  msg = (vapi_msg_lb_add_del_intf_nat6*)vapi_msg_alloc(ctx, size);
+  if (!msg) {
+    return NULL;
+  }
+  msg->header.client_index = vapi_get_client_index(ctx);
+  msg->header.context = 0;
+  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_lb_add_del_intf_nat6);
+
+  return msg;
+}
+
+static inline vapi_error_e vapi_lb_add_del_intf_nat6(struct vapi_ctx_s *ctx,
+  vapi_msg_lb_add_del_intf_nat6 *msg,
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
+                           void *callback_ctx,
+                           vapi_error_e rv,
+                           bool is_last,
+                           vapi_payload_lb_add_del_intf_nat6_reply *reply),
+  void *callback_ctx)
+{
+  if (!msg || !callback) {
+    return VAPI_EINVAL;
+  }
+  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
+    return VAPI_EAGAIN;
+  }
+  vapi_error_e rv;
+  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
+    return rv;
+  }
+  u32 req_context = vapi_gen_req_context(ctx);
+  msg->header.context = req_context;
+  vapi_msg_lb_add_del_intf_nat6_hton(msg);
+  if (VAPI_OK == (rv = vapi_send (ctx, msg))) {
+    vapi_store_request(ctx, req_context, false, (vapi_cb_t)callback, callback_ctx);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+    if (vapi_is_nonblocking(ctx)) {
+      rv = VAPI_OK;
+    } else {
+      rv = vapi_dispatch(ctx);
+    }
+  } else {
+    vapi_msg_lb_add_del_intf_nat6_ntoh(msg);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+  }
+  return rv;
+}
+
+
+static void __attribute__((constructor)) __vapi_constructor_lb_add_del_intf_nat6()
+{
+  static const char name[] = "lb_add_del_intf_nat6";
+  static const char name_with_crc[] = "lb_add_del_intf_nat6_47d6e753";
+  static vapi_message_desc_t __vapi_metadata_lb_add_del_intf_nat6 = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header2_t, context),
+    offsetof(vapi_msg_lb_add_del_intf_nat6, payload),
+    sizeof(vapi_msg_lb_add_del_intf_nat6),
+    (generic_swap_fn_t)vapi_msg_lb_add_del_intf_nat6_hton,
+    (generic_swap_fn_t)vapi_msg_lb_add_del_intf_nat6_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_lb_add_del_intf_nat6 = vapi_register_msg(&__vapi_metadata_lb_add_del_intf_nat6);
+  VAPI_DBG("Assigned msg id %d to lb_add_del_intf_nat6", vapi_msg_id_lb_add_del_intf_nat6);
 }
 #endif
 

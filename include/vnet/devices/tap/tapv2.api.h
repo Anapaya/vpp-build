@@ -1,5 +1,5 @@
 /*
- * VLIB API definitions 2020-06-13 05:56:05
+ * VLIB API definitions 2020-06-30 12:39:08
  * Input file: tapv2.api
  * Automatically generated: please edit the input file NOT this file!
  */
@@ -16,6 +16,12 @@
 #endif
 
 #define VL_API_PACKED(x) x __attribute__ ((packed))
+/* Imported API files */
+#ifndef vl_api_version
+#include <vnet/interface_types.api.h>
+#include <vnet/ethernet/ethernet_types.api.h>
+#include <vnet/ip/ip_types.api.h>
+#endif
 
 /****** Message ID / handler enum ******/
 
@@ -41,122 +47,53 @@ vl_msg_name(vl_api_sw_interface_tap_v2_details_t, 1)
 
 #ifdef vl_msg_name_crc_list
 #define foreach_vl_msg_name_crc_tapv2 \
-_(VL_API_TAP_CREATE_V2, tap_create_v2, 8fa99320) \
-_(VL_API_TAP_CREATE_V2_REPLY, tap_create_v2_reply, fda5941f) \
-_(VL_API_TAP_DELETE_V2, tap_delete_v2, 529cb13f) \
+_(VL_API_TAP_CREATE_V2, tap_create_v2, 445835fd) \
+_(VL_API_TAP_CREATE_V2_REPLY, tap_create_v2_reply, 5383d31f) \
+_(VL_API_TAP_DELETE_V2, tap_delete_v2, f9e6675e) \
 _(VL_API_TAP_DELETE_V2_REPLY, tap_delete_v2_reply, e8d4e804) \
-_(VL_API_SW_INTERFACE_TAP_V2_DUMP, sw_interface_tap_v2_dump, 51077d14) \
-_(VL_API_SW_INTERFACE_TAP_V2_DETAILS, sw_interface_tap_v2_details, 5ee87a5f) 
+_(VL_API_SW_INTERFACE_TAP_V2_DUMP, sw_interface_tap_v2_dump, f9e6675e) \
+_(VL_API_SW_INTERFACE_TAP_V2_DETAILS, sw_interface_tap_v2_details, e53c16de) 
 #endif
-
 /****** Typedefs ******/
 
 #ifdef vl_typedefs
-#ifndef included_tapv2_api
-#define included_tapv2_api
-#ifndef _vl_api_defined_tap_create_v2
-#define _vl_api_defined_tap_create_v2
-typedef VL_API_PACKED(struct _vl_api_tap_create_v2 {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u32 id;
-    u8 use_random_mac;
-    u8 mac_address[6];
-    u16 tx_ring_sz;
-    u16 rx_ring_sz;
-    u8 host_namespace_set;
-    u8 host_namespace[64];
-    u8 host_mac_addr_set;
-    u8 host_mac_addr[6];
-    u8 host_if_name_set;
-    u8 host_if_name[64];
-    u8 host_bridge_set;
-    u8 host_bridge[64];
-    u8 host_ip4_addr_set;
-    u8 host_ip4_addr[4];
-    u8 host_ip4_prefix_len;
-    u8 host_ip6_addr_set;
-    u8 host_ip6_addr[16];
-    u8 host_ip6_prefix_len;
-    u8 host_ip4_gw_set;
-    u8 host_ip4_gw[4];
-    u8 host_ip6_gw_set;
-    u8 host_ip6_gw[16];
-    u8 host_mtu_set;
-    u32 host_mtu_size;
-    u8 tag[64];
-    u32 tap_flags;
-}) vl_api_tap_create_v2_t;
+#include "tapv2.api_types.h"
 #endif
-
-#ifndef _vl_api_defined_tap_create_v2_reply
-#define _vl_api_defined_tap_create_v2_reply
-typedef VL_API_PACKED(struct _vl_api_tap_create_v2_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-    u32 sw_if_index;
-}) vl_api_tap_create_v2_reply_t;
-#endif
-
-#ifndef _vl_api_defined_tap_delete_v2
-#define _vl_api_defined_tap_delete_v2
-typedef VL_API_PACKED(struct _vl_api_tap_delete_v2 {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u32 sw_if_index;
-}) vl_api_tap_delete_v2_t;
-#endif
-
-#ifndef _vl_api_defined_tap_delete_v2_reply
-#define _vl_api_defined_tap_delete_v2_reply
-typedef VL_API_PACKED(struct _vl_api_tap_delete_v2_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_tap_delete_v2_reply_t;
-#endif
-
-#ifndef _vl_api_defined_sw_interface_tap_v2_dump
-#define _vl_api_defined_sw_interface_tap_v2_dump
-typedef VL_API_PACKED(struct _vl_api_sw_interface_tap_v2_dump {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-}) vl_api_sw_interface_tap_v2_dump_t;
-#endif
-
-#ifndef _vl_api_defined_sw_interface_tap_v2_details
-#define _vl_api_defined_sw_interface_tap_v2_details
-typedef VL_API_PACKED(struct _vl_api_sw_interface_tap_v2_details {
-    u16 _vl_msg_id;
-    u32 context;
-    u32 sw_if_index;
-    u32 id;
-    u8 dev_name[64];
-    u16 tx_ring_sz;
-    u16 rx_ring_sz;
-    u8 host_mac_addr[6];
-    u8 host_if_name[64];
-    u8 host_namespace[64];
-    u8 host_bridge[64];
-    u8 host_ip4_addr[4];
-    u8 host_ip4_prefix_len;
-    u8 host_ip6_addr[16];
-    u8 host_ip6_prefix_len;
-    u32 host_mtu_size;
-    u32 tap_flags;
-}) vl_api_sw_interface_tap_v2_details_t;
-#endif
-
-
-#endif
-#endif
-
 /****** Print functions *****/
 #ifdef vl_printfun
+#ifndef included_tapv2_printfun_types
+#define included_tapv2_printfun_types
+
+static inline u8 *format_vl_api_tap_flags_t (u8 *s, va_list * args)
+{
+    vl_api_tap_flags_t *a = va_arg (*args, vl_api_tap_flags_t *);
+    u32 indent __attribute__((unused)) = va_arg (*args, u32);
+    int i __attribute__((unused));
+    indent += 2;
+    switch(*a) {
+    case 1:
+        return format(s, "TAP_API_FLAG_GSO");
+    case 2:
+        return format(s, "TAP_API_FLAG_CSUM_OFFLOAD");
+    case 4:
+        return format(s, "TAP_API_FLAG_PERSIST");
+    case 8:
+        return format(s, "TAP_API_FLAG_ATTACH");
+    case 16:
+        return format(s, "TAP_API_FLAG_TUN");
+    case 32:
+        return format(s, "TAP_API_FLAG_GRO_COALESCE");
+    }
+    return s;
+}
+
+
+#endif
+#endif /* vl_printfun_types */
+/****** Print functions *****/
+#ifdef vl_printfun
+#ifndef included_tapv2_printfun
+#define included_tapv2_printfun
 
 #ifdef LP64
 #define _uword_fmt "%lld"
@@ -166,115 +103,140 @@ typedef VL_API_PACKED(struct _vl_api_sw_interface_tap_v2_details {
 #define _uword_cast long
 #endif
 
-#ifndef _vl_api_defined_tap_create_v2_t_print
-#define _vl_api_defined_tap_create_v2_t_print
-static inline void *vl_api_tap_create_v2_t_print (vl_api_tap_create_v2_t *a,void *handle)
+static inline void *vl_api_tap_create_v2_t_print (vl_api_tap_create_v2_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_tap_create_v2_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "id: %u\n", a->id);
-    vl_print(handle, "use_random_mac: %u\n", a->use_random_mac);
-    vl_print(handle, "tx_ring_sz: %u\n", a->tx_ring_sz);
-    vl_print(handle, "rx_ring_sz: %u\n", a->rx_ring_sz);
-    vl_print(handle, "host_namespace_set: %u\n", a->host_namespace_set);
-    vl_print(handle, "host_mac_addr_set: %u\n", a->host_mac_addr_set);
-    vl_print(handle, "host_if_name_set: %u\n", a->host_if_name_set);
-    vl_print(handle, "host_bridge_set: %u\n", a->host_bridge_set);
-    vl_print(handle, "host_ip4_addr_set: %u\n", a->host_ip4_addr_set);
-    vl_print(handle, "host_ip4_prefix_len: %u\n", a->host_ip4_prefix_len);
-    vl_print(handle, "host_ip6_addr_set: %u\n", a->host_ip6_addr_set);
-    vl_print(handle, "host_ip6_prefix_len: %u\n", a->host_ip6_prefix_len);
-    vl_print(handle, "host_ip4_gw_set: %u\n", a->host_ip4_gw_set);
-    vl_print(handle, "host_ip6_gw_set: %u\n", a->host_ip6_gw_set);
-    vl_print(handle, "host_mtu_set: %u\n", a->host_mtu_set);
-    vl_print(handle, "host_mtu_size: %u\n", a->host_mtu_size);
-    vl_print(handle, "tap_flags: %u\n", a->tap_flags);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_tap_create_v2_t: */
+    s = format(s, "vl_api_tap_create_v2_t:");
+    s = format(s, "\n%Uid: %u", format_white_space, indent, a->id);
+    s = format(s, "\n%Uuse_random_mac: %u", format_white_space, indent, a->use_random_mac);
+    s = format(s, "\n%Umac_address: %U", format_white_space, indent, format_vl_api_mac_address_t, &a->mac_address, indent);
+    s = format(s, "\n%Unum_rx_queues: %u", format_white_space, indent, a->num_rx_queues);
+    s = format(s, "\n%Utx_ring_sz: %u", format_white_space, indent, a->tx_ring_sz);
+    s = format(s, "\n%Urx_ring_sz: %u", format_white_space, indent, a->rx_ring_sz);
+    s = format(s, "\n%Uhost_mtu_set: %u", format_white_space, indent, a->host_mtu_set);
+    s = format(s, "\n%Uhost_mtu_size: %u", format_white_space, indent, a->host_mtu_size);
+    s = format(s, "\n%Uhost_mac_addr_set: %u", format_white_space, indent, a->host_mac_addr_set);
+    s = format(s, "\n%Uhost_mac_addr: %U", format_white_space, indent, format_vl_api_mac_address_t, &a->host_mac_addr, indent);
+    s = format(s, "\n%Uhost_ip4_prefix_set: %u", format_white_space, indent, a->host_ip4_prefix_set);
+    s = format(s, "\n%Uhost_ip4_prefix: %U", format_white_space, indent, format_vl_api_ip4_address_with_prefix_t, &a->host_ip4_prefix, indent);
+    s = format(s, "\n%Uhost_ip6_prefix_set: %u", format_white_space, indent, a->host_ip6_prefix_set);
+    s = format(s, "\n%Uhost_ip6_prefix: %U", format_white_space, indent, format_vl_api_ip6_address_with_prefix_t, &a->host_ip6_prefix, indent);
+    s = format(s, "\n%Uhost_ip4_gw_set: %u", format_white_space, indent, a->host_ip4_gw_set);
+    s = format(s, "\n%Uhost_ip4_gw: %U", format_white_space, indent, format_vl_api_ip4_address_t, &a->host_ip4_gw, indent);
+    s = format(s, "\n%Uhost_ip6_gw_set: %u", format_white_space, indent, a->host_ip6_gw_set);
+    s = format(s, "\n%Uhost_ip6_gw: %U", format_white_space, indent, format_vl_api_ip6_address_t, &a->host_ip6_gw, indent);
+    s = format(s, "\n%Utap_flags: %U", format_white_space, indent, format_vl_api_tap_flags_t, &a->tap_flags, indent);
+    s = format(s, "\n%Uhost_namespace_set: %u", format_white_space, indent, a->host_namespace_set);
+    s = format(s, "\n%Uhost_namespace: %s", format_white_space, indent, a->host_namespace);
+    s = format(s, "\n%Uhost_if_name_set: %u", format_white_space, indent, a->host_if_name_set);
+    s = format(s, "\n%Uhost_if_name: %s", format_white_space, indent, a->host_if_name);
+    s = format(s, "\n%Uhost_bridge_set: %u", format_white_space, indent, a->host_bridge_set);
+    s = format(s, "\n%Uhost_bridge: %s", format_white_space, indent, a->host_bridge);
+    if (vl_api_string_len(&a->tag) > 0) {
+        s = format(s, "\n%Utag: %U", format_white_space, indent, vl_api_format_string, (&a->tag));
+    } else {
+        s = format(s, "\n%Utag:", format_white_space, indent);
+    }
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_tap_create_v2_reply_t_print
-#define _vl_api_defined_tap_create_v2_reply_t_print
-static inline void *vl_api_tap_create_v2_reply_t_print (vl_api_tap_create_v2_reply_t *a,void *handle)
+static inline void *vl_api_tap_create_v2_reply_t_print (vl_api_tap_create_v2_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_tap_create_v2_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
-    vl_print(handle, "sw_if_index: %u\n", a->sw_if_index);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_tap_create_v2_reply_t: */
+    s = format(s, "vl_api_tap_create_v2_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    s = format(s, "\n%Usw_if_index: %U", format_white_space, indent, format_vl_api_interface_index_t, &a->sw_if_index, indent);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_tap_delete_v2_t_print
-#define _vl_api_defined_tap_delete_v2_t_print
-static inline void *vl_api_tap_delete_v2_t_print (vl_api_tap_delete_v2_t *a,void *handle)
+static inline void *vl_api_tap_delete_v2_t_print (vl_api_tap_delete_v2_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_tap_delete_v2_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "sw_if_index: %u\n", a->sw_if_index);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_tap_delete_v2_t: */
+    s = format(s, "vl_api_tap_delete_v2_t:");
+    s = format(s, "\n%Usw_if_index: %U", format_white_space, indent, format_vl_api_interface_index_t, &a->sw_if_index, indent);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_tap_delete_v2_reply_t_print
-#define _vl_api_defined_tap_delete_v2_reply_t_print
-static inline void *vl_api_tap_delete_v2_reply_t_print (vl_api_tap_delete_v2_reply_t *a,void *handle)
+static inline void *vl_api_tap_delete_v2_reply_t_print (vl_api_tap_delete_v2_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_tap_delete_v2_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_tap_delete_v2_reply_t: */
+    s = format(s, "vl_api_tap_delete_v2_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_sw_interface_tap_v2_dump_t_print
-#define _vl_api_defined_sw_interface_tap_v2_dump_t_print
-static inline void *vl_api_sw_interface_tap_v2_dump_t_print (vl_api_sw_interface_tap_v2_dump_t *a,void *handle)
+static inline void *vl_api_sw_interface_tap_v2_dump_t_print (vl_api_sw_interface_tap_v2_dump_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_sw_interface_tap_v2_dump_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_sw_interface_tap_v2_dump_t: */
+    s = format(s, "vl_api_sw_interface_tap_v2_dump_t:");
+    s = format(s, "\n%Usw_if_index: %U", format_white_space, indent, format_vl_api_interface_index_t, &a->sw_if_index, indent);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_sw_interface_tap_v2_details_t_print
-#define _vl_api_defined_sw_interface_tap_v2_details_t_print
-static inline void *vl_api_sw_interface_tap_v2_details_t_print (vl_api_sw_interface_tap_v2_details_t *a,void *handle)
+static inline void *vl_api_sw_interface_tap_v2_details_t_print (vl_api_sw_interface_tap_v2_details_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_sw_interface_tap_v2_details_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "sw_if_index: %u\n", a->sw_if_index);
-    vl_print(handle, "id: %u\n", a->id);
-    vl_print(handle, "tx_ring_sz: %u\n", a->tx_ring_sz);
-    vl_print(handle, "rx_ring_sz: %u\n", a->rx_ring_sz);
-    vl_print(handle, "host_ip4_prefix_len: %u\n", a->host_ip4_prefix_len);
-    vl_print(handle, "host_ip6_prefix_len: %u\n", a->host_ip6_prefix_len);
-    vl_print(handle, "host_mtu_size: %u\n", a->host_mtu_size);
-    vl_print(handle, "tap_flags: %u\n", a->tap_flags);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_sw_interface_tap_v2_details_t: */
+    s = format(s, "vl_api_sw_interface_tap_v2_details_t:");
+    s = format(s, "\n%Usw_if_index: %u", format_white_space, indent, a->sw_if_index);
+    s = format(s, "\n%Uid: %u", format_white_space, indent, a->id);
+    s = format(s, "\n%Utx_ring_sz: %u", format_white_space, indent, a->tx_ring_sz);
+    s = format(s, "\n%Urx_ring_sz: %u", format_white_space, indent, a->rx_ring_sz);
+    s = format(s, "\n%Uhost_mtu_size: %u", format_white_space, indent, a->host_mtu_size);
+    s = format(s, "\n%Uhost_mac_addr: %U", format_white_space, indent, format_vl_api_mac_address_t, &a->host_mac_addr, indent);
+    s = format(s, "\n%Uhost_ip4_prefix: %U", format_white_space, indent, format_vl_api_ip4_address_with_prefix_t, &a->host_ip4_prefix, indent);
+    s = format(s, "\n%Uhost_ip6_prefix: %U", format_white_space, indent, format_vl_api_ip6_address_with_prefix_t, &a->host_ip6_prefix, indent);
+    s = format(s, "\n%Utap_flags: %U", format_white_space, indent, format_vl_api_tap_flags_t, &a->tap_flags, indent);
+    s = format(s, "\n%Udev_name: %s", format_white_space, indent, a->dev_name);
+    s = format(s, "\n%Uhost_if_name: %s", format_white_space, indent, a->host_if_name);
+    s = format(s, "\n%Uhost_namespace: %s", format_white_space, indent, a->host_namespace);
+    s = format(s, "\n%Uhost_bridge: %s", format_white_space, indent, a->host_bridge);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
+
 #endif
-
-
 #endif /* vl_printfun */
 
 /****** Endian swap functions *****/
 #ifdef vl_endianfun
+#ifndef included_tapv2_endianfun
+#define included_tapv2_endianfun
 
 #undef clib_net_to_host_uword
 #ifdef LP64
@@ -283,113 +245,117 @@ static inline void *vl_api_sw_interface_tap_v2_details_t_print (vl_api_sw_interf
 #define clib_net_to_host_uword clib_net_to_host_u32
 #endif
 
-#ifndef _vl_api_defined_tap_create_v2_t_endian
-#define _vl_api_defined_tap_create_v2_t_endian
+static inline void vl_api_tap_flags_t_endian (vl_api_tap_flags_t *a)
+{
+    int i __attribute__((unused));
+    *a = clib_net_to_host_u32(*a);
+}
+
 static inline void vl_api_tap_create_v2_t_endian (vl_api_tap_create_v2_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
     a->id = clib_net_to_host_u32(a->id);
     /* a->use_random_mac = a->use_random_mac (no-op) */
+    vl_api_mac_address_t_endian(&a->mac_address);
+    /* a->num_rx_queues = a->num_rx_queues (no-op) */
     a->tx_ring_sz = clib_net_to_host_u16(a->tx_ring_sz);
     a->rx_ring_sz = clib_net_to_host_u16(a->rx_ring_sz);
-    /* a->host_namespace_set = a->host_namespace_set (no-op) */
-    /* a->host_mac_addr_set = a->host_mac_addr_set (no-op) */
-    /* a->host_if_name_set = a->host_if_name_set (no-op) */
-    /* a->host_bridge_set = a->host_bridge_set (no-op) */
-    /* a->host_ip4_addr_set = a->host_ip4_addr_set (no-op) */
-    /* a->host_ip4_prefix_len = a->host_ip4_prefix_len (no-op) */
-    /* a->host_ip6_addr_set = a->host_ip6_addr_set (no-op) */
-    /* a->host_ip6_prefix_len = a->host_ip6_prefix_len (no-op) */
-    /* a->host_ip4_gw_set = a->host_ip4_gw_set (no-op) */
-    /* a->host_ip6_gw_set = a->host_ip6_gw_set (no-op) */
     /* a->host_mtu_set = a->host_mtu_set (no-op) */
     a->host_mtu_size = clib_net_to_host_u32(a->host_mtu_size);
-    a->tap_flags = clib_net_to_host_u32(a->tap_flags);
+    /* a->host_mac_addr_set = a->host_mac_addr_set (no-op) */
+    vl_api_mac_address_t_endian(&a->host_mac_addr);
+    /* a->host_ip4_prefix_set = a->host_ip4_prefix_set (no-op) */
+    vl_api_ip4_address_with_prefix_t_endian(&a->host_ip4_prefix);
+    /* a->host_ip6_prefix_set = a->host_ip6_prefix_set (no-op) */
+    vl_api_ip6_address_with_prefix_t_endian(&a->host_ip6_prefix);
+    /* a->host_ip4_gw_set = a->host_ip4_gw_set (no-op) */
+    vl_api_ip4_address_t_endian(&a->host_ip4_gw);
+    /* a->host_ip6_gw_set = a->host_ip6_gw_set (no-op) */
+    vl_api_ip6_address_t_endian(&a->host_ip6_gw);
+    vl_api_tap_flags_t_endian(&a->tap_flags);
+    /* a->host_namespace_set = a->host_namespace_set (no-op) */
+    /* a->host_namespace = a->host_namespace (no-op) */
+    /* a->host_if_name_set = a->host_if_name_set (no-op) */
+    /* a->host_if_name = a->host_if_name (no-op) */
+    /* a->host_bridge_set = a->host_bridge_set (no-op) */
+    /* a->host_bridge = a->host_bridge (no-op) */
+    /* a->tag = a->tag (no-op) */
 }
 
-#endif
-
-#ifndef _vl_api_defined_tap_create_v2_reply_t_endian
-#define _vl_api_defined_tap_create_v2_reply_t_endian
 static inline void vl_api_tap_create_v2_reply_t_endian (vl_api_tap_create_v2_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
-    a->sw_if_index = clib_net_to_host_u32(a->sw_if_index);
+    a->retval = clib_net_to_host_i32(a->retval);
+    vl_api_interface_index_t_endian(&a->sw_if_index);
 }
 
-#endif
-
-#ifndef _vl_api_defined_tap_delete_v2_t_endian
-#define _vl_api_defined_tap_delete_v2_t_endian
 static inline void vl_api_tap_delete_v2_t_endian (vl_api_tap_delete_v2_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
-    a->sw_if_index = clib_net_to_host_u32(a->sw_if_index);
+    vl_api_interface_index_t_endian(&a->sw_if_index);
 }
 
-#endif
-
-#ifndef _vl_api_defined_tap_delete_v2_reply_t_endian
-#define _vl_api_defined_tap_delete_v2_reply_t_endian
 static inline void vl_api_tap_delete_v2_reply_t_endian (vl_api_tap_delete_v2_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
-#endif
-
-#ifndef _vl_api_defined_sw_interface_tap_v2_dump_t_endian
-#define _vl_api_defined_sw_interface_tap_v2_dump_t_endian
 static inline void vl_api_sw_interface_tap_v2_dump_t_endian (vl_api_sw_interface_tap_v2_dump_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
+    vl_api_interface_index_t_endian(&a->sw_if_index);
 }
 
-#endif
-
-#ifndef _vl_api_defined_sw_interface_tap_v2_details_t_endian
-#define _vl_api_defined_sw_interface_tap_v2_details_t_endian
 static inline void vl_api_sw_interface_tap_v2_details_t_endian (vl_api_sw_interface_tap_v2_details_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
     a->sw_if_index = clib_net_to_host_u32(a->sw_if_index);
     a->id = clib_net_to_host_u32(a->id);
     a->tx_ring_sz = clib_net_to_host_u16(a->tx_ring_sz);
     a->rx_ring_sz = clib_net_to_host_u16(a->rx_ring_sz);
-    /* a->host_ip4_prefix_len = a->host_ip4_prefix_len (no-op) */
-    /* a->host_ip6_prefix_len = a->host_ip6_prefix_len (no-op) */
     a->host_mtu_size = clib_net_to_host_u32(a->host_mtu_size);
-    a->tap_flags = clib_net_to_host_u32(a->tap_flags);
+    vl_api_mac_address_t_endian(&a->host_mac_addr);
+    vl_api_ip4_address_with_prefix_t_endian(&a->host_ip4_prefix);
+    vl_api_ip6_address_with_prefix_t_endian(&a->host_ip6_prefix);
+    vl_api_tap_flags_t_endian(&a->tap_flags);
+    /* a->dev_name = a->dev_name (no-op) */
+    /* a->host_if_name = a->host_if_name (no-op) */
+    /* a->host_namespace = a->host_namespace (no-op) */
+    /* a->host_bridge = a->host_bridge (no-op) */
 }
 
+
 #endif
-
-
 #endif /* vl_endianfun */
 
 /****** Version tuple *****/
 
 #ifdef vl_api_version_tuple
 
-vl_api_version_tuple(tapv2.api, 2, 1, 0)
+vl_api_version_tuple(tapv2.api, 4, 0, 0)
 
 #endif /* vl_api_version_tuple */
 
 /****** API CRC (whole file) *****/
 
 #ifdef vl_api_version
-vl_api_version(tapv2.api, 0x25beb6c0)
+vl_api_version(tapv2.api, 0xb650c61a)
 
 #endif
 

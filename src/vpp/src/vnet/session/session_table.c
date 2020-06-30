@@ -129,7 +129,8 @@ session_table_init (session_table_t * slt, u8 fib_proto)
       clib_bihash_init2_48_8 (a);
     }
 
-  for (i = 0; i < TRANSPORT_N_PROTO; i++)
+  vec_validate (slt->session_rules, TRANSPORT_N_PROTOS - 1);
+  for (i = 0; i < TRANSPORT_N_PROTOS; i++)
     session_rules_table_init (&slt->session_rules[i]);
 }
 
@@ -139,11 +140,12 @@ typedef struct _ip4_session_table_walk_ctx_t
   void *ctx;
 } ip4_session_table_walk_ctx_t;
 
-void
+static int
 ip4_session_table_walk_cb (clib_bihash_kv_16_8_t * kvp, void *arg)
 {
   ip4_session_table_walk_ctx_t *ctx = arg;
   ctx->fn (kvp, ctx->ctx);
+  return (BIHASH_WALK_CONTINUE);
 }
 
 void

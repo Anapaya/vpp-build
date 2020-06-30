@@ -27,43 +27,15 @@
 #include <vlibmemory/api.h>
 
 /* define message IDs */
-#include <svs/svs_msg_enum.h>
-
-/* define message structures */
-#define vl_typedefs
-#include <svs/svs_all_api_h.h>
-#undef vl_typedefs
-
-/* define generated endian-swappers */
-#define vl_endianfun
-#include <svs/svs_all_api_h.h>
-#undef vl_endianfun
-
-/* instantiate all the print functions we know about */
-#define vl_print(handle, ...) vlib_cli_output (handle, __VA_ARGS__)
-#define vl_printfun
-#include <svs/svs_all_api_h.h>
-#undef vl_printfun
-
-/* Get the API version number */
-#define vl_api_version(n,v) static u32 api_version=(v);
-#include <svs/svs_all_api_h.h>
-#undef vl_api_version
+#include <vnet/format_fns.h>
+#include <svs/svs.api_enum.h>
+#include <svs/svs.api_types.h>
 
 /**
  * Base message ID fot the plugin
  */
 static u32 svs_base_msg_id;
 #include <vlibapi/api_helper_macros.h>
-
-/* List of message types that this plugin understands */
-
-#define foreach_svs_plugin_api_msg                    \
-  _(SVS_PLUGIN_GET_VERSION, svs_plugin_get_version)   \
-  _(SVS_TABLE_ADD_DEL, svs_table_add_del)             \
-  _(SVS_ROUTE_ADD_DEL, svs_route_add_del)             \
-  _(SVS_ENABLE_DISABLE, svs_enable_disable)           \
-  _(SVS_DUMP, svs_dump)
 
 static void
 vl_api_svs_plugin_get_version_t_handler (vl_api_svs_plugin_get_version_t * mp)
@@ -94,7 +66,9 @@ vl_api_svs_table_add_del_t_handler (vl_api_svs_table_add_del_t * mp)
   fib_protocol_t fproto;
   int rv = 0;
 
-  fproto = fib_proto_from_api_address_family (mp->af);
+  rv = fib_proto_from_api_address_family (mp->af, &fproto);
+  if (rv < 0)
+    goto error;
 
   if (mp->is_add)
     {
@@ -105,6 +79,7 @@ vl_api_svs_table_add_del_t_handler (vl_api_svs_table_add_del_t * mp)
       rv = svs_table_delete (fproto, ntohl (mp->table_id));
     }
 
+error:
   REPLY_MACRO (VL_API_SVS_TABLE_ADD_DEL_REPLY + svs_base_msg_id);
 }
 
@@ -139,7 +114,9 @@ vl_api_svs_enable_disable_t_handler (vl_api_svs_enable_disable_t * mp)
 
   VALIDATE_SW_IF_INDEX (mp);
 
-  fproto = fib_proto_from_api_address_family (mp->af);
+  rv = fib_proto_from_api_address_family (mp->af, &fproto);
+  if (rv < 0)
+    goto error;
 
   if (mp->is_enable)
     {
@@ -152,6 +129,7 @@ vl_api_svs_enable_disable_t_handler (vl_api_svs_enable_disable_t * mp)
     }
 
   BAD_SW_IF_INDEX_LABEL;
+error:
   REPLY_MACRO (VL_API_SVS_ENABLE_DISABLE_REPLY + svs_base_msg_id);
 }
 
@@ -201,56 +179,14 @@ vl_api_svs_dump_t_handler (vl_api_svs_dump_t * mp)
   svs_walk (svs_send_details, &ctx);
 }
 
-#define vl_msg_name_crc_list
-#include <svs/svs_all_api_h.h>
-#undef vl_msg_name_crc_list
-
-/* Set up the API message handling tables */
-static clib_error_t *
-svs_plugin_api_hookup (vlib_main_t * vm)
-{
-#define _(N,n)                                                  \
-    vl_msg_api_set_handlers((VL_API_##N + svs_base_msg_id),     \
-                            #n,					\
-                            vl_api_##n##_t_handler,             \
-                            vl_noop_handler,                    \
-                            vl_api_##n##_t_endian,              \
-                            vl_api_##n##_t_print,               \
-                            sizeof(vl_api_##n##_t), 1);
-  foreach_svs_plugin_api_msg;
-#undef _
-
-  return 0;
-}
-
-static void
-setup_message_id_table (api_main_t * apim)
-{
-#define _(id,n,crc) \
-  vl_msg_api_add_msg_name_crc (apim, #n "_" #crc, id + svs_base_msg_id);
-  foreach_vl_msg_name_crc_svs;
-#undef _
-}
-
+#include <svs/svs.api.c>
 static clib_error_t *
 svs_api_init (vlib_main_t * vm)
 {
-  clib_error_t *error = 0;
-
-  u8 *name = format (0, "svs_%08x%c", api_version, 0);
-
   /* Ask for a correctly-sized block of API message decode slots */
-  svs_base_msg_id = vl_msg_api_get_msg_ids ((char *) name,
-					    VL_MSG_FIRST_AVAILABLE);
+  svs_base_msg_id = setup_message_id_table ();
 
-  error = svs_plugin_api_hookup (vm);
-
-  /* Add our API messages to the global name_crc hash table */
-  setup_message_id_table (&api_main);
-
-  vec_free (name);
-
-  return error;
+  return 0;
 }
 
 VLIB_INIT_FUNCTION (svs_api_init);

@@ -1,5 +1,5 @@
 /*
- * VLIB API definitions 2020-06-13 05:56:05
+ * VLIB API definitions 2020-06-30 12:39:08
  * Input file: af_packet.api
  * Automatically generated: please edit the input file NOT this file!
  */
@@ -16,6 +16,11 @@
 #endif
 
 #define VL_API_PACKED(x) x __attribute__ ((packed))
+/* Imported API files */
+#ifndef vl_api_version
+#include <vnet/interface_types.api.h>
+#include <vnet/ethernet/ethernet_types.api.h>
+#endif
 
 /****** Message ID / handler enum ******/
 
@@ -45,107 +50,32 @@ vl_msg_name(vl_api_af_packet_details_t, 1)
 
 #ifdef vl_msg_name_crc_list
 #define foreach_vl_msg_name_crc_af_packet \
-_(VL_API_AF_PACKET_CREATE, af_packet_create, 6d5d30d6) \
-_(VL_API_AF_PACKET_CREATE_REPLY, af_packet_create_reply, fda5941f) \
-_(VL_API_AF_PACKET_DELETE, af_packet_delete, 3efceda3) \
+_(VL_API_AF_PACKET_CREATE, af_packet_create, a190415f) \
+_(VL_API_AF_PACKET_CREATE_REPLY, af_packet_create_reply, 5383d31f) \
+_(VL_API_AF_PACKET_DELETE, af_packet_delete, 863fa648) \
 _(VL_API_AF_PACKET_DELETE_REPLY, af_packet_delete_reply, e8d4e804) \
-_(VL_API_AF_PACKET_SET_L4_CKSUM_OFFLOAD, af_packet_set_l4_cksum_offload, 86538585) \
+_(VL_API_AF_PACKET_SET_L4_CKSUM_OFFLOAD, af_packet_set_l4_cksum_offload, 319cd5c8) \
 _(VL_API_AF_PACKET_SET_L4_CKSUM_OFFLOAD_REPLY, af_packet_set_l4_cksum_offload_reply, e8d4e804) \
 _(VL_API_AF_PACKET_DUMP, af_packet_dump, 51077d14) \
-_(VL_API_AF_PACKET_DETAILS, af_packet_details, 057205fa) 
+_(VL_API_AF_PACKET_DETAILS, af_packet_details, 58c7c042) 
 #endif
-
 /****** Typedefs ******/
 
 #ifdef vl_typedefs
-#ifndef included_af_packet_api
-#define included_af_packet_api
-#ifndef _vl_api_defined_af_packet_create
-#define _vl_api_defined_af_packet_create
-typedef VL_API_PACKED(struct _vl_api_af_packet_create {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u8 host_if_name[64];
-    u8 hw_addr[6];
-    u8 use_random_hw_addr;
-}) vl_api_af_packet_create_t;
+#include "af_packet.api_types.h"
 #endif
-
-#ifndef _vl_api_defined_af_packet_create_reply
-#define _vl_api_defined_af_packet_create_reply
-typedef VL_API_PACKED(struct _vl_api_af_packet_create_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-    u32 sw_if_index;
-}) vl_api_af_packet_create_reply_t;
-#endif
-
-#ifndef _vl_api_defined_af_packet_delete
-#define _vl_api_defined_af_packet_delete
-typedef VL_API_PACKED(struct _vl_api_af_packet_delete {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u8 host_if_name[64];
-}) vl_api_af_packet_delete_t;
-#endif
-
-#ifndef _vl_api_defined_af_packet_delete_reply
-#define _vl_api_defined_af_packet_delete_reply
-typedef VL_API_PACKED(struct _vl_api_af_packet_delete_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_af_packet_delete_reply_t;
-#endif
-
-#ifndef _vl_api_defined_af_packet_set_l4_cksum_offload
-#define _vl_api_defined_af_packet_set_l4_cksum_offload
-typedef VL_API_PACKED(struct _vl_api_af_packet_set_l4_cksum_offload {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u8 sw_if_index;
-    u8 set;
-}) vl_api_af_packet_set_l4_cksum_offload_t;
-#endif
-
-#ifndef _vl_api_defined_af_packet_set_l4_cksum_offload_reply
-#define _vl_api_defined_af_packet_set_l4_cksum_offload_reply
-typedef VL_API_PACKED(struct _vl_api_af_packet_set_l4_cksum_offload_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_af_packet_set_l4_cksum_offload_reply_t;
-#endif
-
-#ifndef _vl_api_defined_af_packet_dump
-#define _vl_api_defined_af_packet_dump
-typedef VL_API_PACKED(struct _vl_api_af_packet_dump {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-}) vl_api_af_packet_dump_t;
-#endif
-
-#ifndef _vl_api_defined_af_packet_details
-#define _vl_api_defined_af_packet_details
-typedef VL_API_PACKED(struct _vl_api_af_packet_details {
-    u16 _vl_msg_id;
-    u32 context;
-    u32 sw_if_index;
-    u8 host_if_name[64];
-}) vl_api_af_packet_details_t;
-#endif
-
-
-#endif
-#endif
-
 /****** Print functions *****/
 #ifdef vl_printfun
+#ifndef included_af_packet_printfun_types
+#define included_af_packet_printfun_types
+
+
+#endif
+#endif /* vl_printfun_types */
+/****** Print functions *****/
+#ifdef vl_printfun
+#ifndef included_af_packet_printfun
+#define included_af_packet_printfun
 
 #ifdef LP64
 #define _uword_fmt "%lld"
@@ -155,119 +85,130 @@ typedef VL_API_PACKED(struct _vl_api_af_packet_details {
 #define _uword_cast long
 #endif
 
-#ifndef _vl_api_defined_af_packet_create_t_print
-#define _vl_api_defined_af_packet_create_t_print
-static inline void *vl_api_af_packet_create_t_print (vl_api_af_packet_create_t *a,void *handle)
+static inline void *vl_api_af_packet_create_t_print (vl_api_af_packet_create_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_af_packet_create_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "use_random_hw_addr: %u\n", a->use_random_hw_addr);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_af_packet_create_t: */
+    s = format(s, "vl_api_af_packet_create_t:");
+    s = format(s, "\n%Uhw_addr: %U", format_white_space, indent, format_vl_api_mac_address_t, &a->hw_addr, indent);
+    s = format(s, "\n%Uuse_random_hw_addr: %u", format_white_space, indent, a->use_random_hw_addr);
+    s = format(s, "\n%Uhost_if_name: %s", format_white_space, indent, a->host_if_name);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_af_packet_create_reply_t_print
-#define _vl_api_defined_af_packet_create_reply_t_print
-static inline void *vl_api_af_packet_create_reply_t_print (vl_api_af_packet_create_reply_t *a,void *handle)
+static inline void *vl_api_af_packet_create_reply_t_print (vl_api_af_packet_create_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_af_packet_create_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
-    vl_print(handle, "sw_if_index: %u\n", a->sw_if_index);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_af_packet_create_reply_t: */
+    s = format(s, "vl_api_af_packet_create_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    s = format(s, "\n%Usw_if_index: %U", format_white_space, indent, format_vl_api_interface_index_t, &a->sw_if_index, indent);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_af_packet_delete_t_print
-#define _vl_api_defined_af_packet_delete_t_print
-static inline void *vl_api_af_packet_delete_t_print (vl_api_af_packet_delete_t *a,void *handle)
+static inline void *vl_api_af_packet_delete_t_print (vl_api_af_packet_delete_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_af_packet_delete_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_af_packet_delete_t: */
+    s = format(s, "vl_api_af_packet_delete_t:");
+    s = format(s, "\n%Uhost_if_name: %s", format_white_space, indent, a->host_if_name);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_af_packet_delete_reply_t_print
-#define _vl_api_defined_af_packet_delete_reply_t_print
-static inline void *vl_api_af_packet_delete_reply_t_print (vl_api_af_packet_delete_reply_t *a,void *handle)
+static inline void *vl_api_af_packet_delete_reply_t_print (vl_api_af_packet_delete_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_af_packet_delete_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_af_packet_delete_reply_t: */
+    s = format(s, "vl_api_af_packet_delete_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_af_packet_set_l4_cksum_offload_t_print
-#define _vl_api_defined_af_packet_set_l4_cksum_offload_t_print
-static inline void *vl_api_af_packet_set_l4_cksum_offload_t_print (vl_api_af_packet_set_l4_cksum_offload_t *a,void *handle)
+static inline void *vl_api_af_packet_set_l4_cksum_offload_t_print (vl_api_af_packet_set_l4_cksum_offload_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_af_packet_set_l4_cksum_offload_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "sw_if_index: %u\n", a->sw_if_index);
-    vl_print(handle, "set: %u\n", a->set);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_af_packet_set_l4_cksum_offload_t: */
+    s = format(s, "vl_api_af_packet_set_l4_cksum_offload_t:");
+    s = format(s, "\n%Usw_if_index: %U", format_white_space, indent, format_vl_api_interface_index_t, &a->sw_if_index, indent);
+    s = format(s, "\n%Uset: %u", format_white_space, indent, a->set);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_af_packet_set_l4_cksum_offload_reply_t_print
-#define _vl_api_defined_af_packet_set_l4_cksum_offload_reply_t_print
-static inline void *vl_api_af_packet_set_l4_cksum_offload_reply_t_print (vl_api_af_packet_set_l4_cksum_offload_reply_t *a,void *handle)
+static inline void *vl_api_af_packet_set_l4_cksum_offload_reply_t_print (vl_api_af_packet_set_l4_cksum_offload_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_af_packet_set_l4_cksum_offload_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_af_packet_set_l4_cksum_offload_reply_t: */
+    s = format(s, "vl_api_af_packet_set_l4_cksum_offload_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_af_packet_dump_t_print
-#define _vl_api_defined_af_packet_dump_t_print
-static inline void *vl_api_af_packet_dump_t_print (vl_api_af_packet_dump_t *a,void *handle)
+static inline void *vl_api_af_packet_dump_t_print (vl_api_af_packet_dump_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_af_packet_dump_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_af_packet_dump_t: */
+    s = format(s, "vl_api_af_packet_dump_t:");
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_af_packet_details_t_print
-#define _vl_api_defined_af_packet_details_t_print
-static inline void *vl_api_af_packet_details_t_print (vl_api_af_packet_details_t *a,void *handle)
+static inline void *vl_api_af_packet_details_t_print (vl_api_af_packet_details_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_af_packet_details_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "sw_if_index: %u\n", a->sw_if_index);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_af_packet_details_t: */
+    s = format(s, "vl_api_af_packet_details_t:");
+    s = format(s, "\n%Usw_if_index: %U", format_white_space, indent, format_vl_api_interface_index_t, &a->sw_if_index, indent);
+    s = format(s, "\n%Uhost_if_name: %s", format_white_space, indent, a->host_if_name);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
+
 #endif
-
-
 #endif /* vl_printfun */
 
 /****** Endian swap functions *****/
 #ifdef vl_endianfun
+#ifndef included_af_packet_endianfun
+#define included_af_packet_endianfun
 
 #undef clib_net_to_host_uword
 #ifdef LP64
@@ -276,113 +217,94 @@ static inline void *vl_api_af_packet_details_t_print (vl_api_af_packet_details_t
 #define clib_net_to_host_uword clib_net_to_host_u32
 #endif
 
-#ifndef _vl_api_defined_af_packet_create_t_endian
-#define _vl_api_defined_af_packet_create_t_endian
 static inline void vl_api_af_packet_create_t_endian (vl_api_af_packet_create_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
+    vl_api_mac_address_t_endian(&a->hw_addr);
     /* a->use_random_hw_addr = a->use_random_hw_addr (no-op) */
+    /* a->host_if_name = a->host_if_name (no-op) */
 }
 
-#endif
-
-#ifndef _vl_api_defined_af_packet_create_reply_t_endian
-#define _vl_api_defined_af_packet_create_reply_t_endian
 static inline void vl_api_af_packet_create_reply_t_endian (vl_api_af_packet_create_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
-    a->sw_if_index = clib_net_to_host_u32(a->sw_if_index);
+    a->retval = clib_net_to_host_i32(a->retval);
+    vl_api_interface_index_t_endian(&a->sw_if_index);
 }
 
-#endif
-
-#ifndef _vl_api_defined_af_packet_delete_t_endian
-#define _vl_api_defined_af_packet_delete_t_endian
 static inline void vl_api_af_packet_delete_t_endian (vl_api_af_packet_delete_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
+    /* a->host_if_name = a->host_if_name (no-op) */
 }
 
-#endif
-
-#ifndef _vl_api_defined_af_packet_delete_reply_t_endian
-#define _vl_api_defined_af_packet_delete_reply_t_endian
 static inline void vl_api_af_packet_delete_reply_t_endian (vl_api_af_packet_delete_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
-#endif
-
-#ifndef _vl_api_defined_af_packet_set_l4_cksum_offload_t_endian
-#define _vl_api_defined_af_packet_set_l4_cksum_offload_t_endian
 static inline void vl_api_af_packet_set_l4_cksum_offload_t_endian (vl_api_af_packet_set_l4_cksum_offload_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
-    /* a->sw_if_index = a->sw_if_index (no-op) */
+    vl_api_interface_index_t_endian(&a->sw_if_index);
     /* a->set = a->set (no-op) */
 }
 
-#endif
-
-#ifndef _vl_api_defined_af_packet_set_l4_cksum_offload_reply_t_endian
-#define _vl_api_defined_af_packet_set_l4_cksum_offload_reply_t_endian
 static inline void vl_api_af_packet_set_l4_cksum_offload_reply_t_endian (vl_api_af_packet_set_l4_cksum_offload_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
-#endif
-
-#ifndef _vl_api_defined_af_packet_dump_t_endian
-#define _vl_api_defined_af_packet_dump_t_endian
 static inline void vl_api_af_packet_dump_t_endian (vl_api_af_packet_dump_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
 }
 
-#endif
-
-#ifndef _vl_api_defined_af_packet_details_t_endian
-#define _vl_api_defined_af_packet_details_t_endian
 static inline void vl_api_af_packet_details_t_endian (vl_api_af_packet_details_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->sw_if_index = clib_net_to_host_u32(a->sw_if_index);
+    vl_api_interface_index_t_endian(&a->sw_if_index);
+    /* a->host_if_name = a->host_if_name (no-op) */
 }
 
+
 #endif
-
-
 #endif /* vl_endianfun */
 
 /****** Version tuple *****/
 
 #ifdef vl_api_version_tuple
 
-vl_api_version_tuple(af_packet.api, 1, 0, 0)
+vl_api_version_tuple(af_packet.api, 2, 0, 0)
 
 #endif /* vl_api_version_tuple */
 
 /****** API CRC (whole file) *****/
 
 #ifdef vl_api_version
-vl_api_version(af_packet.api, 0xfefd69b7)
+vl_api_version(af_packet.api, 0x9376338)
 
 #endif
 

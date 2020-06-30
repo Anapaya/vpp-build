@@ -22,18 +22,33 @@
 #define MIN(x,y) (((x)<(y))?(x):(y))
 #endif
 
+#define foreach_tapv2_flags  \
+  _ (GSO, 0)                 \
+  _ (CSUM_OFFLOAD, 1)        \
+  _ (PERSIST, 2)             \
+  _ (ATTACH, 3)              \
+  _ (TUN, 4)                 \
+  _ (GRO_COALESCE, 5)
+
+typedef enum
+{
+#define _(a, b) TAP_FLAG_##a = (1 << b),
+  foreach_tapv2_flags
+#undef _
+} tap_flag_t;
+
 typedef struct
 {
   u32 id;
   u8 mac_addr_set;
-  u8 mac_addr[6];
+  mac_address_t mac_addr;
+  u8 num_rx_queues;
   u16 rx_ring_sz;
   u16 tx_ring_sz;
   u32 tap_flags;
-#define TAP_FLAG_GSO (1 << 0)
   u8 *host_namespace;
   u8 *host_if_name;
-  u8 host_mac_addr[6];
+  mac_address_t host_mac_addr;
   u8 *host_bridge;
   ip4_address_t host_ip4_addr;
   u8 host_ip4_prefix_len;
@@ -60,13 +75,13 @@ typedef struct
   u8 dev_name[64];
   u16 tx_ring_sz;
   u16 rx_ring_sz;
-  u8 host_mac_addr[6];
+  mac_address_t host_mac_addr;
   u8 host_if_name[64];
   u8 host_namespace[64];
   u8 host_bridge[64];
-  u8 host_ip4_addr[4];
+  ip4_address_t host_ip4_addr;
   u8 host_ip4_prefix_len;
-  u8 host_ip6_addr[16];
+  ip6_address_t host_ip6_addr;
   u8 host_ip6_prefix_len;
   u32 host_mtu_size;
 } tap_interface_details_t;
@@ -87,6 +102,9 @@ void tap_create_if (vlib_main_t * vm, tap_create_if_args_t * args);
 int tap_delete_if (vlib_main_t * vm, u32 sw_if_index);
 int tap_gso_enable_disable (vlib_main_t * vm, u32 sw_if_index,
 			    int enable_disable);
+int
+tap_csum_offload_enable_disable (vlib_main_t * vm, u32 sw_if_index,
+				 int enable_disable);
 int tap_dump_ifs (tap_interface_details_t ** out_tapids);
 
 #endif /* _VNET_DEVICES_VIRTIO_TAP_H_ */

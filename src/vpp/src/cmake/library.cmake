@@ -34,7 +34,7 @@ macro(add_vpp_library lib)
   endif()
   install(
     TARGETS ${lib}
-    DESTINATION lib
+    DESTINATION ${VPP_LIBRARY_DIR}
     COMPONENT ${ARG_COMPONENT}
   )
 
@@ -43,11 +43,13 @@ macro(add_vpp_library lib)
   endif()
 
   if(ARG_API_FILES)
-    vpp_add_api_files(${lib} ${ARG_API_FILES})
+    vpp_add_api_files(${lib} core vpp ${ARG_API_FILES})
     foreach(file ${ARG_API_FILES})
       get_filename_component(dir ${file} DIRECTORY)
       install(
 	FILES ${file} ${CMAKE_CURRENT_BINARY_DIR}/${file}.h
+	${CMAKE_CURRENT_BINARY_DIR}/${file}_enum.h
+	${CMAKE_CURRENT_BINARY_DIR}/${file}_types.h
 	DESTINATION include/${lib}/${dir}
 	COMPONENT vpp-dev
       )

@@ -96,193 +96,10 @@ ip_set (ip46_address_t * dst, void *src, u8 is_ip4)
 		      sizeof (ip6_address_t));
 }
 
-u8
-ip_interface_has_address (u32 sw_if_index, ip46_address_t * ip, u8 is_ip4)
-{
-  ip_interface_address_t *ia = 0;
-
-  if (is_ip4)
-    {
-      ip_lookup_main_t *lm4 = &ip4_main.lookup_main;
-      ip4_address_t *ip4;
-      /* *INDENT-OFF* */
-      foreach_ip_interface_address (lm4, ia, sw_if_index, 1 /* unnumbered */ ,
-      ({
-        ip4 = ip_interface_address_get_address (lm4, ia);
-        if (ip4_address_compare (ip4, &ip->ip4) == 0)
-          return 1;
-      }));
-      /* *INDENT-ON* */
-    }
-  else
-    {
-      ip_lookup_main_t *lm6 = &ip6_main.lookup_main;
-      ip6_address_t *ip6;
-      /* *INDENT-OFF* */
-      foreach_ip_interface_address (lm6, ia, sw_if_index, 1 /* unnumbered */ ,
-      ({
-        ip6 = ip_interface_address_get_address (lm6, ia);
-        if (ip6_address_compare (ip6, &ip->ip6) == 0)
-          return 1;
-      }));
-      /* *INDENT-ON* */
-    }
-  return 0;
-}
-
-void *
-ip_interface_get_first_ip (u32 sw_if_index, u8 is_ip4)
-{
-  ip_lookup_main_t *lm4 = &ip4_main.lookup_main;
-  ip_lookup_main_t *lm6 = &ip6_main.lookup_main;
-  ip_interface_address_t *ia = 0;
-
-  if (is_ip4)
-    {
-      /* *INDENT-OFF* */
-      foreach_ip_interface_address (lm4, ia, sw_if_index, 1 /* unnumbered */ ,
-      ({
-        return ip_interface_address_get_address (lm4, ia);
-      }));
-      /* *INDENT-ON* */
-    }
-  else
-    {
-      /* *INDENT-OFF* */
-      foreach_ip_interface_address (lm6, ia, sw_if_index, 1 /* unnumbered */ ,
-      ({
-        ip6_address_t *rv;
-        rv = ip_interface_address_get_address (lm6, ia);
-        /* Trying to use a link-local ip6 src address is a fool's errand */
-        if (!ip6_address_is_link_local_unicast (rv))
-          return rv;
-      }));
-      /* *INDENT-ON* */
-    }
-
-  return 0;
-}
-
-void
-ip4_address_normalize (ip4_address_t * ip4, u8 preflen)
-{
-  ASSERT (preflen <= 32);
-  if (preflen == 0)
-    ip4->data_u32 = 0;
-  else
-    ip4->data_u32 &= clib_net_to_host_u32 (0xffffffff << (32 - preflen));
-}
-
-void
-ip6_address_normalize (ip6_address_t * ip6, u8 preflen)
-{
-  ASSERT (preflen <= 128);
-  if (preflen == 0)
-    {
-      ip6->as_u64[0] = 0;
-      ip6->as_u64[1] = 0;
-    }
-  else if (preflen <= 64)
-    {
-      ip6->as_u64[0] &=
-	clib_host_to_net_u64 (0xffffffffffffffffL << (64 - preflen));
-      ip6->as_u64[1] = 0;
-    }
-  else
-    ip6->as_u64[1] &=
-      clib_host_to_net_u64 (0xffffffffffffffffL << (128 - preflen));
-}
-
-void
-ip4_preflen_to_mask (u8 pref_len, ip4_address_t * ip)
-{
-  if (pref_len == 0)
-    ip->as_u32 = 0;
-  else
-    ip->as_u32 = clib_host_to_net_u32 (~((1 << (32 - pref_len)) - 1));
-}
-
-u32
-ip4_mask_to_preflen (ip4_address_t * mask)
-{
-  if (mask->as_u32 == 0)
-    return 0;
-  return (32 - log2_first_set (clib_net_to_host_u32 (mask->as_u32)));
-}
-
-void
-ip4_prefix_max_address_host_order (ip4_address_t * ip, u8 plen,
-				   ip4_address_t * res)
-{
-  u32 not_mask;
-  not_mask = (1 << (32 - plen)) - 1;
-  res->as_u32 = clib_net_to_host_u32 (ip->as_u32) + not_mask;
-}
-
-void
-ip6_preflen_to_mask (u8 pref_len, ip6_address_t * mask)
-{
-  if (pref_len == 0)
-    {
-      mask->as_u64[0] = 0;
-      mask->as_u64[1] = 0;
-    }
-  else if (pref_len <= 64)
-    {
-      mask->as_u64[0] =
-	clib_host_to_net_u64 (0xffffffffffffffffL << (64 - pref_len));
-      mask->as_u64[1] = 0;
-    }
-  else
-    {
-      mask->as_u64[0] = 0xffffffffffffffffL;
-      mask->as_u64[1] =
-	clib_host_to_net_u64 (0xffffffffffffffffL << (128 - pref_len));
-    }
-}
-
-void
-ip6_prefix_max_address_host_order (ip6_address_t * ip, u8 plen,
-				   ip6_address_t * res)
-{
-  u64 not_mask;
-  if (plen == 0)
-    {
-      res->as_u64[0] = 0xffffffffffffffffL;
-      res->as_u64[1] = 0xffffffffffffffffL;
-    }
-  else if (plen <= 64)
-    {
-      not_mask = ((u64) 1 << (64 - plen)) - 1;
-      res->as_u64[0] = clib_net_to_host_u64 (ip->as_u64[0]) + not_mask;
-      res->as_u64[1] = 0xffffffffffffffffL;
-    }
-  else
-    {
-      not_mask = ((u64) 1 << (128 - plen)) - 1;
-      res->as_u64[1] = clib_net_to_host_u64 (ip->as_u64[1]) + not_mask;
-    }
-}
-
-u32
-ip6_mask_to_preflen (ip6_address_t * mask)
-{
-  u8 first1, first0;
-  if (mask->as_u64[0] == 0 && mask->as_u64[1] == 0)
-    return 0;
-  first1 = log2_first_set (clib_net_to_host_u64 (mask->as_u64[1]));
-  first0 = log2_first_set (clib_net_to_host_u64 (mask->as_u64[0]));
-
-  if (first1 != 0)
-    return 128 - first1;
-  else
-    return 64 - first0;
-}
-
 u8 *
 format_ip_address_family (u8 * s, va_list * args)
 {
-  ip_address_family_t af = va_arg (*args, ip_address_family_t);
+  ip_address_family_t af = va_arg (*args, int);	// int promo ip_address_family_t);
 
   switch (af)
     {
@@ -293,6 +110,26 @@ format_ip_address_family (u8 * s, va_list * args)
     }
 
   return (format (s, "unknown"));
+}
+
+uword
+unformat_ip_address_family (unformat_input_t * input, va_list * args)
+{
+  ip_address_family_t *af = va_arg (*args, ip_address_family_t *);
+
+  if (unformat (input, "ip4") || unformat (input, "ipv4") ||
+      unformat (input, "IP4") || unformat (input, "IPv4"))
+    {
+      *af = AF_IP4;
+      return (1);
+    }
+  else if (unformat (input, "ip6") || unformat (input, "ipv6") ||
+	   unformat (input, "IP6") || unformat (input, "IPv6"))
+    {
+      *af = AF_IP6;
+      return (1);
+    }
+  return (0);
 }
 
 u8 *
@@ -306,6 +143,23 @@ format_ip_dscp (u8 * s, va_list * va)
     case IP_DSCP_##v:                                           \
       return (format (s, "%s", #v));
       foreach_ip_dscp
+#undef _
+    }
+
+  return (format (s, "unknown"));
+}
+
+u8 *
+format_ip_ecn (u8 * s, va_list * va)
+{
+  ip_ecn_t ecn = va_arg (*va, u32);	// int promotion of u8
+
+  switch (ecn)
+    {
+#define _(n,v)                                                  \
+    case IP_ECN_##v:                                           \
+      return (format (s, "%s", #v));
+      foreach_ip_ecn
 #undef _
     }
 

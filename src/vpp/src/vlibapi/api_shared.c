@@ -32,7 +32,7 @@
 #include <vppinfra/elog.h>
 
 /* *INDENT-OFF* */
-api_main_t api_main =
+api_main_t api_global_main =
   {
     .region_name = "/unset",
     .api_uid = -1,
@@ -40,10 +40,20 @@ api_main_t api_main =
   };
 /* *INDENT-ON* */
 
+/* Please use vlibapi_get_main() to access my_api_main */
+__thread api_main_t *my_api_main = &api_global_main;
+
+void
+vl_msg_api_set_global_main (void *am_arg)
+{
+  ASSERT (am_arg);
+  my_api_main = (api_main_t *) am_arg;
+}
+
 void
 vl_msg_api_increment_missing_client_counter (void)
 {
-  api_main_t *am = &api_main;
+  api_main_t *am = vlibapi_get_main ();
   am->missing_clients++;
 }
 
@@ -249,7 +259,6 @@ vl_msg_api_trace_save (api_main_t * am, vl_api_trace_which_t which, FILE * fp)
   fh.wrapped = tp->wrapped;
   fh.nitems = clib_host_to_net_u32 (vec_len (tp->traces));
   u8 *m = vl_api_serialize_message_table (am, 0);
-  clib_warning ("Message table length %d", vec_len (m));
   fh.msgtbl_size = clib_host_to_net_u32 (vec_len (m));
 
   if (fwrite (&fh, sizeof (fh), 1, fp) != 1)
@@ -524,15 +533,19 @@ msg_handler_internal (api_main_t * am,
     }
 }
 
+void (*vl_msg_api_fuzz_hook) (u16, void *);
+
 /* This is only to be called from a vlib/vnet app */
 void
-vl_msg_api_handler_with_vm_node (api_main_t * am,
+vl_msg_api_handler_with_vm_node (api_main_t * am, svm_region_t * vlib_rp,
 				 void *the_msg, vlib_main_t * vm,
-				 vlib_node_runtime_t * node)
+				 vlib_node_runtime_t * node, u8 is_private)
 {
   u16 id = clib_net_to_host_u16 (*((u16 *) the_msg));
   u8 *(*handler) (void *, void *, void *);
   u8 *(*print_fp) (void *, void *);
+  svm_region_t *old_vlib_rp;
+  void *save_shmem_hdr;
   int is_mp_safe = 1;
 
   if (PREDICT_FALSE (am->elog_trace_api_messages))
@@ -582,7 +595,23 @@ vl_msg_api_handler_with_vm_node (api_main_t * am,
 	  vl_msg_api_barrier_trace_context (am->msg_names[id]);
 	  vl_msg_api_barrier_sync ();
 	}
+      if (is_private)
+	{
+	  old_vlib_rp = am->vlib_rp;
+	  save_shmem_hdr = am->shmem_hdr;
+	  am->vlib_rp = vlib_rp;
+	  am->shmem_hdr = (void *) vlib_rp->user_ctx;
+	}
+
+      if (PREDICT_FALSE (vl_msg_api_fuzz_hook != 0))
+	(*vl_msg_api_fuzz_hook) (id, the_msg);
+
       (*handler) (the_msg, vm, node);
+      if (is_private)
+	{
+	  am->vlib_rp = old_vlib_rp;
+	  am->shmem_hdr = save_shmem_hdr;
+	}
       if (!is_mp_safe)
 	vl_msg_api_barrier_release ();
     }
@@ -631,7 +660,7 @@ vl_msg_api_handler_with_vm_node (api_main_t * am,
 void
 vl_msg_api_handler (void *the_msg)
 {
-  api_main_t *am = &api_main;
+  api_main_t *am = vlibapi_get_main ();
 
   msg_handler_internal (am, the_msg,
 			(am->rx_trace
@@ -642,7 +671,7 @@ vl_msg_api_handler (void *the_msg)
 void
 vl_msg_api_handler_no_free (void *the_msg)
 {
-  api_main_t *am = &api_main;
+  api_main_t *am = vlibapi_get_main ();
   msg_handler_internal (am, the_msg,
 			(am->rx_trace
 			 && am->rx_trace->enabled) /* trace_it */ ,
@@ -652,7 +681,7 @@ vl_msg_api_handler_no_free (void *the_msg)
 void
 vl_msg_api_handler_no_trace_no_free (void *the_msg)
 {
-  api_main_t *am = &api_main;
+  api_main_t *am = vlibapi_get_main ();
   msg_handler_internal (am, the_msg, 0 /* trace_it */ , 1 /* do_it */ ,
 			0 /* free_it */ );
 }
@@ -669,7 +698,7 @@ vl_msg_api_handler_no_trace_no_free (void *the_msg)
 void
 vl_msg_api_trace_only (void *the_msg)
 {
-  api_main_t *am = &api_main;
+  api_main_t *am = vlibapi_get_main ();
 
   msg_handler_internal (am, the_msg,
 			(am->rx_trace
@@ -680,7 +709,7 @@ vl_msg_api_trace_only (void *the_msg)
 void
 vl_msg_api_cleanup_handler (void *the_msg)
 {
-  api_main_t *am = &api_main;
+  api_main_t *am = vlibapi_get_main ();
   u16 id = clib_net_to_host_u16 (*((u16 *) the_msg));
 
   if (PREDICT_FALSE (id >= vec_len (am->msg_cleanup_handlers)))
@@ -700,7 +729,7 @@ vl_msg_api_cleanup_handler (void *the_msg)
 void
 vl_msg_api_replay_handler (void *the_msg)
 {
-  api_main_t *am = &api_main;
+  api_main_t *am = vlibapi_get_main ();
 
   u16 id = clib_net_to_host_u16 (*((u16 *) the_msg));
 
@@ -727,7 +756,7 @@ vl_msg_api_get_msg_length (void *msg_arg)
 void
 vl_msg_api_socket_handler (void *the_msg)
 {
-  api_main_t *am = &api_main;
+  api_main_t *am = vlibapi_get_main ();
 
   msg_handler_internal (am, the_msg,
 			(am->rx_trace
@@ -748,7 +777,7 @@ _(is_mp_safe)
 void
 vl_msg_api_config (vl_msg_api_msg_config_t * c)
 {
-  api_main_t *am = &api_main;
+  api_main_t *am = vlibapi_get_main ();
 
   /*
    * This happens during the java core tests if the message
@@ -831,7 +860,7 @@ vl_msg_api_clean_handlers (int msg_id)
 void
 vl_msg_api_set_cleanup_handler (int msg_id, void *fp)
 {
-  api_main_t *am = &api_main;
+  api_main_t *am = vlibapi_get_main ();
   ASSERT (msg_id > 0);
 
   vec_validate (am->msg_cleanup_handlers, msg_id);
@@ -845,6 +874,21 @@ vl_msg_api_queue_handler (svm_queue_t * q)
 
   while (!svm_queue_sub (q, (u8 *) & msg, SVM_Q_WAIT, 0))
     vl_msg_api_handler ((void *) msg);
+}
+
+u32
+vl_msg_api_max_length (void *mp)
+{
+  msgbuf_t *mb;
+  u32 data_len = ~0;
+
+  /* Work out the maximum sane message length, and return it */
+  if (PREDICT_TRUE (mp != 0))
+    {
+      mb = (msgbuf_t *) (((u8 *) mp) - offsetof (msgbuf_t, data));
+      data_len = clib_net_to_host_u32 (mb->data_len);
+    }
+  return data_len;
 }
 
 vl_api_trace_t *
@@ -878,7 +922,7 @@ vl_msg_api_post_mortem_dump_enable_disable (int enable)
 void
 vl_msg_api_post_mortem_dump (void)
 {
-  api_main_t *am = &api_main;
+  api_main_t *am = vlibapi_get_main ();
   FILE *fp;
   char filename[64];
   int rv;
@@ -913,7 +957,7 @@ vl_msg_api_post_mortem_dump (void)
 void
 vl_msg_api_register_pd_handler (void *fp, u16 msg_id_host_byte_order)
 {
-  api_main_t *am = &api_main;
+  api_main_t *am = vlibapi_get_main ();
 
   /* Mild idiot proofing */
   if (msg_id_host_byte_order > 10000)
@@ -927,7 +971,7 @@ vl_msg_api_register_pd_handler (void *fp, u16 msg_id_host_byte_order)
 int
 vl_msg_api_pd_handler (void *mp, int rv)
 {
-  api_main_t *am = &api_main;
+  api_main_t *am = vlibapi_get_main ();
   int (*fp) (void *, int);
   u16 msg_id;
 
@@ -948,7 +992,7 @@ vl_msg_api_pd_handler (void *mp, int rv)
 void
 vl_msg_api_set_first_available_msg_id (u16 first_avail)
 {
-  api_main_t *am = &api_main;
+  api_main_t *am = vlibapi_get_main ();
 
   am->first_available_msg_id = first_avail;
 }
@@ -956,7 +1000,7 @@ vl_msg_api_set_first_available_msg_id (u16 first_avail)
 u16
 vl_msg_api_get_msg_ids (const char *name, int n)
 {
-  api_main_t *am = &api_main;
+  api_main_t *am = vlibapi_get_main ();
   u8 *name_copy;
   vl_api_msg_range_t *rp;
   uword *p;
@@ -1028,7 +1072,7 @@ vl_msg_api_add_version (api_main_t * am, const char *string,
 u32
 vl_msg_api_get_msg_index (u8 * name_and_crc)
 {
-  api_main_t *am = &api_main;
+  api_main_t *am = vlibapi_get_main ();
   uword *p;
 
   if (am->msg_index_by_name_and_crc)
@@ -1041,29 +1085,46 @@ vl_msg_api_get_msg_index (u8 * name_and_crc)
 }
 
 void *
+vl_msg_push_heap_w_region (svm_region_t * vlib_rp)
+{
+  pthread_mutex_lock (&vlib_rp->mutex);
+  return svm_push_data_heap (vlib_rp);
+}
+
+void *
 vl_msg_push_heap (void)
 {
-  api_main_t *am = &api_main;
-  pthread_mutex_lock (&am->vlib_rp->mutex);
-  return svm_push_data_heap (am->vlib_rp);
+  api_main_t *am = vlibapi_get_main ();
+  return vl_msg_push_heap_w_region (am->vlib_rp);
+}
+
+void
+vl_msg_pop_heap_w_region (svm_region_t * vlib_rp, void *oldheap)
+{
+  svm_pop_heap (oldheap);
+  pthread_mutex_unlock (&vlib_rp->mutex);
 }
 
 void
 vl_msg_pop_heap (void *oldheap)
 {
-  api_main_t *am = &api_main;
-  svm_pop_heap (oldheap);
-  pthread_mutex_unlock (&am->vlib_rp->mutex);
+  api_main_t *am = vlibapi_get_main ();
+  vl_msg_pop_heap_w_region (am->vlib_rp, oldheap);
 }
 
+/* Must be nul terminated */
 int
-vl_api_to_api_string (u32 len, const char *buf, vl_api_string_t * str)
+vl_api_c_string_to_api_string (const char *buf, vl_api_string_t * str)
 {
-  clib_memcpy_fast (str->buf, buf, len);
+  /* copy without nul terminator */
+  u32 len = strlen (buf);
+  if (len > 0)
+    clib_memcpy_fast (str->buf, buf, len);
   str->length = htonl (len);
   return len + sizeof (u32);
 }
 
+/* Must NOT be nul terminated */
 int
 vl_api_vec_to_api_string (const u8 * vec, vl_api_string_t * str)
 {
@@ -1073,34 +1134,56 @@ vl_api_vec_to_api_string (const u8 * vec, vl_api_string_t * str)
   return len + sizeof (u32);
 }
 
-/* Return a pointer to the API string (not nul terminated */
-u8 *
-vl_api_from_api_string (vl_api_string_t * astr)
-{
-  return astr->buf;
-}
-
 u32
 vl_api_string_len (vl_api_string_t * astr)
 {
   return clib_net_to_host_u32 (astr->length);
 }
 
+u8 *
+vl_api_format_string (u8 * s, va_list * args)
+{
+  vl_api_string_t *a = va_arg (*args, vl_api_string_t *);
+  vec_add (s, a->buf, clib_net_to_host_u32 (a->length));
+  return s;
+}
+
 /*
  * Returns a new vector. Remember to free it after use.
+ * NOT nul terminated.
  */
 u8 *
-vl_api_from_api_to_vec (vl_api_string_t * astr)
+vl_api_from_api_to_new_vec (void *mp, vl_api_string_t * astr)
 {
   u8 *v = 0;
+
+  if (vl_msg_api_max_length (mp) < clib_net_to_host_u32 (astr->length))
+    return format (0, "insane astr->length %u%c",
+		   clib_net_to_host_u32 (astr->length), 0);
   vec_add (v, astr->buf, clib_net_to_host_u32 (astr->length));
+  return v;
+}
+
+/*
+ * Returns a new vector. Remember to free it after use.
+ * Nul terminated.
+ */
+char *
+vl_api_from_api_to_new_c_string (vl_api_string_t * astr)
+{
+  char *v = 0;
+  if (clib_net_to_host_u32 (astr->length) > 0)
+    {
+      vec_add (v, astr->buf, clib_net_to_host_u32 (astr->length));
+      vec_add1 (v, 0);
+    }
   return v;
 }
 
 void
 vl_api_set_elog_main (elog_main_t * m)
 {
-  api_main_t *am = &api_main;
+  api_main_t *am = vlibapi_get_main ();
   am->elog_main = m;
 }
 
@@ -1108,7 +1191,7 @@ int
 vl_api_set_elog_trace_api_messages (int enable)
 {
   int rv;
-  api_main_t *am = &api_main;
+  api_main_t *am = vlibapi_get_main ();
 
   rv = am->elog_trace_api_messages;
   am->elog_trace_api_messages = enable;
@@ -1118,7 +1201,7 @@ vl_api_set_elog_trace_api_messages (int enable)
 int
 vl_api_get_elog_trace_api_messages (void)
 {
-  api_main_t *am = &api_main;
+  api_main_t *am = vlibapi_get_main ();
 
   return am->elog_trace_api_messages;
 }

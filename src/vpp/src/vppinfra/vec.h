@@ -96,12 +96,14 @@
     @param data_bytes requested size in bytes
     @param header_bytes header size in bytes (may be zero)
     @param data_align alignment (may be zero)
+    @param numa_id numa id (may be zero)
     @return v_prime pointer to resized vector, may or may not equal v
 */
 void *vec_resize_allocate_memory (void *v,
 				  word length_increment,
 				  uword data_bytes,
-				  uword header_bytes, uword data_align);
+				  uword header_bytes, uword data_align,
+				  uword numa_id);
 
 /** \brief Low-level vector resize function, usually not called directly
 
@@ -110,19 +112,29 @@ void *vec_resize_allocate_memory (void *v,
     @param data_bytes requested size in bytes
     @param header_bytes header size in bytes (may be zero)
     @param data_align alignment (may be zero)
+    @param numa_id (may be ~0)
     @return v_prime pointer to resized vector, may or may not equal v
 */
 
-#define _vec_resize(V,L,DB,HB,A) \
-  _vec_resize_inline(V,L,DB,HB,clib_max((__alignof__((V)[0])),(A)))
+#define _vec_resize_numa(V,L,DB,HB,A,S)					\
+({									\
+  __typeof__ ((V)) _V;							\
+  _V = _vec_resize_inline(V,L,DB,HB,clib_max((__alignof__((V)[0])),(A)),(S)); \
+  _V;									\
+})
+
+#define _vec_resize(V,L,DB,HB,A)  \
+  _vec_resize_numa(V,L,DB,HB,A,VEC_NUMA_UNSPECIFIED)
 
 always_inline void *
 _vec_resize_inline (void *v,
 		    word length_increment,
-		    uword data_bytes, uword header_bytes, uword data_align)
+		    uword data_bytes, uword header_bytes, uword data_align,
+		    uword numa_id)
 {
   vec_header_t *vh = _vec_find (v);
   uword new_data_bytes, aligned_header_bytes;
+  void *oldheap;
 
   aligned_header_bytes = vec_header_bytes (header_bytes);
 
@@ -132,22 +144,33 @@ _vec_resize_inline (void *v,
     {
       void *p = v - aligned_header_bytes;
 
+      if (PREDICT_FALSE (numa_id != VEC_NUMA_UNSPECIFIED))
+	{
+	  oldheap = clib_mem_get_per_cpu_heap ();
+	  clib_mem_set_per_cpu_heap (clib_mem_get_per_numa_heap (numa_id));
+	}
+
       /* Vector header must start heap object. */
       ASSERT (clib_mem_is_heap_object (p));
 
       /* Typically we'll not need to resize. */
       if (new_data_bytes <= clib_mem_size (p))
 	{
+	  CLIB_MEM_UNPOISON (v, data_bytes);
 	  vh->len += length_increment;
+	  if (PREDICT_FALSE (numa_id != VEC_NUMA_UNSPECIFIED))
+	    clib_mem_set_per_cpu_heap (oldheap);
 	  return v;
 	}
+      if (PREDICT_FALSE (numa_id != VEC_NUMA_UNSPECIFIED))
+	clib_mem_set_per_cpu_heap (oldheap);
     }
 
   /* Slow path: call helper function. */
   return vec_resize_allocate_memory (v, length_increment, data_bytes,
 				     header_bytes,
 				     clib_max (sizeof (vec_header_t),
-					       data_align));
+					       data_align), numa_id);
 }
 
 /** \brief Determine if vector will resize with next allocation
@@ -220,15 +243,31 @@ clib_mem_is_vec (void *v)
     @param N number of elements to add
     @param H header size in bytes (may be zero)
     @param A alignment (may be zero)
+    @param S numa_id (may be zero)
     @return V (value-result macro parameter)
 */
 
-#define vec_resize_ha(V,N,H,A)							\
-do {										\
-  word _v(n) = (N);								\
-  word _v(l) = vec_len (V);							\
-  V = _vec_resize ((V), _v(n), (_v(l) + _v(n)) * sizeof ((V)[0]), (H), (A));	\
+#define vec_resize_has(V,N,H,A,S)                               \
+do {                                                            \
+  word _v(n) = (N);                                             \
+  word _v(l) = vec_len (V);                                     \
+  V = _vec_resize_numa ((V), _v(n),                           \
+                          (_v(l) + _v(n)) * sizeof ((V)[0]),    \
+                          (H), (A),(S));                        \
 } while (0)
+
+/** \brief Resize a vector (less general version).
+   Add N elements to end of given vector V, return pointer to start of vector.
+   Vector will have room for H header bytes and will have user's data aligned
+   at alignment A (rounded to next power of 2).
+
+    @param V pointer to a vector
+    @param N number of elements to add
+    @param H header size in bytes (may be zero)
+    @param A alignment (may be zero)
+    @return V (value-result macro parameter)
+*/
+#define vec_resize_ha(V,N,H,A) vec_resize_has(V,N,H,A,VEC_NUMA_UNSPECIFIED)
 
 /** \brief Resize a vector (no header, unspecified alignment)
    Add N elements to end of given vector V, return pointer to start of vector.
@@ -295,10 +334,10 @@ do {						\
     @param A alignment (may be zero)
     @return V new vector
 */
-#define vec_new_ha(T,N,H,A)					\
-({								\
-  word _v(n) = (N);						\
-  _vec_resize ((T *) 0, _v(n), _v(n) * sizeof (T), (H), (A));	\
+#define vec_new_ha(T,N,H,A)						\
+({									\
+  word _v(n) = (N);							\
+  (T *)_vec_resize ((T *) 0, _v(n), _v(n) * sizeof (T), (H), (A));	\
 })
 
 /** \brief Create new vector of given type and length
@@ -351,21 +390,34 @@ do {						\
     @param V pointer to a vector
     @param H size of header in bytes
     @param A alignment (may be zero)
+    @param S numa (may be VEC_NUMA_UNSPECIFIED)
 
     @return Vdup copy of vector
 */
 
-#define vec_dup_ha(V,H,A)				\
+#define vec_dup_ha_numa(V,H,A,S)                      \
 ({							\
   __typeof__ ((V)[0]) * _v(v) = 0;			\
   uword _v(l) = vec_len (V);				\
   if (_v(l) > 0)					\
     {							\
-      vec_resize_ha (_v(v), _v(l), (H), (A));		\
+      vec_resize_has (_v(v), _v(l), (H), (A), (S));     \
       clib_memcpy_fast (_v(v), (V), _v(l) * sizeof ((V)[0]));\
     }							\
   _v(v);						\
 })
+
+/** \brief Return copy of vector (VEC_NUMA_UNSPECIFIED).
+
+    @param V pointer to a vector
+    @param H size of header in bytes
+    @param A alignment (may be zero)
+
+    @return Vdup copy of vector
+*/
+#define vec_dup_ha(V,H,A) \
+  vec_dup_ha_numa(V,H,A,VEC_NUMA_UNSPECIFIED)
+
 
 /** \brief Return copy of vector (no header, no alignment)
 
@@ -411,23 +463,39 @@ do {										\
     @param I vector index which will be valid upon return
     @param H header size in bytes (may be zero)
     @param A alignment (may be zero)
+    @param N numa_id (may be zero)
     @return V (value-result macro parameter)
 */
 
-#define vec_validate_ha(V,I,H,A)					\
-do {									\
-  STATIC_ASSERT(A==0 || ((A % sizeof(V[0]))==0) || ((sizeof(V[0]) % A) == 0),\
-                "vector validate aligned on incorrectly sized object"); \
-  word _v(i) = (I);							\
-  word _v(l) = vec_len (V);						\
-  if (_v(i) >= _v(l))							\
-    {									\
-      vec_resize_ha ((V), 1 + (_v(i) - _v(l)), (H), (A));		\
-      /* Must zero new space since user may have previously		\
-	 used e.g. _vec_len (v) -= 10 */				\
-      clib_memset ((V) + _v(l), 0, (1 + (_v(i) - _v(l))) * sizeof ((V)[0]));	\
-    }									\
+#define vec_validate_han(V,I,H,A,N)                                     \
+do {                                                                    \
+  void *oldheap;                                                        \
+  STATIC_ASSERT(A==0 || ((A % sizeof(V[0]))==0)                         \
+        || ((sizeof(V[0]) % A) == 0),                                   \
+    "vector validate aligned on incorrectly sized object");             \
+  word _v(i) = (I);                                                     \
+  word _v(l) = vec_len (V);                                             \
+  if (_v(i) >= _v(l))                                                   \
+    {                                                                   \
+      /* switch to the per-numa heap if directed */                   \
+      if (PREDICT_FALSE(N != VEC_NUMA_UNSPECIFIED))                   \
+        {                                                               \
+           oldheap = clib_mem_get_per_cpu_heap();                       \
+           clib_mem_set_per_cpu_heap (clib_mem_get_per_numa_heap(N)); \
+        }                                                               \
+                                                                        \
+      vec_resize_ha ((V), 1 + (_v(i) - _v(l)), (H), (A));               \
+      /* Must zero new space since user may have previously             \
+	 used e.g. _vec_len (v) -= 10 */                                \
+      clib_memset ((V) + _v(l), 0,                                      \
+                   (1 + (_v(i) - _v(l))) * sizeof ((V)[0]));            \
+      /* Switch back to the global heap */                              \
+      if (PREDICT_FALSE (N != VEC_NUMA_UNSPECIFIED))                  \
+        clib_mem_set_per_cpu_heap (oldheap);                            \
+    }                                                                   \
 } while (0)
+
+#define vec_validate_ha(V,I,H,A) vec_validate_han(V,I,H,A,VEC_NUMA_UNSPECIFIED)
 
 /** \brief Make sure vector is long enough for given index
     (no header, unspecified alignment)
@@ -794,6 +862,7 @@ do {								\
   if (_v(n) > 0)						\
     clib_memset ((V) + _v(l) - _v(n), 0, _v(n) * sizeof ((V)[0]));	\
   _vec_len (V) -= _v(n);					\
+  CLIB_MEM_POISON(vec_end(V), _v(n) * sizeof ((V)[0]));         \
 } while (0)
 
 /** \brief Delete the element at index I
@@ -808,6 +877,7 @@ do {						\
   if (_vec_del_i < _vec_del_l)			\
     (v)[_vec_del_i] = (v)[_vec_del_l];		\
   _vec_len (v) = _vec_del_l;			\
+  CLIB_MEM_POISON(vec_end(v), sizeof ((v)[0])); \
 } while (0)
 
 /** \brief Append v2 after v1. Result in v1.
@@ -974,12 +1044,16 @@ do {						\
 
 /** \brief Sort a vector using the supplied element comparison function
 
+    Does not depend on the underlying implementation to deal correctly
+    with null, zero-long, or 1-long vectors
+
     @param vec vector to sort
     @param f comparison function
 */
-#define vec_sort_with_function(vec,f)				\
-do {								\
-  qsort (vec, vec_len (vec), sizeof (vec[0]), (void *) (f));	\
+#define vec_sort_with_function(vec,f)                           \
+do {                                                            \
+  if (vec_len (vec) > 1)                                        \
+    qsort (vec, vec_len (vec), sizeof (vec[0]), (void *) (f));  \
 } while (0)
 
 /** \brief Make a vector containing a NULL terminated c-string.

@@ -18,10 +18,14 @@
 #include <vlibmemory/api.h>
 #include <vppinfra/error.h>
 #include <gtpu/gtpu.h>
+#include <vnet/ip/ip_types_api.h>
 
 #define __plugin_msg_base gtpu_test_main.msg_id_base
 #include <vlibapi/vat_helper_macros.h>
 
+#include <vnet/format_fns.h>
+#include <gtpu/gtpu.api_enum.h>
+#include <gtpu/gtpu.api_types.h>
 
 uword unformat_ip46_address (unformat_input_t * input, va_list * args)
 {
@@ -60,36 +64,6 @@ uword unformat_ip46_prefix (unformat_input_t * input, va_list * args)
 }
 /////////////////////////
 
-#define vl_msg_id(n,h) n,
-typedef enum {
-#include <gtpu/gtpu.api.h>
-    /* We'll want to know how many messages IDs we need... */
-    VL_MSG_FIRST_AVAILABLE,
-} vl_msg_id_t;
-#undef vl_msg_id
-
-/* define message structures */
-#define vl_typedefs
-#include <gtpu/gtpu.api.h>
-#undef vl_typedefs
-
-/* declare message handlers for each api */
-
-#define vl_endianfun             /* define message structures */
-#include <gtpu/gtpu.api.h>
-#undef vl_endianfun
-
-/* instantiate all the print functions we know about */
-#define vl_print(handle, ...)
-#define vl_printfun
-#include <gtpu/gtpu.api.h>
-#undef vl_printfun
-
-/* Get the API version number. */
-#define vl_api_version(n,v) static u32 api_version=(v);
-#include <gtpu/gtpu.api.h>
-#undef vl_api_version
-
 typedef struct {
     /* API message ID base */
     u16 msg_id_base;
@@ -115,36 +89,6 @@ static void vl_api_gtpu_add_del_tunnel_reply_t_handler
     }
 }
 
-
-#define foreach_standard_reply_retval_handler   \
-    _(sw_interface_set_gtpu_bypass_reply)
-
-#define _(n)                                            \
-    static void vl_api_##n##_t_handler                  \
-    (vl_api_##n##_t * mp)                               \
-    {                                                   \
-        vat_main_t * vam = gtpu_test_main.vat_main;   \
-        i32 retval = ntohl(mp->retval);                 \
-        if (vam->async_mode) {                          \
-            vam->async_errors += (retval < 0);          \
-        } else {                                        \
-            vam->retval = retval;                       \
-            vam->result_ready = 1;                      \
-        }                                               \
-    }
-  foreach_standard_reply_retval_handler;
-#undef _
-
-/*
- * Table of message reply handlers, must include boilerplate handlers
- * we just generated
- */
-#define foreach_vpe_api_reply_msg                               \
-  _(SW_INTERFACE_SET_GTPU_BYPASS_REPLY, sw_interface_set_gtpu_bypass_reply) \
-  _(GTPU_ADD_DEL_TUNNEL_REPLY, gtpu_add_del_tunnel_reply)               \
-  _(GTPU_TUNNEL_DETAILS, gtpu_tunnel_details)
-
-
 static uword
 api_unformat_sw_if_index (unformat_input_t * input, va_list * args)
 {
@@ -161,6 +105,12 @@ api_unformat_sw_if_index (unformat_input_t * input, va_list * args)
     return 0;
   *result = p[0];
   return 1;
+}
+
+static uword
+api_unformat_hw_if_index (unformat_input_t * input, va_list * args)
+{
+  return 0;
 }
 
 static int
@@ -227,6 +177,58 @@ static uword unformat_gtpu_decap_next
   else
     return 0;
   return 1;
+}
+
+static int
+api_gtpu_offload_rx (vat_main_t * vam)
+{
+  unformat_input_t *line_input = vam->input;
+  vl_api_gtpu_offload_rx_t *mp;
+  u32 rx_sw_if_index = ~0;
+  u32 hw_if_index = ~0;
+  int is_add = 1;
+  int ret;
+
+  while (unformat_check_input (line_input) != UNFORMAT_END_OF_INPUT)
+    {
+		  if (unformat (line_input, "hw %U", api_unformat_hw_if_index, vam, &hw_if_index))
+		    ;
+		  else
+		  if (unformat (line_input, "rx %U", api_unformat_sw_if_index, vam, &rx_sw_if_index))
+		    ;
+		  else
+      if (unformat (line_input, "del"))
+      {
+	is_add = 0;
+	continue;
+	    }
+      else
+      {
+	errmsg ("parse error '%U'", format_unformat_error, line_input);
+	return -99;
+      }
+    }
+
+  if (rx_sw_if_index == ~0)
+    {
+      errmsg ("missing rx interface");
+      return -99;
+    }
+
+  if (hw_if_index == ~0)
+    {
+      errmsg ("missing hw interface");
+      return -99;
+    }
+
+  M (GTPU_OFFLOAD_RX, mp);
+  mp->hw_if_index = ntohl (hw_if_index);
+  mp->sw_if_index = ntohl (rx_sw_if_index);
+  mp->enable = is_add;
+
+  S (mp);
+  W (ret);
+  return ret;
 }
 
 static int
@@ -357,22 +359,15 @@ api_gtpu_add_del_tunnel (vat_main_t * vam)
 
   M (GTPU_ADD_DEL_TUNNEL, mp);
 
-  if (ipv6_set)
-    {
-      clib_memcpy (mp->src_address, &src.ip6, sizeof (src.ip6));
-      clib_memcpy (mp->dst_address, &dst.ip6, sizeof (dst.ip6));
-    }
-  else
-    {
-      clib_memcpy (mp->src_address, &src.ip4, sizeof (src.ip4));
-      clib_memcpy (mp->dst_address, &dst.ip4, sizeof (dst.ip4));
-    }
+  ip_address_encode(&src, ipv6_set ? IP46_TYPE_IP6 : IP46_TYPE_IP4,
+		    &mp->src_address);
+  ip_address_encode(&dst, ipv6_set ? IP46_TYPE_IP6 : IP46_TYPE_IP4,
+		    &mp->dst_address);
   mp->encap_vrf_id = ntohl (encap_vrf_id);
   mp->decap_next_index = ntohl (decap_next_index);
   mp->mcast_sw_if_index = ntohl (mcast_sw_if_index);
   mp->teid = ntohl (teid);
   mp->is_add = is_add;
-  mp->is_ipv6 = ipv6_set;
 
   S (mp);
   W (ret);
@@ -383,9 +378,10 @@ static void vl_api_gtpu_tunnel_details_t_handler
   (vl_api_gtpu_tunnel_details_t * mp)
 {
   vat_main_t *vam = &vat_main;
-  ip46_address_t src = to_ip46 (mp->is_ipv6, mp->dst_address);
-  ip46_address_t dst = to_ip46 (mp->is_ipv6, mp->src_address);
-
+  ip46_address_t src;
+  ip46_address_t dst;
+  ip_address_decode(&mp->dst_address, &dst);
+  ip_address_decode(&mp->src_address, &src);
   print (vam->ofp, "%11d%24U%24U%14d%18d%13d%19d",
        ntohl (mp->sw_if_index),
        format_ip46_address, &src, IP46_TYPE_ANY,
@@ -436,44 +432,4 @@ api_gtpu_tunnel_dump (vat_main_t * vam)
   return ret;
 }
 
-/*
- * List of messages that the api test plugin sends,
- * and that the data plane plugin processes
- */
-#define foreach_vpe_api_msg                                            \
-_(sw_interface_set_gtpu_bypass,                                        \
-      "<intfc> | sw_if_index <id> [ip4 | ip6] [enable | disable]")     \
-_(gtpu_add_del_tunnel,                                                 \
-        "src <ip-addr> { dst <ip-addr> | group <mcast-ip-addr>\n"      \
-        "{ <intfc> | mcast_sw_if_index <nn> } }\n"                     \
-        "teid <teid> [encap-vrf-id <nn>] [decap-next <l2|nn>] [del]")  \
-_(gtpu_tunnel_dump, "[<intfc> | sw_if_index <nn>]")                    \
-
-static void
-gtpu_api_hookup (vat_main_t *vam)
-{
-  gtpu_test_main_t * gtm = &gtpu_test_main;
-  /* Hook up handlers for replies from the data plane plug-in */
-#define _(N,n)                                                  \
-  vl_msg_api_set_handlers((VL_API_##N + gtm->msg_id_base),       \
-                          #n,                                   \
-                          vl_api_##n##_t_handler,               \
-                          vl_noop_handler,                      \
-                          vl_api_##n##_t_endian,                \
-                          vl_api_##n##_t_print,                 \
-                          sizeof(vl_api_##n##_t), 1);
-  foreach_vpe_api_reply_msg;
-#undef _
-
-  /* API messages we can send */
-#define _(n,h) hash_set_mem (vam->function_by_name, #n, api_##n);
-  foreach_vpe_api_msg;
-#undef _
-
-  /* Help strings */
-#define _(n,h) hash_set_mem (vam->help_by_name, #n, h);
-  foreach_vpe_api_msg;
-#undef _
-}
-
-VAT_PLUGIN_REGISTER(gtpu);
+#include <gtpu/gtpu.api_test.c>

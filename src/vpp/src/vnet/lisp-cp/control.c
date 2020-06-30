@@ -134,14 +134,17 @@ ip_address_to_fib_prefix (const ip_address_t * addr, fib_prefix_t * prefix)
       prefix->fp_len = 32;
       prefix->fp_proto = FIB_PROTOCOL_IP4;
       clib_memset (&prefix->fp_addr.pad, 0, sizeof (prefix->fp_addr.pad));
-      memcpy (&prefix->fp_addr.ip4, &addr->ip, sizeof (prefix->fp_addr.ip4));
+      memcpy (&prefix->fp_addr.ip4, &addr->ip.ip4,
+	      sizeof (prefix->fp_addr.ip4));
     }
   else
     {
       prefix->fp_len = 128;
       prefix->fp_proto = FIB_PROTOCOL_IP6;
-      memcpy (&prefix->fp_addr.ip6, &addr->ip, sizeof (prefix->fp_addr.ip6));
+      memcpy (&prefix->fp_addr.ip6, &addr->ip.ip6,
+	      sizeof (prefix->fp_addr.ip6));
     }
+  prefix->___fp___pad = 0;
 }
 
 /**
@@ -899,16 +902,17 @@ vnet_lisp_add_del_local_mapping (vnet_lisp_add_del_mapping_args_t * a,
   return vnet_lisp_map_cache_add_del (a, map_index_result);
 }
 
-static void
+static int
 add_l2_arp_bd (BVT (clib_bihash_kv) * kvp, void *arg)
 {
   u32 **ht = arg;
   u32 version = (u32) kvp->key[0];
   if (AF_IP6 == version)
-    return;
+    return (BIHASH_WALK_CONTINUE);
 
   u32 bd = (u32) (kvp->key[0] >> 32);
   hash_set (ht[0], bd, 0);
+  return (BIHASH_WALK_CONTINUE);
 }
 
 u32 *
@@ -922,16 +926,17 @@ vnet_lisp_l2_arp_bds_get (void)
   return bds;
 }
 
-static void
+static int
 add_ndp_bd (BVT (clib_bihash_kv) * kvp, void *arg)
 {
   u32 **ht = arg;
   u32 version = (u32) kvp->key[0];
   if (AF_IP4 == version)
-    return;
+    return (BIHASH_WALK_CONTINUE);
 
   u32 bd = (u32) (kvp->key[0] >> 32);
   hash_set (ht[0], bd, 0);
+  return (BIHASH_WALK_CONTINUE);
 }
 
 u32 *
@@ -951,7 +956,7 @@ typedef struct
   u32 bd;
 } lisp_add_l2_arp_ndp_args_t;
 
-static void
+static int
 add_l2_arp_entry (BVT (clib_bihash_kv) * kvp, void *arg)
 {
   lisp_add_l2_arp_ndp_args_t *a = arg;
@@ -959,7 +964,7 @@ add_l2_arp_entry (BVT (clib_bihash_kv) * kvp, void *arg)
 
   u32 version = (u32) kvp->key[0];
   if (AF_IP6 == version)
-    return;
+    return (BIHASH_WALK_CONTINUE);
 
   u32 bd = (u32) (kvp->key[0] >> 32);
 
@@ -969,6 +974,7 @@ add_l2_arp_entry (BVT (clib_bihash_kv) * kvp, void *arg)
       e.ip4 = (u32) kvp->key[1];
       vec_add1 (vector[0], e);
     }
+  return (BIHASH_WALK_CONTINUE);
 }
 
 lisp_api_l2_arp_entry_t *
@@ -986,7 +992,7 @@ vnet_lisp_l2_arp_entries_get_by_bd (u32 bd)
   return entries;
 }
 
-static void
+static int
 add_ndp_entry (BVT (clib_bihash_kv) * kvp, void *arg)
 {
   lisp_add_l2_arp_ndp_args_t *a = arg;
@@ -994,7 +1000,7 @@ add_ndp_entry (BVT (clib_bihash_kv) * kvp, void *arg)
 
   u32 version = (u32) kvp->key[0];
   if (AF_IP4 == version)
-    return;
+    return (BIHASH_WALK_CONTINUE);
 
   u32 bd = (u32) (kvp->key[0] >> 32);
 
@@ -1004,6 +1010,7 @@ add_ndp_entry (BVT (clib_bihash_kv) * kvp, void *arg)
       clib_memcpy (e.ip6, &kvp->key[1], 16);
       vec_add1 (vector[0], e);
     }
+  return (BIHASH_WALK_CONTINUE);
 }
 
 lisp_api_ndp_entry_t *
@@ -1231,12 +1238,6 @@ remove_overlapping_sub_prefixes (lisp_cp_main_t * lcm, gid_address_t * eid,
   vec_free (a.eids_to_be_deleted);
 }
 
-static void
-mapping_delete_timer (lisp_cp_main_t * lcm, u32 mi)
-{
-  timing_wheel_delete (&lcm->wheel, mi);
-}
-
 static int
 is_local_ip (lisp_cp_main_t * lcm, ip_address_t * addr)
 {
@@ -1397,18 +1398,18 @@ vnet_lisp_del_mapping (gid_address_t * eid, u32 * res_map_index)
   gid_address_copy (&m_args->eid, eid);
   m_args->locator_set_index = old_map->locator_set_index;
 
-  /* delete mapping associated from map-cache */
-  vnet_lisp_map_cache_add_del (m_args, 0);
-
   ls_args->is_add = 0;
   ls_args->index = old_map->locator_set_index;
+
+  /* delete timer associated to the mapping if any */
+  if (old_map->timer_set)
+    TW (tw_timer_stop) (&lcm->wheel, old_map->timer_handle);
 
   /* delete locator set */
   vnet_lisp_add_del_locator_set (ls_args, 0);
 
-  /* delete timer associated to the mapping if any */
-  if (old_map->timer_set)
-    mapping_delete_timer (lcm, mi);
+  /* delete mapping associated from map-cache */
+  vnet_lisp_map_cache_add_del (m_args, 0);
 
   /* return old mapping index */
   if (res_map_index)
@@ -2003,8 +2004,8 @@ vnet_lisp_add_del_locator (vnet_lisp_add_del_locator_set_args_t * a,
 	      removed = 1;
 	      remove_locator_from_locator_set (ls, locit, ls_index, loc_id);
 	    }
-	  if (0 == loc->local &&
-	      !gid_address_cmp (&loc->address, &itloc->address))
+	  else if (0 == loc->local &&
+		   !gid_address_cmp (&loc->address, &itloc->address))
 	    {
 	      removed = 1;
 	      remove_locator_from_locator_set (ls, locit, ls_index, loc_id);
@@ -3770,8 +3771,8 @@ remove_expired_mapping (lisp_cp_main_t * lcm, u32 mi)
   if (vnet_lisp_add_del_adjacency (adj_args))
     clib_warning ("failed to del adjacency!");
 
+  TW (tw_timer_stop) (&lcm->wheel, m->timer_handle);
   vnet_lisp_del_mapping (&m->eid, NULL);
-  mapping_delete_timer (lcm, mi);
 }
 
 static void
@@ -3786,7 +3787,7 @@ mapping_start_expiration_timer (lisp_cp_main_t * lcm, u32 mi,
   m = pool_elt_at_index (lcm->mapping_pool, mi);
 
   m->timer_set = 1;
-  timing_wheel_insert (&lcm->wheel, exp_clock_time, mi);
+  m->timer_handle = TW (tw_timer_start) (&lcm->wheel, mi, 0, exp_clock_time);
 }
 
 static void
@@ -4539,8 +4540,9 @@ lisp_cp_init (vlib_main_t * vm)
   hash_set (lcm->table_id_by_vni, 0, 0);
   hash_set (lcm->vni_by_table_id, 0, 0);
 
-  u64 now = clib_cpu_time_now ();
-  timing_wheel_init (&lcm->wheel, now, vm->clib_time.clocks_per_second);
+  TW (tw_timer_wheel_init) (&lcm->wheel, 0 /* no callback */ ,
+			    1e-3 /* timer period 1ms */ ,
+			    ~0 /* max expirations per call */ );
   lcm->nsh_map_index = ~0;
   lcm->map_register_ttl = MAP_REGISTER_DEFAULT_TTL;
   lcm->max_expired_map_registers = MAX_EXPIRED_MAP_REGISTERS_DEFAULT;
@@ -4862,9 +4864,8 @@ send_map_resolver_service (vlib_main_t * vm,
       update_map_register (lcm, period);
       update_rloc_probing (lcm, period);
 
-      u64 now = clib_cpu_time_now ();
-
-      expired = timing_wheel_advance (&lcm->wheel, now, expired, 0);
+      expired = TW (tw_timer_expire_timers_vec) (&lcm->wheel,
+						 vlib_time_now (vm), expired);
       if (vec_len (expired) > 0)
 	{
 	  u32 *mi = 0;

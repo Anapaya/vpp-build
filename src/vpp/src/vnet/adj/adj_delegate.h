@@ -78,11 +78,24 @@ typedef void (*adj_delegate_adj_deleted_t)(adj_delegate_t *aed);
 typedef u8 * (*adj_delegate_format_t)(const adj_delegate_t *aed, u8 *s);
 
 /**
+ * Notification that an adjacency has been created
+ */
+typedef void (*adj_delegate_adj_created_t)(adj_index_t ai);
+
+/**
+ * Indication that the adjacency has been modified.
+ * the delegate.
+ */
+typedef void (*adj_delegate_adj_modified_t)(adj_delegate_t *aed);
+
+/**
  * An ADJ delegate virtual function table
  */
 typedef struct adj_delegate_vft_t_ {
     adj_delegate_format_t adv_format;
     adj_delegate_adj_deleted_t adv_adj_deleted;
+    adj_delegate_adj_modified_t adv_adj_modified;
+    adj_delegate_adj_created_t adv_adj_created;
 } adj_delegate_vft_t;
 
 /**

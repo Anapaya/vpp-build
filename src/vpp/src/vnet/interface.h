@@ -74,6 +74,10 @@ typedef clib_error_t *(vnet_interface_set_mac_address_function_t)
   (struct vnet_hw_interface_t * hi,
    const u8 * old_address, const u8 * new_address);
 
+/* Interface add/del additional mac address callback */
+typedef clib_error_t *(vnet_interface_add_del_mac_address_function_t)
+  (struct vnet_hw_interface_t * hi, const u8 * address, u8 is_add);
+
 /* Interface set rx mode callback. */
 typedef clib_error_t *(vnet_interface_set_rx_mode_function_t)
   (struct vnet_main_t * vnm, u32 if_index, u32 queue_id,
@@ -266,6 +270,9 @@ typedef struct _vnet_device_class
 
   /* Function to set mac address. */
   vnet_interface_set_mac_address_function_t *mac_addr_change_function;
+
+  /* Function to add/delete additional MAC addresses */
+  vnet_interface_add_del_mac_address_function_t *mac_addr_add_del_function;
 } vnet_device_class_t;
 
 #ifndef CLIB_MARCH_VARIANT
@@ -366,6 +373,10 @@ typedef enum vnet_hw_interface_class_flags_t_
    * @brief a point 2 point interface
    */
   VNET_HW_INTERFACE_CLASS_FLAG_P2P = (1 << 0),
+  /**
+   * @brief a non-broadcast multiple access interface
+   */
+  VNET_HW_INTERFACE_CLASS_FLAG_NBMA = (1 << 1),
 } vnet_hw_interface_class_flags_t;
 
 /* Layer-2 (e.g. Ethernet) interface class. */
@@ -391,6 +402,9 @@ typedef struct _vnet_hw_interface_class
 
   /* Function to call when link MAC changes. */
   vnet_interface_set_mac_address_function_t *mac_addr_change_function;
+
+  /* Function to add/delete additional MAC addresses */
+  vnet_interface_add_del_mac_address_function_t *mac_addr_add_del_function;
 
   /* Format function to display interface name. */
   format_function_t *format_interface_name;
@@ -486,6 +500,9 @@ typedef enum vnet_hw_interface_flags_t_
 
   /* gso */
   VNET_HW_INTERFACE_FLAG_SUPPORTS_GSO = (1 << 18),
+
+  /* non-broadcast multiple access */
+  VNET_HW_INTERFACE_FLAG_NBMA = (1 << 19),
 } vnet_hw_interface_flags_t;
 
 #define VNET_HW_INTERFACE_FLAG_DUPLEX_SHIFT 1
@@ -860,9 +877,6 @@ typedef struct
 
   /* per-thread data */
   vnet_interface_per_thread_data_t *per_thread_data;
-
-  /* enable GSO processing in packet path if this count is > 0 */
-  u32 gso_interface_count;
 
   /* feature_arc_index */
   u8 output_feature_arc_index;

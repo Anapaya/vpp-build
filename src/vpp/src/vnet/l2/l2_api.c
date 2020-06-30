@@ -28,6 +28,7 @@
 #include <vnet/l2/l2_learn.h>
 #include <vnet/l2/l2_bd.h>
 #include <vnet/l2/l2_bvi.h>
+#include <vnet/l2/l2_arp_term.h>
 #include <vnet/ip/ip_types_api.h>
 #include <vnet/ethernet/ethernet_types_api.h>
 
@@ -77,7 +78,8 @@ _(L2_INTERFACE_PBB_TAG_REWRITE, l2_interface_pbb_tag_rewrite)   \
 _(BRIDGE_DOMAIN_SET_MAC_AGE, bridge_domain_set_mac_age)         \
 _(SW_INTERFACE_SET_VPATH, sw_interface_set_vpath)               \
 _(BVI_CREATE, bvi_create)                                       \
-_(BVI_DELETE, bvi_delete)
+_(BVI_DELETE, bvi_delete)                                       \
+_(WANT_L2_ARP_TERM_EVENTS, want_l2_arp_term_events)
 
 static void
 send_l2_xconnect_details (vl_api_registration_t * reg, u32 context,
@@ -147,7 +149,7 @@ send_l2fib_table_entry (vpe_api_main_t * am,
   mp->bd_id =
     ntohl (l2input_main.bd_configs[l2fe_key->fields.bd_index].bd_id);
 
-  clib_memcpy (mp->mac, l2fe_key->fields.mac, 6);
+  mac_address_encode ((mac_address_t *) l2fe_key->fields.mac, mp->mac);
   mp->sw_if_index = ntohl (l2fe_res->fields.sw_if_index);
   mp->static_mac = (l2fib_entry_result_is_set_STATIC (l2fe_res) ? 1 : 0);
   mp->filter_mac = (l2fib_entry_result_is_set_FILTER (l2fe_res) ? 1 : 0);
@@ -213,13 +215,13 @@ vl_api_l2fib_add_del_t_handler (vl_api_l2fib_add_del_t * mp)
     }
   u32 bd_index = p[0];
 
-  u8 mac[6];
+  mac_address_t mac;
 
-  clib_memcpy (mac, mp->mac, 6);
+  mac_address_decode (mp->mac, &mac);
   if (mp->is_add)
     {
       if (mp->filter_mac)
-	l2fib_add_filter_entry (mac, bd_index);
+	l2fib_add_filter_entry (mac.bytes, bd_index);
       else
 	{
 	  l2fib_entry_result_flags_t flags = L2FIB_ENTRY_RESULT_FLAG_NONE;
@@ -244,13 +246,13 @@ vl_api_l2fib_add_del_t_handler (vl_api_l2fib_add_del_t * mp)
 	    flags |= L2FIB_ENTRY_RESULT_FLAG_STATIC;
 	  if (mp->bvi_mac)
 	    flags |= L2FIB_ENTRY_RESULT_FLAG_BVI;
-	  l2fib_add_entry (mac, bd_index, sw_if_index, flags);
+	  l2fib_add_entry (mac.bytes, bd_index, sw_if_index, flags);
 	}
     }
   else
     {
       u32 sw_if_index = ntohl (mp->sw_if_index);
-      if (l2fib_del_entry (mac, bd_index, sw_if_index))
+      if (l2fib_del_entry (mac.bytes, bd_index, sw_if_index))
 	rv = VNET_API_ERROR_NO_SUCH_ENTRY;
     }
 
@@ -279,18 +281,27 @@ vl_api_want_l2_macs_events_t_handler (vl_api_want_l2_macs_events_t * mp)
 	  if (mp->max_macs_in_event)
 	    fm->max_macs_in_event = mp->max_macs_in_event * 10;
 	  else
-	    fm->max_macs_in_event = L2FIB_EVENT_MAX_MACS_DEFAULT;
+	    {
+	      rv = VNET_API_ERROR_INVALID_VALUE;
+	      goto exit;
+	    }
 
 	  if (mp->scan_delay)
 	    fm->event_scan_delay = (f64) (mp->scan_delay) * 10e-3;
 	  else
-	    fm->event_scan_delay = L2FIB_EVENT_SCAN_DELAY_DEFAULT;
+	    {
+	      rv = VNET_API_ERROR_INVALID_VALUE;
+	      goto exit;
+	    }
 
 	  /* change learn limit and flush all learned MACs */
 	  if (learn_limit && (learn_limit < L2LEARN_DEFAULT_LIMIT))
 	    lm->global_learn_limit = learn_limit;
 	  else
-	    lm->global_learn_limit = L2FIB_EVENT_LEARN_LIMIT_DEFAULT;
+	    {
+	      rv = VNET_API_ERROR_INVALID_VALUE;
+	      goto exit;
+	    }
 
 	  l2fib_flush_all_mac (vlib_get_main ());
 	}
@@ -504,11 +515,15 @@ vl_api_bridge_domain_dump_t_handler (vl_api_bridge_domain_dump_t * mp)
   bd_main_t *bdm = &bd_main;
   l2input_main_t *l2im = &l2input_main;
   vl_api_registration_t *reg;
-  u32 bd_id, bd_index, end;
+  u32 bd_id, bd_index, end, filter_sw_if_index;
 
   reg = vl_api_client_index_to_registration (mp->client_index);
   if (!reg)
     return;
+
+  filter_sw_if_index = ntohl (mp->sw_if_index);
+  if (filter_sw_if_index != ~0)
+    return;			/* UNIMPLEMENTED */
 
   bd_id = ntohl (mp->bd_id);
   if (bd_id == 0)
@@ -646,6 +661,7 @@ static void
   vlib_main_t *vm = vlib_get_main ();
   u32 vtr_op;
   int rv = 0;
+  mac_address_t b_dmac, b_smac;
 
   VALIDATE_SW_IF_INDEX (mp);
 
@@ -664,8 +680,11 @@ static void
       goto bad_sw_if_index;
     }
 
+  mac_address_decode (mp->b_dmac, &b_dmac);
+  mac_address_decode (mp->b_smac, &b_smac);
+
   rv = l2pbb_configure (vm, vnm, ntohl (mp->sw_if_index), vtr_op,
-			mp->b_dmac, mp->b_smac, ntohs (mp->b_vlanid),
+			b_dmac.bytes, b_smac.bytes, ntohs (mp->b_vlanid),
 			ntohl (mp->i_sid), ntohs (mp->outer_tag));
 
   BAD_SW_IF_INDEX_LABEL;
@@ -1045,6 +1064,169 @@ vl_api_bvi_delete_t_handler (vl_api_bvi_delete_t * mp)
   REPLY_MACRO (VL_API_BVI_DELETE_REPLY);
 }
 
+static bool
+l2_arp_term_publish_event_is_equal (const l2_arp_term_publish_event_t * e1,
+				    const l2_arp_term_publish_event_t * e2)
+{
+  if (e1 == NULL || e2 == NULL)
+    return false;
+  return (ip46_address_is_equal (&e1->ip, &e2->ip) &&
+	  (e1->sw_if_index == e2->sw_if_index) &&
+	  (mac_address_equal (&e1->mac, &e2->mac)));
+}
+
+static uword
+l2_arp_term_process (vlib_main_t * vm, vlib_node_runtime_t * rt,
+		     vlib_frame_t * f)
+{
+  /* These cross the longjmp boundary (vlib_process_wait_for_event)
+   * and need to be volatile - to prevent them from being optimized into
+   * a register - which could change during suspension */
+  volatile f64 last = vlib_time_now (vm);
+  volatile l2_arp_term_publish_event_t last_event = { };
+
+  l2_arp_term_main_t *l2am = &l2_arp_term_main;
+
+  while (1)
+    {
+      uword event_type = L2_ARP_TERM_EVENT_PUBLISH;
+      vpe_client_registration_t *reg;
+      f64 now;
+
+      vlib_process_wait_for_event (vm);
+
+      vlib_process_get_event_data (vm, &event_type);
+      now = vlib_time_now (vm);
+
+      if (event_type == L2_ARP_TERM_EVENT_PUBLISH)
+	{
+	  l2_arp_term_publish_event_t *event;
+
+	  vec_foreach (event, l2am->publish_events)
+	  {
+	    /* dampen duplicate events - cast away volatile */
+	    if (l2_arp_term_publish_event_is_equal
+		(event, (l2_arp_term_publish_event_t *) & last_event) &&
+		(now - last) < 10.0)
+	      {
+		continue;
+	      }
+	    last_event = *event;
+	    last = now;
+
+            /* *INDENT-OFF* */
+            pool_foreach(reg, vpe_api_main.l2_arp_term_events_registrations,
+            ({
+              vl_api_registration_t *vl_reg;
+              vl_reg = vl_api_client_index_to_registration (reg->client_index);
+              ALWAYS_ASSERT (vl_reg != NULL);
+
+              if (reg && vl_api_can_send_msg (vl_reg))
+                {
+                  vl_api_l2_arp_term_event_t * vevent;
+                  vevent = vl_msg_api_alloc (sizeof *vevent);
+                  clib_memset (vevent, 0, sizeof *vevent);
+                  vevent->_vl_msg_id = htons (VL_API_L2_ARP_TERM_EVENT);
+                  vevent->client_index = reg->client_index;
+                  vevent->pid = reg->client_pid;
+                  ip_address_encode(&event->ip,
+                                    event->type,
+                                    &vevent->ip);
+                  vevent->sw_if_index = htonl(event->sw_if_index);
+                  mac_address_encode(&event->mac, vevent->mac);
+                  vl_api_send_msg (vl_reg, (u8 *) vevent);
+                }
+            }));
+            /* *INDENT-ON* */
+	  }
+	  vec_reset_length (l2am->publish_events);
+	}
+    }
+
+  return 0;
+}
+
+/* *INDENT-OFF* */
+VLIB_REGISTER_NODE (l2_arp_term_process_node) = {
+  .function = l2_arp_term_process,
+  .type = VLIB_NODE_TYPE_PROCESS,
+  .name = "l2-arp-term-publisher",
+};
+/* *INDENT-ON* */
+
+static void
+vl_api_want_l2_arp_term_events_t_handler (vl_api_want_l2_arp_term_events_t *
+					  mp)
+{
+  vl_api_want_l2_arp_term_events_reply_t *rmp;
+  vpe_api_main_t *am = &vpe_api_main;
+  vpe_client_registration_t *rp;
+  int rv = 0;
+  uword *p;
+
+  p = hash_get (am->l2_arp_term_events_registration_hash, mp->client_index);
+
+  if (p)
+    {
+      if (mp->enable)
+	{
+	  clib_warning ("pid %d: already enabled...", mp->pid);
+	  rv = VNET_API_ERROR_INVALID_REGISTRATION;
+	  goto reply;
+	}
+      else
+	{
+	  rp = pool_elt_at_index (am->l2_arp_term_events_registrations, p[0]);
+	  pool_put (am->l2_arp_term_events_registrations, rp);
+	  hash_unset (am->l2_arp_term_events_registration_hash,
+		      mp->client_index);
+	  if (pool_elts (am->l2_arp_term_events_registrations) == 0)
+	    l2_arp_term_set_publisher_node (false);
+	  goto reply;
+	}
+    }
+  if (mp->enable == 0)
+    {
+      clib_warning ("pid %d: already disabled...", mp->pid);
+      rv = VNET_API_ERROR_INVALID_REGISTRATION;
+      goto reply;
+    }
+  pool_get (am->l2_arp_term_events_registrations, rp);
+  rp->client_index = mp->client_index;
+  rp->client_pid = mp->pid;
+  hash_set (am->l2_arp_term_events_registration_hash, rp->client_index,
+	    rp - am->l2_arp_term_events_registrations);
+  l2_arp_term_set_publisher_node (true);
+
+reply:
+  REPLY_MACRO (VL_API_WANT_L2_ARP_TERM_EVENTS_REPLY);
+}
+
+static clib_error_t *
+want_l2_arp_term_events_reaper (u32 client_index)
+{
+  vpe_client_registration_t *rp;
+  vpe_api_main_t *am;
+  uword *p;
+
+  am = &vpe_api_main;
+
+  /* remove from the registration hash */
+  p = hash_get (am->l2_arp_term_events_registration_hash, client_index);
+
+  if (p)
+    {
+      rp = pool_elt_at_index (am->l2_arp_term_events_registrations, p[0]);
+      pool_put (am->l2_arp_term_events_registrations, rp);
+      hash_unset (am->l2_arp_term_events_registration_hash, client_index);
+      if (pool_elts (am->l2_arp_term_events_registrations) == 0)
+	l2_arp_term_set_publisher_node (false);
+    }
+  return (NULL);
+}
+
+VL_MSG_API_REAPER_FUNCTION (want_l2_arp_term_events_reaper);
+
 /*
  * l2_api_hookup
  * Add vpe's API message handlers to the table.
@@ -1067,7 +1249,7 @@ setup_message_id_table (api_main_t * am)
 static clib_error_t *
 l2_api_hookup (vlib_main_t * vm)
 {
-  api_main_t *am = &api_main;
+  api_main_t *am = vlibapi_get_main ();
 
 #define _(N,n)                                                  \
     vl_msg_api_set_handlers(VL_API_##N, #n,                     \

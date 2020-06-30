@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import unittest
 import binascii
@@ -14,8 +14,6 @@ from scapy.packet import Raw
 from scapy.layers.l2 import Ether, Dot1Q
 from scapy.layers.inet6 import IPv6, UDP, IPv6ExtHdrSegmentRouting
 from scapy.layers.inet import IP, UDP
-
-from scapy.utils import inet_pton, inet_ntop
 
 from util import ppp
 
@@ -116,7 +114,7 @@ class TestSRv6(VppTestCase):
         if any(ipv6):
             self.logger.debug(self.vapi.cli("show ip6 neighbors"))
         if any(ipv4):
-            self.logger.debug(self.vapi.cli("show ip arp"))
+            self.logger.debug(self.vapi.cli("show ip4 neighbors"))
         self.logger.debug(self.vapi.cli("show interface"))
         self.logger.debug(self.vapi.cli("show hardware"))
 
@@ -525,8 +523,8 @@ class TestSRv6(VppTestCase):
             self.assertEqual(rx_srh.segleft, len(tx_seglist)-1)
             # segleft should be equal to lastentry
             self.assertEqual(rx_srh.segleft, rx_srh.lastentry)
-            # nh should be "No Next Header" (59)
-            self.assertEqual(rx_srh.nh, 59)
+            # nh should be "No Next Header" (143)
+            self.assertEqual(rx_srh.nh, 143)
             # get payload
             payload = rx_srh.payload
         else:
@@ -798,7 +796,7 @@ class TestSRv6(VppTestCase):
 
         p = (IPv6(src='1234::1', dst=sidlist[segleft]) /
              IPv6ExtHdrSegmentRouting(addresses=sidlist,
-                                      segleft=segleft, nh=59) /
+                                      segleft=segleft, nh=143) /
              eth)
         return p
 

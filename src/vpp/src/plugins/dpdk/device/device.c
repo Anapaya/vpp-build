@@ -15,7 +15,6 @@
 #include <vnet/vnet.h>
 #include <vppinfra/vec.h>
 #include <vppinfra/format.h>
-#include <vlib/unix/cj.h>
 #include <assert.h>
 
 #include <vnet/ethernet/ethernet.h>
@@ -43,6 +42,29 @@ static char *dpdk_tx_func_error_strings[] = {
 };
 
 static clib_error_t *
+dpdk_add_del_mac_address (vnet_hw_interface_t * hi,
+			  const u8 * address, u8 is_add)
+{
+  int error;
+  dpdk_main_t *dm = &dpdk_main;
+  dpdk_device_t *xd = vec_elt_at_index (dm->devices, hi->dev_instance);
+
+  if (is_add)
+    error = rte_eth_dev_mac_addr_add (xd->port_id,
+				      (struct rte_ether_addr *) address, 0);
+  else
+    error = rte_eth_dev_mac_addr_remove (xd->port_id,
+					 (struct rte_ether_addr *) address);
+
+  if (error)
+    {
+      return clib_error_return (0, "mac address add/del failed: %d", error);
+    }
+
+  return NULL;
+}
+
+static clib_error_t *
 dpdk_set_mac_address (vnet_hw_interface_t * hi,
 		      const u8 * old_address, const u8 * address)
 {
@@ -50,8 +72,7 @@ dpdk_set_mac_address (vnet_hw_interface_t * hi,
   dpdk_main_t *dm = &dpdk_main;
   dpdk_device_t *xd = vec_elt_at_index (dm->devices, hi->dev_instance);
 
-  error = rte_eth_dev_default_mac_addr_set (xd->port_id,
-					    (struct ether_addr *) address);
+  error = rte_eth_dev_default_mac_addr_set (xd->port_id, (void *) address);
 
   if (error)
     {
@@ -158,25 +179,11 @@ static_always_inline
 	    queue_id = (queue_id + 1) % xd->tx_q_used;
 	}
 
-#if 0
-      if (PREDICT_FALSE (xd->flags & DPDK_DEVICE_FLAG_HQOS))	/* HQoS ON */
-	{
-	  /* no wrap, transmit in one burst */
-	  dpdk_device_hqos_per_worker_thread_t *hqos =
-	    &xd->hqos_wt[vm->thread_index];
-
-	  ASSERT (hqos->swq != NULL);
-
-	  dpdk_hqos_metadata_set (hqos, mb, n_left);
-	  n_sent = rte_ring_sp_enqueue_burst (hqos->swq, (void **) mb,
-					      n_left, 0);
-	}
-      else
-#endif
       if (PREDICT_TRUE (xd->flags & DPDK_DEVICE_FLAG_PMD))
 	{
 	  /* no wrap, transmit in one burst */
 	  n_sent = rte_eth_tx_burst (xd->port_id, queue_id, mb, n_left);
+	  n_retry--;
 	}
       else
 	{
@@ -210,7 +217,7 @@ static_always_inline
   return n_left;
 }
 
-static_always_inline void
+static_always_inline __clib_unused void
 dpdk_prefetch_buffer (vlib_main_t * vm, struct rte_mbuf *mb)
 {
   vlib_buffer_t *b = vlib_buffer_from_rte_mbuf (mb);
@@ -290,6 +297,7 @@ VNET_DEVICE_CLASS_TX_FN (dpdk_device_class) (vlib_main_t * vm,
   n_left = n_packets;
   mb = ptd->mbufs;
 
+#if (CLIB_N_PREFETCHES >= 8)
   while (n_left >= 8)
     {
       u32 or_flags;
@@ -354,6 +362,62 @@ VNET_DEVICE_CLASS_TX_FN (dpdk_device_class) (vlib_main_t * vm,
       mb += 4;
       n_left -= 4;
     }
+#elif (CLIB_N_PREFETCHES >= 4)
+  while (n_left >= 4)
+    {
+      vlib_buffer_t *b2, *b3;
+      u32 or_flags;
+
+      CLIB_PREFETCH (mb[2], CLIB_CACHE_LINE_BYTES, STORE);
+      CLIB_PREFETCH (mb[3], CLIB_CACHE_LINE_BYTES, STORE);
+      b2 = vlib_buffer_from_rte_mbuf (mb[2]);
+      CLIB_PREFETCH (b2, CLIB_CACHE_LINE_BYTES, LOAD);
+      b3 = vlib_buffer_from_rte_mbuf (mb[3]);
+      CLIB_PREFETCH (b3, CLIB_CACHE_LINE_BYTES, LOAD);
+
+      b[0] = vlib_buffer_from_rte_mbuf (mb[0]);
+      b[1] = vlib_buffer_from_rte_mbuf (mb[1]);
+
+      or_flags = b[0]->flags | b[1]->flags;
+      all_or_flags |= or_flags;
+
+      VLIB_BUFFER_TRACE_TRAJECTORY_INIT (b[0]);
+      VLIB_BUFFER_TRACE_TRAJECTORY_INIT (b[1]);
+
+      if (or_flags & VLIB_BUFFER_NEXT_PRESENT)
+	{
+	  dpdk_validate_rte_mbuf (vm, b[0], 1);
+	  dpdk_validate_rte_mbuf (vm, b[1], 1);
+	}
+      else
+	{
+	  dpdk_validate_rte_mbuf (vm, b[0], 0);
+	  dpdk_validate_rte_mbuf (vm, b[1], 0);
+	}
+
+      if (PREDICT_FALSE ((xd->flags & DPDK_DEVICE_FLAG_TX_OFFLOAD) &&
+			 (or_flags &
+			  (VNET_BUFFER_F_OFFLOAD_TCP_CKSUM
+			   | VNET_BUFFER_F_OFFLOAD_IP_CKSUM
+			   | VNET_BUFFER_F_OFFLOAD_UDP_CKSUM))))
+	{
+	  dpdk_buffer_tx_offload (xd, b[0], mb[0]);
+	  dpdk_buffer_tx_offload (xd, b[1], mb[1]);
+	}
+
+      if (PREDICT_FALSE (node->flags & VLIB_NODE_FLAG_TRACE))
+	{
+	  if (b[0]->flags & VLIB_BUFFER_IS_TRACED)
+	    dpdk_tx_trace_buffer (dm, node, xd, queue_id, b[0]);
+	  if (b[1]->flags & VLIB_BUFFER_IS_TRACED)
+	    dpdk_tx_trace_buffer (dm, node, xd, queue_id, b[1]);
+	}
+
+      mb += 2;
+      n_left -= 2;
+    }
+#endif
+
   while (n_left > 0)
     {
       b[0] = vlib_buffer_from_rte_mbuf (mb[0]);
@@ -544,6 +608,7 @@ VNET_DEVICE_CLASS (dpdk_device_class) = {
   .subif_add_del_function = dpdk_subif_add_del_function,
   .rx_redirect_to_node = dpdk_set_interface_next_node,
   .mac_addr_change_function = dpdk_set_mac_address,
+  .mac_addr_add_del_function = dpdk_add_del_mac_address,
   .format_flow = format_dpdk_flow,
   .flow_ops_function = dpdk_flow_ops_fn,
 };

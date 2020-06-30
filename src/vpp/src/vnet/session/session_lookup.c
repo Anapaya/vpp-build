@@ -156,24 +156,27 @@ make_v6_ss_kv_from_tc (session_kv6_t * kv, transport_connection_t * tc)
 }
 
 static session_table_t *
-session_table_get_or_alloc (u8 fib_proto, u8 fib_index)
+session_table_get_or_alloc (u8 fib_proto, u32 fib_index)
 {
   session_table_t *st;
   u32 table_index;
-  if (vec_len (fib_index_to_table_index[fib_proto]) <= fib_index)
+  ASSERT (fib_index != ~0);
+  if (vec_len (fib_index_to_table_index[fib_proto]) > fib_index &&
+      fib_index_to_table_index[fib_proto][fib_index] != ~0)
+    {
+      table_index = fib_index_to_table_index[fib_proto][fib_index];
+      return session_table_get (table_index);
+    }
+  else
     {
       st = session_table_alloc ();
       table_index = session_table_index (st);
-      vec_validate (fib_index_to_table_index[fib_proto], fib_index);
+      vec_validate_init_empty (fib_index_to_table_index[fib_proto], fib_index,
+			       ~0);
       fib_index_to_table_index[fib_proto][fib_index] = table_index;
       st->active_fib_proto = fib_proto;
       session_table_init (st, fib_proto);
       return st;
-    }
-  else
-    {
-      table_index = fib_index_to_table_index[fib_proto][fib_index];
-      return session_table_get (table_index);
     }
 }
 
@@ -284,6 +287,32 @@ session_lookup_del_session_endpoint (u32 table_index,
   session_kv6_t kv6;
 
   st = session_table_get (table_index);
+  if (!st)
+    return -1;
+  if (sep->is_ip4)
+    {
+      make_v4_listener_kv (&kv4, &sep->ip.ip4, sep->port,
+			   sep->transport_proto);
+      return clib_bihash_add_del_16_8 (&st->v4_session_hash, &kv4, 0);
+    }
+  else
+    {
+      make_v6_listener_kv (&kv6, &sep->ip.ip6, sep->port,
+			   sep->transport_proto);
+      return clib_bihash_add_del_48_8 (&st->v6_session_hash, &kv6, 0);
+    }
+}
+
+int
+session_lookup_del_session_endpoint2 (session_endpoint_t * sep)
+{
+  fib_protocol_t fib_proto;
+  session_table_t *st;
+  session_kv4_t kv4;
+  session_kv6_t kv6;
+
+  fib_proto = sep->is_ip4 ? FIB_PROTOCOL_IP4 : FIB_PROTOCOL_IP6;
+  st = session_table_get_for_fib_index (fib_proto, sep->fib_index);
   if (!st)
     return -1;
   if (sep->is_ip4)
@@ -654,13 +683,13 @@ session_lookup_listener4_i (session_table_t * st, ip4_address_t * lcl,
 
 session_t *
 session_lookup_listener4 (u32 fib_index, ip4_address_t * lcl, u16 lcl_port,
-			  u8 proto)
+			  u8 proto, u8 use_wildcard)
 {
   session_table_t *st;
   st = session_table_get_for_fib_index (FIB_PROTOCOL_IP4, fib_index);
   if (!st)
     return 0;
-  return session_lookup_listener4_i (st, lcl, lcl_port, proto, 0);
+  return session_lookup_listener4_i (st, lcl, lcl_port, proto, use_wildcard);
 }
 
 static session_t *
@@ -697,13 +726,13 @@ session_lookup_listener6_i (session_table_t * st, ip6_address_t * lcl,
 
 session_t *
 session_lookup_listener6 (u32 fib_index, ip6_address_t * lcl, u16 lcl_port,
-			  u8 proto)
+			  u8 proto, u8 use_wildcard)
 {
   session_table_t *st;
   st = session_table_get_for_fib_index (FIB_PROTOCOL_IP6, fib_index);
   if (!st)
     return 0;
-  return session_lookup_listener6_i (st, lcl, lcl_port, proto, 1);
+  return session_lookup_listener6_i (st, lcl, lcl_port, proto, use_wildcard);
 }
 
 /**
@@ -1263,6 +1292,19 @@ session_lookup_safe6 (u32 fib_index, ip6_address_t * lcl, ip6_address_t * rmt,
   return 0;
 }
 
+transport_connection_t *
+session_lookup_connection (u32 fib_index, ip46_address_t * lcl,
+			   ip46_address_t * rmt, u16 lcl_port, u16 rmt_port,
+			   u8 proto, u8 is_ip4)
+{
+  if (is_ip4)
+    return session_lookup_connection4 (fib_index, &lcl->ip4, &rmt->ip4,
+				       lcl_port, rmt_port, proto);
+  else
+    return session_lookup_connection6 (fib_index, &lcl->ip6, &rmt->ip6,
+				       lcl_port, rmt_port, proto);
+}
+
 int
 vnet_session_rule_add_del (session_rule_add_del_args_t * args)
 {
@@ -1317,7 +1359,7 @@ session_lookup_set_tables_appns (app_namespace_t * app_ns)
   for (fp = 0; fp < ARRAY_LEN (fib_index_to_table_index); fp++)
     {
       fib_index = app_namespace_get_fib_index (app_ns, fp);
-      st = session_table_get_for_fib_index (fp, fib_index);
+      st = session_table_get_or_alloc (fp, fib_index);
       if (st)
 	st->appns_index = app_namespace_index (app_ns);
     }

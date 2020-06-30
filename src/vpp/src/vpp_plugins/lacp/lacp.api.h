@@ -1,5 +1,5 @@
 /*
- * VLIB API definitions 2020-06-13 06:01:56
+ * VLIB API definitions 2020-06-30 12:50:27
  * Input file: lacp.api
  * Automatically generated: please edit the input file NOT this file!
  */
@@ -16,6 +16,11 @@
 #endif
 
 #define VL_API_PACKED(x) x __attribute__ ((packed))
+/* Imported API files */
+#ifndef vl_api_version
+#include <vnet/ethernet/ethernet_types.api.h>
+#include <vnet/interface_types.api.h>
+#endif
 
 /****** Message ID / handler enum ******/
 
@@ -34,56 +39,25 @@ vl_msg_name(vl_api_sw_interface_lacp_details_t, 1)
 #ifdef vl_msg_name_crc_list
 #define foreach_vl_msg_name_crc_lacp \
 _(VL_API_SW_INTERFACE_LACP_DUMP, sw_interface_lacp_dump, 51077d14) \
-_(VL_API_SW_INTERFACE_LACP_DETAILS, sw_interface_lacp_details, 8a14b95e) 
+_(VL_API_SW_INTERFACE_LACP_DETAILS, sw_interface_lacp_details, 745ae0ba) 
 #endif
-
 /****** Typedefs ******/
 
 #ifdef vl_typedefs
-#ifndef included_lacp_api
-#define included_lacp_api
-#ifndef _vl_api_defined_sw_interface_lacp_dump
-#define _vl_api_defined_sw_interface_lacp_dump
-typedef VL_API_PACKED(struct _vl_api_sw_interface_lacp_dump {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-}) vl_api_sw_interface_lacp_dump_t;
+#include "lacp.api_types.h"
 #endif
-
-#ifndef _vl_api_defined_sw_interface_lacp_details
-#define _vl_api_defined_sw_interface_lacp_details
-typedef VL_API_PACKED(struct _vl_api_sw_interface_lacp_details {
-    u16 _vl_msg_id;
-    u32 context;
-    u32 sw_if_index;
-    u8 interface_name[64];
-    u32 rx_state;
-    u32 tx_state;
-    u32 mux_state;
-    u32 ptx_state;
-    u8 bond_interface_name[64];
-    u16 actor_system_priority;
-    u8 actor_system[6];
-    u16 actor_key;
-    u16 actor_port_priority;
-    u16 actor_port_number;
-    u8 actor_state;
-    u16 partner_system_priority;
-    u8 partner_system[6];
-    u16 partner_key;
-    u16 partner_port_priority;
-    u16 partner_port_number;
-    u8 partner_state;
-}) vl_api_sw_interface_lacp_details_t;
-#endif
-
-
-#endif
-#endif
-
 /****** Print functions *****/
 #ifdef vl_printfun
+#ifndef included_lacp_printfun_types
+#define included_lacp_printfun_types
+
+
+#endif
+#endif /* vl_printfun_types */
+/****** Print functions *****/
+#ifdef vl_printfun
+#ifndef included_lacp_printfun
+#define included_lacp_printfun
 
 #ifdef LP64
 #define _uword_fmt "%lld"
@@ -93,51 +67,59 @@ typedef VL_API_PACKED(struct _vl_api_sw_interface_lacp_details {
 #define _uword_cast long
 #endif
 
-#ifndef _vl_api_defined_sw_interface_lacp_dump_t_print
-#define _vl_api_defined_sw_interface_lacp_dump_t_print
-static inline void *vl_api_sw_interface_lacp_dump_t_print (vl_api_sw_interface_lacp_dump_t *a,void *handle)
+static inline void *vl_api_sw_interface_lacp_dump_t_print (vl_api_sw_interface_lacp_dump_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_sw_interface_lacp_dump_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_sw_interface_lacp_dump_t: */
+    s = format(s, "vl_api_sw_interface_lacp_dump_t:");
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_sw_interface_lacp_details_t_print
-#define _vl_api_defined_sw_interface_lacp_details_t_print
-static inline void *vl_api_sw_interface_lacp_details_t_print (vl_api_sw_interface_lacp_details_t *a,void *handle)
+static inline void *vl_api_sw_interface_lacp_details_t_print (vl_api_sw_interface_lacp_details_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_sw_interface_lacp_details_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "sw_if_index: %u\n", a->sw_if_index);
-    vl_print(handle, "rx_state: %u\n", a->rx_state);
-    vl_print(handle, "tx_state: %u\n", a->tx_state);
-    vl_print(handle, "mux_state: %u\n", a->mux_state);
-    vl_print(handle, "ptx_state: %u\n", a->ptx_state);
-    vl_print(handle, "actor_system_priority: %u\n", a->actor_system_priority);
-    vl_print(handle, "actor_key: %u\n", a->actor_key);
-    vl_print(handle, "actor_port_priority: %u\n", a->actor_port_priority);
-    vl_print(handle, "actor_port_number: %u\n", a->actor_port_number);
-    vl_print(handle, "actor_state: %u\n", a->actor_state);
-    vl_print(handle, "partner_system_priority: %u\n", a->partner_system_priority);
-    vl_print(handle, "partner_key: %u\n", a->partner_key);
-    vl_print(handle, "partner_port_priority: %u\n", a->partner_port_priority);
-    vl_print(handle, "partner_port_number: %u\n", a->partner_port_number);
-    vl_print(handle, "partner_state: %u\n", a->partner_state);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_sw_interface_lacp_details_t: */
+    s = format(s, "vl_api_sw_interface_lacp_details_t:");
+    s = format(s, "\n%Usw_if_index: %U", format_white_space, indent, format_vl_api_interface_index_t, &a->sw_if_index, indent);
+    s = format(s, "\n%Uinterface_name: %s", format_white_space, indent, a->interface_name);
+    s = format(s, "\n%Urx_state: %u", format_white_space, indent, a->rx_state);
+    s = format(s, "\n%Utx_state: %u", format_white_space, indent, a->tx_state);
+    s = format(s, "\n%Umux_state: %u", format_white_space, indent, a->mux_state);
+    s = format(s, "\n%Uptx_state: %u", format_white_space, indent, a->ptx_state);
+    s = format(s, "\n%Ubond_interface_name: %s", format_white_space, indent, a->bond_interface_name);
+    s = format(s, "\n%Uactor_system_priority: %u", format_white_space, indent, a->actor_system_priority);
+    s = format(s, "\n%Uactor_system: %U", format_white_space, indent, format_vl_api_mac_address_t, &a->actor_system, indent);
+    s = format(s, "\n%Uactor_key: %u", format_white_space, indent, a->actor_key);
+    s = format(s, "\n%Uactor_port_priority: %u", format_white_space, indent, a->actor_port_priority);
+    s = format(s, "\n%Uactor_port_number: %u", format_white_space, indent, a->actor_port_number);
+    s = format(s, "\n%Uactor_state: %u", format_white_space, indent, a->actor_state);
+    s = format(s, "\n%Upartner_system_priority: %u", format_white_space, indent, a->partner_system_priority);
+    s = format(s, "\n%Upartner_system: %U", format_white_space, indent, format_vl_api_mac_address_t, &a->partner_system, indent);
+    s = format(s, "\n%Upartner_key: %u", format_white_space, indent, a->partner_key);
+    s = format(s, "\n%Upartner_port_priority: %u", format_white_space, indent, a->partner_port_priority);
+    s = format(s, "\n%Upartner_port_number: %u", format_white_space, indent, a->partner_port_number);
+    s = format(s, "\n%Upartner_state: %u", format_white_space, indent, a->partner_state);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
+
 #endif
-
-
 #endif /* vl_printfun */
 
 /****** Endian swap functions *****/
 #ifdef vl_endianfun
+#ifndef included_lacp_endianfun
+#define included_lacp_endianfun
 
 #undef clib_net_to_host_uword
 #ifdef LP64
@@ -146,57 +128,56 @@ static inline void *vl_api_sw_interface_lacp_details_t_print (vl_api_sw_interfac
 #define clib_net_to_host_uword clib_net_to_host_u32
 #endif
 
-#ifndef _vl_api_defined_sw_interface_lacp_dump_t_endian
-#define _vl_api_defined_sw_interface_lacp_dump_t_endian
 static inline void vl_api_sw_interface_lacp_dump_t_endian (vl_api_sw_interface_lacp_dump_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
 }
 
-#endif
-
-#ifndef _vl_api_defined_sw_interface_lacp_details_t_endian
-#define _vl_api_defined_sw_interface_lacp_details_t_endian
 static inline void vl_api_sw_interface_lacp_details_t_endian (vl_api_sw_interface_lacp_details_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->sw_if_index = clib_net_to_host_u32(a->sw_if_index);
+    vl_api_interface_index_t_endian(&a->sw_if_index);
+    /* a->interface_name = a->interface_name (no-op) */
     a->rx_state = clib_net_to_host_u32(a->rx_state);
     a->tx_state = clib_net_to_host_u32(a->tx_state);
     a->mux_state = clib_net_to_host_u32(a->mux_state);
     a->ptx_state = clib_net_to_host_u32(a->ptx_state);
+    /* a->bond_interface_name = a->bond_interface_name (no-op) */
     a->actor_system_priority = clib_net_to_host_u16(a->actor_system_priority);
+    vl_api_mac_address_t_endian(&a->actor_system);
     a->actor_key = clib_net_to_host_u16(a->actor_key);
     a->actor_port_priority = clib_net_to_host_u16(a->actor_port_priority);
     a->actor_port_number = clib_net_to_host_u16(a->actor_port_number);
     /* a->actor_state = a->actor_state (no-op) */
     a->partner_system_priority = clib_net_to_host_u16(a->partner_system_priority);
+    vl_api_mac_address_t_endian(&a->partner_system);
     a->partner_key = clib_net_to_host_u16(a->partner_key);
     a->partner_port_priority = clib_net_to_host_u16(a->partner_port_priority);
     a->partner_port_number = clib_net_to_host_u16(a->partner_port_number);
     /* a->partner_state = a->partner_state (no-op) */
 }
 
+
 #endif
-
-
 #endif /* vl_endianfun */
 
 /****** Version tuple *****/
 
 #ifdef vl_api_version_tuple
 
-vl_api_version_tuple(lacp.api, 1, 0, 0)
+vl_api_version_tuple(lacp.api, 2, 0, 0)
 
 #endif /* vl_api_version_tuple */
 
 /****** API CRC (whole file) *****/
 
 #ifdef vl_api_version
-vl_api_version(lacp.api, 0xec776e02)
+vl_api_version(lacp.api, 0x8975258e)
 
 #endif
 

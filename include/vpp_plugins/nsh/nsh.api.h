@@ -1,5 +1,5 @@
 /*
- * VLIB API definitions 2020-06-13 05:58:25
+ * VLIB API definitions 2020-06-30 12:42:25
  * Input file: nsh.api
  * Automatically generated: please edit the input file NOT this file!
  */
@@ -16,6 +16,10 @@
 #endif
 
 #define VL_API_PACKED(x) x __attribute__ ((packed))
+/* Imported API files */
+#ifndef vl_api_version
+#include <vnet/interface_types.api.h>
+#endif
 
 /****** Message ID / handler enum ******/
 
@@ -45,141 +49,32 @@ vl_msg_name(vl_api_nsh_map_details_t, 1)
 
 #ifdef vl_msg_name_crc_list
 #define foreach_vl_msg_name_crc_nsh \
-_(VL_API_NSH_ADD_DEL_ENTRY, nsh_add_del_entry, 395ee8fb) \
+_(VL_API_NSH_ADD_DEL_ENTRY, nsh_add_del_entry, 7dea480b) \
 _(VL_API_NSH_ADD_DEL_ENTRY_REPLY, nsh_add_del_entry_reply, 6296a9eb) \
 _(VL_API_NSH_ENTRY_DUMP, nsh_entry_dump, cdaf8ccb) \
 _(VL_API_NSH_ENTRY_DETAILS, nsh_entry_details, 046fb556) \
-_(VL_API_NSH_ADD_DEL_MAP, nsh_add_del_map, 3af737a1) \
+_(VL_API_NSH_ADD_DEL_MAP, nsh_add_del_map, 898d857d) \
 _(VL_API_NSH_ADD_DEL_MAP_REPLY, nsh_add_del_map_reply, b2b127ef) \
 _(VL_API_NSH_MAP_DUMP, nsh_map_dump, 8fc06b82) \
-_(VL_API_NSH_MAP_DETAILS, nsh_map_details, a5c4e8fa) 
+_(VL_API_NSH_MAP_DETAILS, nsh_map_details, b34ac8a1) 
 #endif
-
 /****** Typedefs ******/
 
 #ifdef vl_typedefs
-#ifndef included_nsh_api
-#define included_nsh_api
-#ifndef _vl_api_defined_nsh_add_del_entry
-#define _vl_api_defined_nsh_add_del_entry
-typedef VL_API_PACKED(struct _vl_api_nsh_add_del_entry {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u8 is_add;
-    u32 nsp_nsi;
-    u8 md_type;
-    u8 ver_o_c;
-    u8 ttl;
-    u8 length;
-    u8 next_protocol;
-    u32 c1;
-    u32 c2;
-    u32 c3;
-    u32 c4;
-    u8 tlv_length;
-    u8 tlv[248];
-}) vl_api_nsh_add_del_entry_t;
+#include "nsh.api_types.h"
 #endif
-
-#ifndef _vl_api_defined_nsh_add_del_entry_reply
-#define _vl_api_defined_nsh_add_del_entry_reply
-typedef VL_API_PACKED(struct _vl_api_nsh_add_del_entry_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-    u32 entry_index;
-}) vl_api_nsh_add_del_entry_reply_t;
-#endif
-
-#ifndef _vl_api_defined_nsh_entry_dump
-#define _vl_api_defined_nsh_entry_dump
-typedef VL_API_PACKED(struct _vl_api_nsh_entry_dump {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u32 entry_index;
-}) vl_api_nsh_entry_dump_t;
-#endif
-
-#ifndef _vl_api_defined_nsh_entry_details
-#define _vl_api_defined_nsh_entry_details
-typedef VL_API_PACKED(struct _vl_api_nsh_entry_details {
-    u16 _vl_msg_id;
-    u32 context;
-    u32 entry_index;
-    u32 nsp_nsi;
-    u8 md_type;
-    u8 ver_o_c;
-    u8 ttl;
-    u8 length;
-    u8 next_protocol;
-    u32 c1;
-    u32 c2;
-    u32 c3;
-    u32 c4;
-    u8 tlv_length;
-    u8 tlv[248];
-}) vl_api_nsh_entry_details_t;
-#endif
-
-#ifndef _vl_api_defined_nsh_add_del_map
-#define _vl_api_defined_nsh_add_del_map
-typedef VL_API_PACKED(struct _vl_api_nsh_add_del_map {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u8 is_add;
-    u32 nsp_nsi;
-    u32 mapped_nsp_nsi;
-    u32 nsh_action;
-    u32 sw_if_index;
-    u32 rx_sw_if_index;
-    u32 next_node;
-}) vl_api_nsh_add_del_map_t;
-#endif
-
-#ifndef _vl_api_defined_nsh_add_del_map_reply
-#define _vl_api_defined_nsh_add_del_map_reply
-typedef VL_API_PACKED(struct _vl_api_nsh_add_del_map_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-    u32 map_index;
-}) vl_api_nsh_add_del_map_reply_t;
-#endif
-
-#ifndef _vl_api_defined_nsh_map_dump
-#define _vl_api_defined_nsh_map_dump
-typedef VL_API_PACKED(struct _vl_api_nsh_map_dump {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u32 map_index;
-}) vl_api_nsh_map_dump_t;
-#endif
-
-#ifndef _vl_api_defined_nsh_map_details
-#define _vl_api_defined_nsh_map_details
-typedef VL_API_PACKED(struct _vl_api_nsh_map_details {
-    u16 _vl_msg_id;
-    u32 context;
-    u32 map_index;
-    u32 nsp_nsi;
-    u32 mapped_nsp_nsi;
-    u32 nsh_action;
-    u32 sw_if_index;
-    u32 rx_sw_if_index;
-    u32 next_node;
-}) vl_api_nsh_map_details_t;
-#endif
-
-
-#endif
-#endif
-
 /****** Print functions *****/
 #ifdef vl_printfun
+#ifndef included_nsh_printfun_types
+#define included_nsh_printfun_types
+
+
+#endif
+#endif /* vl_printfun_types */
+/****** Print functions *****/
+#ifdef vl_printfun
+#ifndef included_nsh_printfun
+#define included_nsh_printfun
 
 #ifdef LP64
 #define _uword_fmt "%lld"
@@ -189,155 +84,164 @@ typedef VL_API_PACKED(struct _vl_api_nsh_map_details {
 #define _uword_cast long
 #endif
 
-#ifndef _vl_api_defined_nsh_add_del_entry_t_print
-#define _vl_api_defined_nsh_add_del_entry_t_print
-static inline void *vl_api_nsh_add_del_entry_t_print (vl_api_nsh_add_del_entry_t *a,void *handle)
+static inline void *vl_api_nsh_add_del_entry_t_print (vl_api_nsh_add_del_entry_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_nsh_add_del_entry_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "is_add: %u\n", a->is_add);
-    vl_print(handle, "nsp_nsi: %u\n", a->nsp_nsi);
-    vl_print(handle, "md_type: %u\n", a->md_type);
-    vl_print(handle, "ver_o_c: %u\n", a->ver_o_c);
-    vl_print(handle, "ttl: %u\n", a->ttl);
-    vl_print(handle, "length: %u\n", a->length);
-    vl_print(handle, "next_protocol: %u\n", a->next_protocol);
-    vl_print(handle, "c1: %u\n", a->c1);
-    vl_print(handle, "c2: %u\n", a->c2);
-    vl_print(handle, "c3: %u\n", a->c3);
-    vl_print(handle, "c4: %u\n", a->c4);
-    vl_print(handle, "tlv_length: %u\n", a->tlv_length);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_nsh_add_del_entry_t: */
+    s = format(s, "vl_api_nsh_add_del_entry_t:");
+    s = format(s, "\n%Uis_add: %u", format_white_space, indent, a->is_add);
+    s = format(s, "\n%Unsp_nsi: %u", format_white_space, indent, a->nsp_nsi);
+    s = format(s, "\n%Umd_type: %u", format_white_space, indent, a->md_type);
+    s = format(s, "\n%Uver_o_c: %u", format_white_space, indent, a->ver_o_c);
+    s = format(s, "\n%Uttl: %u", format_white_space, indent, a->ttl);
+    s = format(s, "\n%Ulength: %u", format_white_space, indent, a->length);
+    s = format(s, "\n%Unext_protocol: %u", format_white_space, indent, a->next_protocol);
+    s = format(s, "\n%Uc1: %u", format_white_space, indent, a->c1);
+    s = format(s, "\n%Uc2: %u", format_white_space, indent, a->c2);
+    s = format(s, "\n%Uc3: %u", format_white_space, indent, a->c3);
+    s = format(s, "\n%Uc4: %u", format_white_space, indent, a->c4);
+    s = format(s, "\n%Utlv_length: %u", format_white_space, indent, a->tlv_length);
+    s = format(s, "\n%Utlv: %U", format_white_space, indent, format_hex_bytes, a, 248);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_nsh_add_del_entry_reply_t_print
-#define _vl_api_defined_nsh_add_del_entry_reply_t_print
-static inline void *vl_api_nsh_add_del_entry_reply_t_print (vl_api_nsh_add_del_entry_reply_t *a,void *handle)
+static inline void *vl_api_nsh_add_del_entry_reply_t_print (vl_api_nsh_add_del_entry_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_nsh_add_del_entry_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
-    vl_print(handle, "entry_index: %u\n", a->entry_index);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_nsh_add_del_entry_reply_t: */
+    s = format(s, "vl_api_nsh_add_del_entry_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    s = format(s, "\n%Uentry_index: %u", format_white_space, indent, a->entry_index);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_nsh_entry_dump_t_print
-#define _vl_api_defined_nsh_entry_dump_t_print
-static inline void *vl_api_nsh_entry_dump_t_print (vl_api_nsh_entry_dump_t *a,void *handle)
+static inline void *vl_api_nsh_entry_dump_t_print (vl_api_nsh_entry_dump_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_nsh_entry_dump_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "entry_index: %u\n", a->entry_index);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_nsh_entry_dump_t: */
+    s = format(s, "vl_api_nsh_entry_dump_t:");
+    s = format(s, "\n%Uentry_index: %u", format_white_space, indent, a->entry_index);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_nsh_entry_details_t_print
-#define _vl_api_defined_nsh_entry_details_t_print
-static inline void *vl_api_nsh_entry_details_t_print (vl_api_nsh_entry_details_t *a,void *handle)
+static inline void *vl_api_nsh_entry_details_t_print (vl_api_nsh_entry_details_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_nsh_entry_details_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "entry_index: %u\n", a->entry_index);
-    vl_print(handle, "nsp_nsi: %u\n", a->nsp_nsi);
-    vl_print(handle, "md_type: %u\n", a->md_type);
-    vl_print(handle, "ver_o_c: %u\n", a->ver_o_c);
-    vl_print(handle, "ttl: %u\n", a->ttl);
-    vl_print(handle, "length: %u\n", a->length);
-    vl_print(handle, "next_protocol: %u\n", a->next_protocol);
-    vl_print(handle, "c1: %u\n", a->c1);
-    vl_print(handle, "c2: %u\n", a->c2);
-    vl_print(handle, "c3: %u\n", a->c3);
-    vl_print(handle, "c4: %u\n", a->c4);
-    vl_print(handle, "tlv_length: %u\n", a->tlv_length);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_nsh_entry_details_t: */
+    s = format(s, "vl_api_nsh_entry_details_t:");
+    s = format(s, "\n%Uentry_index: %u", format_white_space, indent, a->entry_index);
+    s = format(s, "\n%Unsp_nsi: %u", format_white_space, indent, a->nsp_nsi);
+    s = format(s, "\n%Umd_type: %u", format_white_space, indent, a->md_type);
+    s = format(s, "\n%Uver_o_c: %u", format_white_space, indent, a->ver_o_c);
+    s = format(s, "\n%Uttl: %u", format_white_space, indent, a->ttl);
+    s = format(s, "\n%Ulength: %u", format_white_space, indent, a->length);
+    s = format(s, "\n%Unext_protocol: %u", format_white_space, indent, a->next_protocol);
+    s = format(s, "\n%Uc1: %u", format_white_space, indent, a->c1);
+    s = format(s, "\n%Uc2: %u", format_white_space, indent, a->c2);
+    s = format(s, "\n%Uc3: %u", format_white_space, indent, a->c3);
+    s = format(s, "\n%Uc4: %u", format_white_space, indent, a->c4);
+    s = format(s, "\n%Utlv_length: %u", format_white_space, indent, a->tlv_length);
+    s = format(s, "\n%Utlv: %U", format_white_space, indent, format_hex_bytes, a, 248);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_nsh_add_del_map_t_print
-#define _vl_api_defined_nsh_add_del_map_t_print
-static inline void *vl_api_nsh_add_del_map_t_print (vl_api_nsh_add_del_map_t *a,void *handle)
+static inline void *vl_api_nsh_add_del_map_t_print (vl_api_nsh_add_del_map_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_nsh_add_del_map_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "is_add: %u\n", a->is_add);
-    vl_print(handle, "nsp_nsi: %u\n", a->nsp_nsi);
-    vl_print(handle, "mapped_nsp_nsi: %u\n", a->mapped_nsp_nsi);
-    vl_print(handle, "nsh_action: %u\n", a->nsh_action);
-    vl_print(handle, "sw_if_index: %u\n", a->sw_if_index);
-    vl_print(handle, "rx_sw_if_index: %u\n", a->rx_sw_if_index);
-    vl_print(handle, "next_node: %u\n", a->next_node);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_nsh_add_del_map_t: */
+    s = format(s, "vl_api_nsh_add_del_map_t:");
+    s = format(s, "\n%Uis_add: %u", format_white_space, indent, a->is_add);
+    s = format(s, "\n%Unsp_nsi: %u", format_white_space, indent, a->nsp_nsi);
+    s = format(s, "\n%Umapped_nsp_nsi: %u", format_white_space, indent, a->mapped_nsp_nsi);
+    s = format(s, "\n%Unsh_action: %u", format_white_space, indent, a->nsh_action);
+    s = format(s, "\n%Usw_if_index: %U", format_white_space, indent, format_vl_api_interface_index_t, &a->sw_if_index, indent);
+    s = format(s, "\n%Urx_sw_if_index: %U", format_white_space, indent, format_vl_api_interface_index_t, &a->rx_sw_if_index, indent);
+    s = format(s, "\n%Unext_node: %u", format_white_space, indent, a->next_node);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_nsh_add_del_map_reply_t_print
-#define _vl_api_defined_nsh_add_del_map_reply_t_print
-static inline void *vl_api_nsh_add_del_map_reply_t_print (vl_api_nsh_add_del_map_reply_t *a,void *handle)
+static inline void *vl_api_nsh_add_del_map_reply_t_print (vl_api_nsh_add_del_map_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_nsh_add_del_map_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
-    vl_print(handle, "map_index: %u\n", a->map_index);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_nsh_add_del_map_reply_t: */
+    s = format(s, "vl_api_nsh_add_del_map_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    s = format(s, "\n%Umap_index: %u", format_white_space, indent, a->map_index);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_nsh_map_dump_t_print
-#define _vl_api_defined_nsh_map_dump_t_print
-static inline void *vl_api_nsh_map_dump_t_print (vl_api_nsh_map_dump_t *a,void *handle)
+static inline void *vl_api_nsh_map_dump_t_print (vl_api_nsh_map_dump_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_nsh_map_dump_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "map_index: %u\n", a->map_index);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_nsh_map_dump_t: */
+    s = format(s, "vl_api_nsh_map_dump_t:");
+    s = format(s, "\n%Umap_index: %u", format_white_space, indent, a->map_index);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_nsh_map_details_t_print
-#define _vl_api_defined_nsh_map_details_t_print
-static inline void *vl_api_nsh_map_details_t_print (vl_api_nsh_map_details_t *a,void *handle)
+static inline void *vl_api_nsh_map_details_t_print (vl_api_nsh_map_details_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_nsh_map_details_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "map_index: %u\n", a->map_index);
-    vl_print(handle, "nsp_nsi: %u\n", a->nsp_nsi);
-    vl_print(handle, "mapped_nsp_nsi: %u\n", a->mapped_nsp_nsi);
-    vl_print(handle, "nsh_action: %u\n", a->nsh_action);
-    vl_print(handle, "sw_if_index: %u\n", a->sw_if_index);
-    vl_print(handle, "rx_sw_if_index: %u\n", a->rx_sw_if_index);
-    vl_print(handle, "next_node: %u\n", a->next_node);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_nsh_map_details_t: */
+    s = format(s, "vl_api_nsh_map_details_t:");
+    s = format(s, "\n%Umap_index: %u", format_white_space, indent, a->map_index);
+    s = format(s, "\n%Unsp_nsi: %u", format_white_space, indent, a->nsp_nsi);
+    s = format(s, "\n%Umapped_nsp_nsi: %u", format_white_space, indent, a->mapped_nsp_nsi);
+    s = format(s, "\n%Unsh_action: %u", format_white_space, indent, a->nsh_action);
+    s = format(s, "\n%Usw_if_index: %U", format_white_space, indent, format_vl_api_interface_index_t, &a->sw_if_index, indent);
+    s = format(s, "\n%Urx_sw_if_index: %U", format_white_space, indent, format_vl_api_interface_index_t, &a->rx_sw_if_index, indent);
+    s = format(s, "\n%Unext_node: %u", format_white_space, indent, a->next_node);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
+
 #endif
-
-
 #endif /* vl_printfun */
 
 /****** Endian swap functions *****/
 #ifdef vl_endianfun
+#ifndef included_nsh_endianfun
+#define included_nsh_endianfun
 
 #undef clib_net_to_host_uword
 #ifdef LP64
@@ -346,10 +250,9 @@ static inline void *vl_api_nsh_map_details_t_print (vl_api_nsh_map_details_t *a,
 #define clib_net_to_host_uword clib_net_to_host_u32
 #endif
 
-#ifndef _vl_api_defined_nsh_add_del_entry_t_endian
-#define _vl_api_defined_nsh_add_del_entry_t_endian
 static inline void vl_api_nsh_add_del_entry_t_endian (vl_api_nsh_add_del_entry_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
@@ -365,38 +268,30 @@ static inline void vl_api_nsh_add_del_entry_t_endian (vl_api_nsh_add_del_entry_t
     a->c3 = clib_net_to_host_u32(a->c3);
     a->c4 = clib_net_to_host_u32(a->c4);
     /* a->tlv_length = a->tlv_length (no-op) */
+    /* a->tlv = a->tlv (no-op) */
 }
 
-#endif
-
-#ifndef _vl_api_defined_nsh_add_del_entry_reply_t_endian
-#define _vl_api_defined_nsh_add_del_entry_reply_t_endian
 static inline void vl_api_nsh_add_del_entry_reply_t_endian (vl_api_nsh_add_del_entry_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
     a->entry_index = clib_net_to_host_u32(a->entry_index);
 }
 
-#endif
-
-#ifndef _vl_api_defined_nsh_entry_dump_t_endian
-#define _vl_api_defined_nsh_entry_dump_t_endian
 static inline void vl_api_nsh_entry_dump_t_endian (vl_api_nsh_entry_dump_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
     a->entry_index = clib_net_to_host_u32(a->entry_index);
 }
 
-#endif
-
-#ifndef _vl_api_defined_nsh_entry_details_t_endian
-#define _vl_api_defined_nsh_entry_details_t_endian
 static inline void vl_api_nsh_entry_details_t_endian (vl_api_nsh_entry_details_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
     a->entry_index = clib_net_to_host_u32(a->entry_index);
@@ -411,14 +306,12 @@ static inline void vl_api_nsh_entry_details_t_endian (vl_api_nsh_entry_details_t
     a->c3 = clib_net_to_host_u32(a->c3);
     a->c4 = clib_net_to_host_u32(a->c4);
     /* a->tlv_length = a->tlv_length (no-op) */
+    /* a->tlv = a->tlv (no-op) */
 }
 
-#endif
-
-#ifndef _vl_api_defined_nsh_add_del_map_t_endian
-#define _vl_api_defined_nsh_add_del_map_t_endian
 static inline void vl_api_nsh_add_del_map_t_endian (vl_api_nsh_add_del_map_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
@@ -426,68 +319,59 @@ static inline void vl_api_nsh_add_del_map_t_endian (vl_api_nsh_add_del_map_t *a)
     a->nsp_nsi = clib_net_to_host_u32(a->nsp_nsi);
     a->mapped_nsp_nsi = clib_net_to_host_u32(a->mapped_nsp_nsi);
     a->nsh_action = clib_net_to_host_u32(a->nsh_action);
-    a->sw_if_index = clib_net_to_host_u32(a->sw_if_index);
-    a->rx_sw_if_index = clib_net_to_host_u32(a->rx_sw_if_index);
+    vl_api_interface_index_t_endian(&a->sw_if_index);
+    vl_api_interface_index_t_endian(&a->rx_sw_if_index);
     a->next_node = clib_net_to_host_u32(a->next_node);
 }
 
-#endif
-
-#ifndef _vl_api_defined_nsh_add_del_map_reply_t_endian
-#define _vl_api_defined_nsh_add_del_map_reply_t_endian
 static inline void vl_api_nsh_add_del_map_reply_t_endian (vl_api_nsh_add_del_map_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
     a->map_index = clib_net_to_host_u32(a->map_index);
 }
 
-#endif
-
-#ifndef _vl_api_defined_nsh_map_dump_t_endian
-#define _vl_api_defined_nsh_map_dump_t_endian
 static inline void vl_api_nsh_map_dump_t_endian (vl_api_nsh_map_dump_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
     a->map_index = clib_net_to_host_u32(a->map_index);
 }
 
-#endif
-
-#ifndef _vl_api_defined_nsh_map_details_t_endian
-#define _vl_api_defined_nsh_map_details_t_endian
 static inline void vl_api_nsh_map_details_t_endian (vl_api_nsh_map_details_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
     a->map_index = clib_net_to_host_u32(a->map_index);
     a->nsp_nsi = clib_net_to_host_u32(a->nsp_nsi);
     a->mapped_nsp_nsi = clib_net_to_host_u32(a->mapped_nsp_nsi);
     a->nsh_action = clib_net_to_host_u32(a->nsh_action);
-    a->sw_if_index = clib_net_to_host_u32(a->sw_if_index);
-    a->rx_sw_if_index = clib_net_to_host_u32(a->rx_sw_if_index);
+    vl_api_interface_index_t_endian(&a->sw_if_index);
+    vl_api_interface_index_t_endian(&a->rx_sw_if_index);
     a->next_node = clib_net_to_host_u32(a->next_node);
 }
 
+
 #endif
-
-
 #endif /* vl_endianfun */
 
 /****** Version tuple *****/
 
 #ifdef vl_api_version_tuple
 
+vl_api_version_tuple(nsh.api, 1, 0, 0)
 
 #endif /* vl_api_version_tuple */
 
 /****** API CRC (whole file) *****/
 
 #ifdef vl_api_version
-vl_api_version(nsh.api, 0x6de57acf)
+vl_api_version(nsh.api, 0x2d586141)
 
 #endif
 

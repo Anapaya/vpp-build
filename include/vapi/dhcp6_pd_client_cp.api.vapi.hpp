@@ -6,34 +6,6 @@
 
 namespace vapi {
 
-template <> inline void vapi_swap_to_be<vapi_msg_dhcp6_pd_client_enable_disable_reply>(vapi_msg_dhcp6_pd_client_enable_disable_reply *msg)
-{
-  vapi_msg_dhcp6_pd_client_enable_disable_reply_hton(msg);
-}
-
-template <> inline void vapi_swap_to_host<vapi_msg_dhcp6_pd_client_enable_disable_reply>(vapi_msg_dhcp6_pd_client_enable_disable_reply *msg)
-{
-  vapi_msg_dhcp6_pd_client_enable_disable_reply_ntoh(msg);
-}
-
-template <> inline vapi_msg_id_t vapi_get_msg_id_t<vapi_msg_dhcp6_pd_client_enable_disable_reply>()
-{
-  return ::vapi_msg_id_dhcp6_pd_client_enable_disable_reply; 
-}
-
-template <> inline vapi_msg_id_t vapi_get_msg_id_t<Msg<vapi_msg_dhcp6_pd_client_enable_disable_reply>>()
-{
-  return ::vapi_msg_id_dhcp6_pd_client_enable_disable_reply; 
-}
-
-static void __attribute__((constructor)) __vapi_cpp_constructor_dhcp6_pd_client_enable_disable_reply()
-{
-  vapi::vapi_msg_set_msg_id<vapi_msg_dhcp6_pd_client_enable_disable_reply>(vapi_msg_id_dhcp6_pd_client_enable_disable_reply);
-}
-
-template class Msg<vapi_msg_dhcp6_pd_client_enable_disable_reply>;
-
-using Dhcp6_pd_client_enable_disable_reply = Msg<vapi_msg_dhcp6_pd_client_enable_disable_reply>;
 template <> inline void vapi_swap_to_be<vapi_msg_dhcp6_pd_client_enable_disable>(vapi_msg_dhcp6_pd_client_enable_disable *msg)
 {
   vapi_msg_dhcp6_pd_client_enable_disable_hton(msg);
@@ -74,6 +46,34 @@ template class Request<vapi_msg_dhcp6_pd_client_enable_disable, vapi_msg_dhcp6_p
 
 using Dhcp6_pd_client_enable_disable = Request<vapi_msg_dhcp6_pd_client_enable_disable, vapi_msg_dhcp6_pd_client_enable_disable_reply>;
 
+template <> inline void vapi_swap_to_be<vapi_msg_dhcp6_pd_client_enable_disable_reply>(vapi_msg_dhcp6_pd_client_enable_disable_reply *msg)
+{
+  vapi_msg_dhcp6_pd_client_enable_disable_reply_hton(msg);
+}
+
+template <> inline void vapi_swap_to_host<vapi_msg_dhcp6_pd_client_enable_disable_reply>(vapi_msg_dhcp6_pd_client_enable_disable_reply *msg)
+{
+  vapi_msg_dhcp6_pd_client_enable_disable_reply_ntoh(msg);
+}
+
+template <> inline vapi_msg_id_t vapi_get_msg_id_t<vapi_msg_dhcp6_pd_client_enable_disable_reply>()
+{
+  return ::vapi_msg_id_dhcp6_pd_client_enable_disable_reply; 
+}
+
+template <> inline vapi_msg_id_t vapi_get_msg_id_t<Msg<vapi_msg_dhcp6_pd_client_enable_disable_reply>>()
+{
+  return ::vapi_msg_id_dhcp6_pd_client_enable_disable_reply; 
+}
+
+static void __attribute__((constructor)) __vapi_cpp_constructor_dhcp6_pd_client_enable_disable_reply()
+{
+  vapi::vapi_msg_set_msg_id<vapi_msg_dhcp6_pd_client_enable_disable_reply>(vapi_msg_id_dhcp6_pd_client_enable_disable_reply);
+}
+
+template class Msg<vapi_msg_dhcp6_pd_client_enable_disable_reply>;
+
+using Dhcp6_pd_client_enable_disable_reply = Msg<vapi_msg_dhcp6_pd_client_enable_disable_reply>;
 template <> inline void vapi_swap_to_be<vapi_msg_ip6_add_del_address_using_prefix>(vapi_msg_ip6_add_del_address_using_prefix *msg)
 {
   vapi_msg_ip6_add_del_address_using_prefix_hton(msg);

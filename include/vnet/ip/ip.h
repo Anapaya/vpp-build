@@ -50,6 +50,7 @@
 #include <vnet/ip/format.h>
 #include <vnet/ip/ip_packet.h>
 #include <vnet/ip/lookup.h>
+#include <vnet/ip/ip_interface.h>
 
 #include <vnet/tcp/tcp_packet.h>
 #include <vnet/udp/udp_packet.h>
@@ -64,7 +65,6 @@
 #include <vnet/ip/ip6_packet.h>
 #include <vnet/ip/ip6_error.h>
 #include <vnet/ip/icmp6.h>
-#include <vnet/classify/vnet_classify.h>
 
 /* Per protocol info. */
 typedef struct
@@ -213,7 +213,6 @@ ip_calculate_l4_checksum (vlib_main_t * vm, vlib_buffer_t * p0,
 	      n_this_buffer = n_ip_bytes_this_buffer - ip_header_size;
 	      if (PREDICT_FALSE (n_this_buffer >> 31))
 		{		/*  error - ip header don't fit this buffer */
-		  ASSERT (0);
 		  return 0xfefe;
 		}
 	    }
@@ -235,7 +234,6 @@ ip_calculate_l4_checksum (vlib_main_t * vm, vlib_buffer_t * p0,
 
       if (!(p0->flags & VLIB_BUFFER_NEXT_PRESENT))
 	{
-	  ASSERT (0);		/* error - more buffer expected */
 	  return 0xfefe;
 	}
 
@@ -277,20 +275,17 @@ u8 ip_is_local_host (ip46_address_t * ip46_address, u8 is_ip4);
 u8 ip4_is_local_host (ip4_address_t * ip4_address);
 u8 ip6_is_local_host (ip6_address_t * ip6_address);
 u8 ip_is_local (u32 fib_index, ip46_address_t * ip46_address, u8 is_ip4);
-u8 ip_interface_has_address (u32 sw_if_index, ip46_address_t * ip, u8 is_ip4);
 void ip_copy (ip46_address_t * dst, ip46_address_t * src, u8 is_ip4);
 void ip_set (ip46_address_t * dst, void *src, u8 is_ip4);
-void *ip_interface_get_first_ip (u32 sw_if_index, u8 is_ip4);
-void ip4_address_normalize (ip4_address_t * ip4, u8 preflen);
-void ip6_address_normalize (ip6_address_t * ip6, u8 preflen);
-void ip4_preflen_to_mask (u8 pref_len, ip4_address_t * ip);
-u32 ip4_mask_to_preflen (ip4_address_t * mask);
-void ip4_prefix_max_address_host_order (ip4_address_t * ip, u8 plen,
-					ip4_address_t * res);
-void ip6_prefix_max_address_host_order (ip6_address_t * ip, u8 plen,
-					ip6_address_t * res);
-void ip6_preflen_to_mask (u8 pref_len, ip6_address_t * mask);
-u32 ip6_mask_to_preflen (ip6_address_t * mask);
+
+always_inline u32 vlib_buffer_get_ip4_fib_index (vlib_buffer_t * b);
+always_inline u32 vlib_buffer_get_ip6_fib_index (vlib_buffer_t * b);
+always_inline u32
+vlib_buffer_get_ip_fib_index (vlib_buffer_t * b, u8 is_ip4)
+{
+  return (is_ip4 ? vlib_buffer_get_ip4_fib_index
+	  : vlib_buffer_get_ip6_fib_index) (b);
+}
 
 #endif /* included_ip_main_h */
 

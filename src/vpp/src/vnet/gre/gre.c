@@ -18,6 +18,7 @@
 #include <vnet/vnet.h>
 #include <vnet/gre/gre.h>
 #include <vnet/adj/adj_midchain.h>
+#include <vnet/tunnel/tunnel_dp.h>
 
 extern gre_main_t gre_main;
 
@@ -213,6 +214,7 @@ gre_build_rewrite (vnet_main_t * vnm,
 		   vnet_link_t link_type, const void *dst_address)
 {
   gre_main_t *gm = &gre_main;
+  const ip46_address_t *dst;
   ip4_and_gre_header_t *h4;
   ip6_and_gre_header_t *h6;
   gre_header_t *gre;
@@ -221,6 +223,7 @@ gre_build_rewrite (vnet_main_t * vnm,
   u32 ti;
   u8 is_ipv6;
 
+  dst = dst_address;
   ti = gm->tunnel_index_by_sw_if_index[sw_if_index];
 
   if (~0 == ti)
@@ -241,7 +244,7 @@ gre_build_rewrite (vnet_main_t * vnm,
       h4->ip4.protocol = IP_PROTOCOL_GRE;
       /* fixup ip4 header length and checksum after-the-fact */
       h4->ip4.src_address.as_u32 = t->tunnel_src.ip4.as_u32;
-      h4->ip4.dst_address.as_u32 = t->tunnel_dst.fp_addr.ip4.as_u32;
+      h4->ip4.dst_address.as_u32 = dst->ip4.as_u32;
       h4->ip4.checksum = ip4_header_checksum (&h4->ip4);
     }
   else
@@ -256,8 +259,8 @@ gre_build_rewrite (vnet_main_t * vnm,
       /* fixup ip6 header length and checksum after-the-fact */
       h6->ip6.src_address.as_u64[0] = t->tunnel_src.ip6.as_u64[0];
       h6->ip6.src_address.as_u64[1] = t->tunnel_src.ip6.as_u64[1];
-      h6->ip6.dst_address.as_u64[0] = t->tunnel_dst.fp_addr.ip6.as_u64[0];
-      h6->ip6.dst_address.as_u64[1] = t->tunnel_dst.fp_addr.ip6.as_u64[1];
+      h6->ip6.dst_address.as_u64[0] = dst->ip6.as_u64[0];
+      h6->ip6.dst_address.as_u64[1] = dst->ip6.as_u64[1];
     }
 
   if (PREDICT_FALSE (t->type == GRE_TUNNEL_TYPE_ERSPAN))
@@ -272,11 +275,45 @@ gre_build_rewrite (vnet_main_t * vnm,
   return (rewrite);
 }
 
-#define is_v4_packet(_h) ((*(u8*) _h) & 0xF0) == 0x40
+static void
+gre44_fixup (vlib_main_t * vm,
+	     const ip_adjacency_t * adj, vlib_buffer_t * b0, const void *data)
+{
+  tunnel_encap_decap_flags_t flags;
+  ip4_and_gre_header_t *ip0;
+
+  ip0 = vlib_buffer_get_current (b0);
+  flags = pointer_to_uword (data);
+
+  /* Fixup the checksum and len fields in the GRE tunnel encap
+   * that was applied at the midchain node */
+  ip0->ip4.length =
+    clib_host_to_net_u16 (vlib_buffer_length_in_chain (vm, b0));
+  tunnel_encap_fixup_4o4 (flags, (ip4_header_t *) (ip0 + 1), &ip0->ip4);
+  ip0->ip4.checksum = ip4_header_checksum (&ip0->ip4);
+}
 
 static void
-gre4_fixup (vlib_main_t * vm,
-	    ip_adjacency_t * adj, vlib_buffer_t * b0, const void *data)
+gre64_fixup (vlib_main_t * vm,
+	     const ip_adjacency_t * adj, vlib_buffer_t * b0, const void *data)
+{
+  tunnel_encap_decap_flags_t flags;
+  ip4_and_gre_header_t *ip0;
+
+  ip0 = vlib_buffer_get_current (b0);
+  flags = pointer_to_uword (data);
+
+  /* Fixup the checksum and len fields in the GRE tunnel encap
+   * that was applied at the midchain node */
+  ip0->ip4.length =
+    clib_host_to_net_u16 (vlib_buffer_length_in_chain (vm, b0));
+  tunnel_encap_fixup_6o4 (flags, (ip6_header_t *) (ip0 + 1), &ip0->ip4);
+  ip0->ip4.checksum = ip4_header_checksum (&ip0->ip4);
+}
+
+static void
+grex4_fixup (vlib_main_t * vm,
+	     const ip_adjacency_t * adj, vlib_buffer_t * b0, const void *data)
 {
   ip4_header_t *ip0;
 
@@ -289,8 +326,44 @@ gre4_fixup (vlib_main_t * vm,
 }
 
 static void
-gre6_fixup (vlib_main_t * vm,
-	    ip_adjacency_t * adj, vlib_buffer_t * b0, const void *data)
+gre46_fixup (vlib_main_t * vm,
+	     const ip_adjacency_t * adj, vlib_buffer_t * b0, const void *data)
+{
+  tunnel_encap_decap_flags_t flags;
+  ip6_and_gre_header_t *ip0;
+
+  ip0 = vlib_buffer_get_current (b0);
+  flags = pointer_to_uword (data);
+
+  /* Fixup the payload length field in the GRE tunnel encap that was applied
+   * at the midchain node */
+  ip0->ip6.payload_length =
+    clib_host_to_net_u16 (vlib_buffer_length_in_chain (vm, b0) -
+			  sizeof (*ip0));
+  tunnel_encap_fixup_4o6 (flags, (ip4_header_t *) (ip0 + 1), &ip0->ip6);
+}
+
+static void
+gre66_fixup (vlib_main_t * vm,
+	     const ip_adjacency_t * adj, vlib_buffer_t * b0, const void *data)
+{
+  tunnel_encap_decap_flags_t flags;
+  ip6_and_gre_header_t *ip0;
+
+  ip0 = vlib_buffer_get_current (b0);
+  flags = pointer_to_uword (data);
+
+  /* Fixup the payload length field in the GRE tunnel encap that was applied
+   * at the midchain node */
+  ip0->ip6.payload_length =
+    clib_host_to_net_u16 (vlib_buffer_length_in_chain (vm, b0) -
+			  sizeof (*ip0));
+  tunnel_encap_fixup_6o6 (flags, (ip6_header_t *) (ip0 + 1), &ip0->ip6);
+}
+
+static void
+grex6_fixup (vlib_main_t * vm,
+	     const ip_adjacency_t * adj, vlib_buffer_t * b0, const void *data)
 {
   ip6_header_t *ip0;
 
@@ -303,28 +376,115 @@ gre6_fixup (vlib_main_t * vm,
 			  sizeof (*ip0));
 }
 
+/**
+ * return the appropriate fixup function given the overlay (link-type) and
+ * underlay (fproto) combination
+ */
+static adj_midchain_fixup_t
+gre_get_fixup (fib_protocol_t fproto, vnet_link_t lt)
+{
+  if (fproto == FIB_PROTOCOL_IP6 && lt == VNET_LINK_IP6)
+    return (gre66_fixup);
+  if (fproto == FIB_PROTOCOL_IP6 && lt == VNET_LINK_IP4)
+    return (gre46_fixup);
+  if (fproto == FIB_PROTOCOL_IP4 && lt == VNET_LINK_IP6)
+    return (gre64_fixup);
+  if (fproto == FIB_PROTOCOL_IP4 && lt == VNET_LINK_IP4)
+    return (gre44_fixup);
+  if (fproto == FIB_PROTOCOL_IP6 && lt == VNET_LINK_ETHERNET)
+    return (grex6_fixup);
+  if (fproto == FIB_PROTOCOL_IP4 && lt == VNET_LINK_ETHERNET)
+    return (grex4_fixup);
+
+  ASSERT (0);
+  return (gre44_fixup);
+}
+
 void
 gre_update_adj (vnet_main_t * vnm, u32 sw_if_index, adj_index_t ai)
 {
   gre_main_t *gm = &gre_main;
   gre_tunnel_t *t;
   adj_flags_t af;
-  u8 is_ipv6;
   u32 ti;
 
   ti = gm->tunnel_index_by_sw_if_index[sw_if_index];
   t = pool_elt_at_index (gm->tunnels, ti);
-  is_ipv6 = t->tunnel_dst.fp_proto == FIB_PROTOCOL_IP6 ? 1 : 0;
   af = ADJ_FLAG_MIDCHAIN_IP_STACK;
 
   if (VNET_LINK_ETHERNET == adj_get_link_type (ai))
     af |= ADJ_FLAG_MIDCHAIN_NO_COUNT;
 
   adj_nbr_midchain_update_rewrite
-    (ai, !is_ipv6 ? gre4_fixup : gre6_fixup, NULL, af,
-     gre_build_rewrite (vnm, sw_if_index, adj_get_link_type (ai), NULL));
+    (ai, gre_get_fixup (t->tunnel_dst.fp_proto,
+			adj_get_link_type (ai)),
+     uword_to_pointer (t->flags, void *), af,
+     gre_build_rewrite (vnm, sw_if_index, adj_get_link_type (ai),
+			&t->tunnel_dst.fp_addr));
 
   gre_tunnel_stack (ai);
+}
+
+adj_walk_rc_t
+mgre_mk_complete_walk (adj_index_t ai, void *data)
+{
+  mgre_walk_ctx_t *ctx = data;
+
+  adj_nbr_midchain_update_rewrite
+    (ai, gre_get_fixup (ctx->t->tunnel_dst.fp_proto,
+			adj_get_link_type (ai)),
+     uword_to_pointer (ctx->t->flags, void *),
+     ADJ_FLAG_MIDCHAIN_IP_STACK,
+     gre_build_rewrite (vnet_get_main (),
+			ctx->t->sw_if_index,
+			adj_get_link_type (ai),
+			&teib_entry_get_nh (ctx->ne)->fp_addr));
+
+  teib_entry_adj_stack (ctx->ne, ai);
+
+  return (ADJ_WALK_RC_CONTINUE);
+}
+
+adj_walk_rc_t
+mgre_mk_incomplete_walk (adj_index_t ai, void *data)
+{
+  gre_tunnel_t *t = data;
+
+  adj_nbr_midchain_update_rewrite (ai, gre_get_fixup (t->tunnel_dst.fp_proto,
+						      adj_get_link_type (ai)),
+				   NULL, ADJ_FLAG_NONE, NULL);
+
+  adj_midchain_delegate_unstack (ai);
+
+  return (ADJ_WALK_RC_CONTINUE);
+}
+
+void
+mgre_update_adj (vnet_main_t * vnm, u32 sw_if_index, adj_index_t ai)
+{
+  gre_main_t *gm = &gre_main;
+  ip_adjacency_t *adj;
+  teib_entry_t *ne;
+  gre_tunnel_t *t;
+  u32 ti;
+
+  adj = adj_get (ai);
+  ti = gm->tunnel_index_by_sw_if_index[sw_if_index];
+  t = pool_elt_at_index (gm->tunnels, ti);
+
+  ne = teib_entry_find (sw_if_index, &adj->sub_type.nbr.next_hop);
+
+  if (NULL == ne)
+    // no NHRP entry to provide the next-hop
+    return;
+
+  mgre_walk_ctx_t ctx = {
+    .t = t,
+    .ne = ne
+  };
+  adj_nbr_walk_nh (sw_if_index,
+		   adj->ia_nh_proto,
+		   &adj->sub_type.nbr.next_hop, mgre_mk_complete_walk, &ctx);
 }
 #endif /* CLIB_MARCH_VARIANT */
 
@@ -338,8 +498,10 @@ typedef enum
  * @brief TX function. Only called for L2 payload including TEB or ERSPAN.
  *        L3 traffic uses the adj-midchains.
  */
-VLIB_NODE_FN (gre_encap_node) (vlib_main_t * vm, vlib_node_runtime_t * node,
-			       vlib_frame_t * frame)
+static_always_inline u32
+gre_encap_inline (vlib_main_t * vm,
+		  vlib_node_runtime_t * node,
+		  vlib_frame_t * frame, gre_tunnel_type_t type)
 {
   gre_main_t *gm = &gre_main;
   u32 *from, n_left_from;
@@ -377,7 +539,7 @@ VLIB_NODE_FN (gre_encap_node) (vlib_main_t * vm, vlib_node_runtime_t * node,
       vnet_buffer (b[0])->ip.adj_index[VLIB_TX] = adj_index[0];
       vnet_buffer (b[1])->ip.adj_index[VLIB_TX] = adj_index[1];
 
-      if (PREDICT_FALSE (gt[0]->type == GRE_TUNNEL_TYPE_ERSPAN))
+      if (type == GRE_TUNNEL_TYPE_ERSPAN)
 	{
 	  /* Encap GRE seq# and ERSPAN type II header */
 	  erspan_t2_t *h0;
@@ -391,7 +553,7 @@ VLIB_NODE_FN (gre_encap_node) (vlib_main_t * vm, vlib_node_runtime_t * node,
 	  h0->t2_u64 = hdr;
 	  h0->t2.cos_en_t_session |= clib_host_to_net_u16 (gt[0]->session_id);
 	}
-      if (PREDICT_FALSE (gt[1]->type == GRE_TUNNEL_TYPE_ERSPAN))
+      if (type == GRE_TUNNEL_TYPE_ERSPAN)
 	{
 	  /* Encap GRE seq# and ERSPAN type II header */
 	  erspan_t2_t *h0;
@@ -444,12 +606,13 @@ VLIB_NODE_FN (gre_encap_node) (vlib_main_t * vm, vlib_node_runtime_t * node,
 
       vnet_buffer (b[0])->ip.adj_index[VLIB_TX] = adj_index[0];
 
-      if (PREDICT_FALSE (gt[0]->type == GRE_TUNNEL_TYPE_ERSPAN))
+      if (type == GRE_TUNNEL_TYPE_ERSPAN)
 	{
 	  /* Encap GRE seq# and ERSPAN type II header */
 	  erspan_t2_t *h0;
 	  u32 seq_num;
 	  u64 hdr;
+	  ASSERT (gt[0]->type == GRE_TUNNEL_TYPE_ERSPAN);
 	  vlib_buffer_advance (b[0], -sizeof (erspan_t2_t));
 	  h0 = vlib_buffer_get_current (b[0]);
 	  seq_num = clib_atomic_fetch_add (&gt[0]->gre_sn->seq_num, 1);
@@ -489,10 +652,37 @@ static char *gre_error_strings[] = {
 #undef gre_error
 };
 
-/* *INDENT-OFF* */
-VLIB_REGISTER_NODE (gre_encap_node) =
+VLIB_NODE_FN (gre_teb_encap_node) (vlib_main_t * vm,
+				   vlib_node_runtime_t * node,
+				   vlib_frame_t * frame)
 {
-  .name = "gre-encap",
+  return (gre_encap_inline (vm, node, frame, GRE_TUNNEL_TYPE_TEB));
+}
+
+VLIB_NODE_FN (gre_erspan_encap_node) (vlib_main_t * vm,
+				      vlib_node_runtime_t * node,
+				      vlib_frame_t * frame)
+{
+  return (gre_encap_inline (vm, node, frame, GRE_TUNNEL_TYPE_ERSPAN));
+}
+
+/* *INDENT-OFF* */
+VLIB_REGISTER_NODE (gre_teb_encap_node) =
+{
+  .name = "gre-teb-encap",
+  .vector_size = sizeof (u32),
+  .format_trace = format_gre_tx_trace,
+  .type = VLIB_NODE_TYPE_INTERNAL,
+  .n_errors = GRE_N_ERROR,
+  .error_strings = gre_error_strings,
+  .n_next_nodes = GRE_ENCAP_N_NEXT,
+  .next_nodes = {
+    [GRE_ENCAP_NEXT_L2_MIDCHAIN] = "adj-l2-midchain",
+  },
+};
+VLIB_REGISTER_NODE (gre_erspan_encap_node) =
+{
+  .name = "gre-erspan-encap",
   .vector_size = sizeof (u32),
   .format_trace = format_gre_tx_trace,
   .type = VLIB_NODE_TYPE_INTERNAL,
@@ -573,6 +763,15 @@ VNET_HW_INTERFACE_CLASS (gre_hw_interface_class) = {
   .build_rewrite = gre_build_rewrite,
   .update_adjacency = gre_update_adj,
   .flags = VNET_HW_INTERFACE_CLASS_FLAG_P2P,
+};
+
+VNET_HW_INTERFACE_CLASS (mgre_hw_interface_class) = {
+  .name = "mGRE",
+  .format_header = format_gre_header_with_length,
+  .unformat_header = unformat_gre_header,
+  .build_rewrite = gre_build_rewrite,
+  .update_adjacency = mgre_update_adj,
+  .flags = VNET_HW_INTERFACE_CLASS_FLAG_NBMA,
 };
 /* *INDENT-ON* */
 #endif /* CLIB_MARCH_VARIANT */

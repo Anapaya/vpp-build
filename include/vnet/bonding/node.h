@@ -111,6 +111,15 @@ typedef struct
   clib_error_t *error;
 } bond_detach_slave_args_t;
 
+typedef struct
+{
+  u32 sw_if_index;
+  u32 weight;
+  /* return */
+  int rv;
+  clib_error_t *error;
+} bond_set_intf_weight_args_t;
+
 /** BOND interface details struct */
 typedef struct
 {
@@ -131,6 +140,8 @@ typedef struct
   u8 interface_name[64];
   u8 is_passive;
   u8 is_long_timeout;
+  u8 is_local_numa;
+  u32 weight;
   u32 active_slaves;
 } slave_interface_details_t;
 
@@ -160,11 +171,6 @@ typedef struct
   u8 mode;
   u8 lb;
 
-  /* This flag works for active-backup mode only
-     and marks if the working port is local numa. */
-  u8 is_local_numa;
-  /* current working sw_if_index in active-bakeup mode. */
-  u32 sw_if_index_working;
   /* the last slave index for the rr lb */
   u32 lb_rr_last_index;
 
@@ -237,6 +243,9 @@ typedef struct
 
   /* neighbor vlib hw_if_index */
   u32 hw_if_index;
+
+  /* weight -- valid only for active backup */
+  u32 weight;
 
   /* actor does not initiate the protocol exchange */
   u8 is_passive;
@@ -335,10 +344,19 @@ typedef struct
 
   /* pdu sent */
   u64 marker_pdu_sent;
+
+  /* slave is numa node */
+  u8 is_local_numa;
 } slave_if_t;
 
 typedef void (*lacp_enable_disable_func) (vlib_main_t * vm, bond_if_t * bif,
 					  slave_if_t * sif, u8 enable);
+
+typedef struct
+{
+  u32 partner_state;
+  u32 actor_state;
+} lacp_stats_t;
 
 typedef struct
 {
@@ -367,7 +385,7 @@ typedef struct
 
   bond_per_thread_data_t *per_thread_data;
 
-  u32 **stats;
+  lacp_stats_t **stats;
 } bond_main_t;
 
 /* bond packet trace capture */
@@ -397,6 +415,8 @@ void bond_disable_collecting_distributing (vlib_main_t * vm,
 void bond_enable_collecting_distributing (vlib_main_t * vm, slave_if_t * sif);
 u8 *format_bond_interface_name (u8 * s, va_list * args);
 
+void bond_set_intf_weight (vlib_main_t * vm,
+			   bond_set_intf_weight_args_t * args);
 void bond_create_if (vlib_main_t * vm, bond_create_if_args_t * args);
 int bond_delete_if (vlib_main_t * vm, u32 sw_if_index);
 void bond_enslave (vlib_main_t * vm, bond_enslave_args_t * args);

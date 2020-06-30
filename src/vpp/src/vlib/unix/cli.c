@@ -2557,6 +2557,9 @@ more:
 		   format_timeval, 0 /* current bat-time */ ,
 		   0 /* current bat-format */ ,
 		   cli_file_index, cf->current_command);
+      if ((vec_len (cf->current_command) > 0) &&
+	  (cf->current_command[vec_len (cf->current_command) - 1] != '\n'))
+	lv = format (lv, "\n");
       int rv __attribute__ ((unused)) = write (um->log_fd, lv, vec_len (lv));
     }
 
@@ -3089,9 +3092,11 @@ unix_cli_config (vlib_main_t * vm, unformat_input_t * input)
 	    clib_panic ("sigaction");
 
 	  /* Retrieve the current terminal size */
-	  ioctl (STDIN_FILENO, TIOCGWINSZ, &ws);
-	  cf->width = ws.ws_col;
-	  cf->height = ws.ws_row;
+	  if (ioctl (STDIN_FILENO, TIOCGWINSZ, &ws) == 0)
+	    {
+	      cf->width = ws.ws_col;
+	      cf->height = ws.ws_row;
+	    }
 
 	  if (cf->width == 0 || cf->height == 0)
 	    {
@@ -3167,7 +3172,7 @@ unix_cli_config (vlib_main_t * vm, unformat_input_t * input)
 	  while (i && tmp[--i] != '/')
 	    ;
 
-	  tmp[i] = 0;
+	  tmp[i] = '\0';
 
 	  if (i)
 	    vlib_unix_recursive_mkdir ((char *) tmp);
@@ -3328,7 +3333,7 @@ unix_cli_exec (vlib_main_t * vm,
   unformat_free (&sub_input);
 
 done:
-  if (fd > 0)
+  if (fd >= 0)
     close (fd);
   vec_free (file_name);
 
@@ -3844,6 +3849,46 @@ VLIB_CLI_COMMAND (cli_unix_cli_set_terminal_ansi, static) = {
   .path = "set terminal ansi",
   .short_help = "set terminal ansi [on|off]",
   .function = unix_cli_set_terminal_ansi,
+};
+/* *INDENT-ON* */
+
+
+#define MAX_CLI_WAIT 86400
+/** CLI command to wait <sec> seconds. Useful for exec script. */
+static clib_error_t *
+unix_wait_cmd (vlib_main_t * vm,
+	       unformat_input_t * input, vlib_cli_command_t * cmd)
+{
+  unformat_input_t _line_input, *line_input = &_line_input;
+  f64 sec = 1.0;
+
+  if (!unformat_user (input, unformat_line_input, line_input))
+    return 0;
+
+  while (unformat_check_input (line_input) != UNFORMAT_END_OF_INPUT)
+    {
+      if (unformat (line_input, "%f", &sec))
+	;
+      else
+	return clib_error_return (0, "unknown parameter: `%U`",
+				  format_unformat_error, input);
+    }
+
+  if (sec <= 0 || sec > MAX_CLI_WAIT || floor (sec * 1000) / 1000 != sec)
+    return clib_error_return (0,
+			      "<sec> must be a positive value and less than 86400 (one day) with no more than msec precision.");
+
+  vlib_process_wait_for_event_or_clock (vm, sec);
+  vlib_cli_output (vm, "waited %.3f sec.", sec);
+
+  unformat_free (line_input);
+  return 0;
+}
+/* *INDENT-OFF* */
+VLIB_CLI_COMMAND (cli_unix_wait_cmd, static) = {
+  .path = "wait",
+  .short_help = "wait <sec>",
+  .function = unix_wait_cmd,
 };
 /* *INDENT-ON* */
 

@@ -49,7 +49,7 @@
   _ (VIRTIO_NET_F_CTRL_MAC_ADDR, 23)	/* Set MAC address */ \
   _ (VIRTIO_F_NOTIFY_ON_EMPTY, 24) \
   _ (VHOST_F_LOG_ALL, 26)      /* Log all write descriptors */ \
-  _ (VIRTIO_F_ANY_LAYOUT, 27)  /* Can the device handle any descripor layout */ \
+  _ (VIRTIO_F_ANY_LAYOUT, 27)  /* Can the device handle any descriptor layout */ \
   _ (VIRTIO_RING_F_INDIRECT_DESC, 28)   /* Support indirect buffer descriptors */ \
   _ (VIRTIO_RING_F_EVENT_IDX, 29)       /* The Guest publishes the used index for which it expects an interrupt \
  * at the end of the avail ring. Host should ignore the avail->flags field. */ \
@@ -57,7 +57,6 @@
  * at the end of the used ring. Guest should ignore the used->flags field. */ \
   _ (VHOST_USER_F_PROTOCOL_FEATURES, 30) \
   _ (VIRTIO_F_VERSION_1, 32)
-
 
 #define foreach_virtio_if_flag		\
   _(0, ADMIN_UP, "admin-up")		\
@@ -80,11 +79,17 @@ typedef enum
 #define TX_QUEUE_ACCESS(X) (X/2)
 #define RX_QUEUE_ACCESS(X) (X/2)
 
+#define foreach_virtio_if_types \
+  _ (TAP, 0)                    \
+  _ (TUN, 1)                    \
+  _ (PCI, 2)
+
 typedef enum
 {
-  VIRTIO_IF_TYPE_TAP,
-  VIRTIO_IF_TYPE_PCI,
-  VIRTIO_IF_N_TYPES,
+#define _(a, b) VIRTIO_IF_TYPE_##a = (1 << b),
+  foreach_virtio_if_types
+#undef _
+    VIRTIO_IF_N_TYPES = (1 << 3),
 } virtio_if_type_t;
 
 
@@ -149,16 +154,10 @@ typedef struct
     pci_addr_t pci_addr;
   };
   u32 per_interface_next_index;
-  union
-  {
-    int fd;
-    u32 msix_enabled;
-  };
-  union
-  {
-    int tap_fd;
-    u32 pci_dev_handle;
-  };
+  int *vhost_fds;
+  int *tap_fds;
+  u32 msix_enabled;
+  u32 pci_dev_handle;
   virtio_vring_t *rxq_vrings;
   virtio_vring_t *txq_vrings;
   u64 features, remote_features;
@@ -181,6 +180,7 @@ typedef struct
   u8 host_ip6_prefix_len;
   u32 host_mtu_size;
   int gso_enabled;
+  int csum_offload_enabled;
   int ifindex;
   virtio_vring_t *cxq_vring;
 } virtio_if_t;
@@ -213,6 +213,7 @@ extern void virtio_show (vlib_main_t * vm, u32 * hw_if_indices, u8 show_descr,
 extern void virtio_pci_legacy_notify_queue (vlib_main_t * vm,
 					    virtio_if_t * vif, u16 queue_id);
 format_function_t format_virtio_device_name;
+format_function_t format_virtio_log_name;
 
 static_always_inline void
 virtio_kick (vlib_main_t * vm, virtio_vring_t * vring, virtio_if_t * vif)
@@ -228,6 +229,28 @@ virtio_kick (vlib_main_t * vm, virtio_vring_t * vring, virtio_if_t * vif)
       vring->last_kick_avail_idx = vring->avail->idx;
     }
 }
+
+
+#define virtio_log_debug(vif, f, ...)				\
+{								\
+  vlib_log(VLIB_LOG_LEVEL_DEBUG, virtio_main.log_default,	\
+	   "%U: " f, format_virtio_log_name, vif,		\
+           ##__VA_ARGS__);					\
+};
+
+#define virtio_log_warning(vif, f, ...)				\
+{								\
+  vlib_log(VLIB_LOG_LEVEL_WARNING, virtio_main.log_default,	\
+	   "%U: " f, format_virtio_log_name, vif,		\
+           ##__VA_ARGS__);					\
+};
+
+#define virtio_log_error(vif, f, ...)				\
+{								\
+  vlib_log(VLIB_LOG_LEVEL_ERR, virtio_main.log_default,		\
+	   "%U: " f, format_virtio_log_name, vif,		\
+           ##__VA_ARGS__);					\
+};
 
 #endif /* _VNET_DEVICES_VIRTIO_VIRTIO_H_ */
 

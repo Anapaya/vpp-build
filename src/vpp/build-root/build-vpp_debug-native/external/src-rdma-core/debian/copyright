@@ -111,7 +111,6 @@ License: BSD-MIT or GPL-2
 
 Files: libibverbs/man/*
        libibverbs/neigh.h
-       libibverbs/nl1_compat.h
        libibverbs/neigh.c
 Copyright: disclaimed
 License: BSD-2-clause
@@ -149,8 +148,7 @@ Files: providers/bnxt_re/*
 Copyright: 2015-2017, Broadcom Limited and/or its subsidiaries
 License: BSD-2-clause or GPL-2
 
-Files: providers/cxgb3/*
-       providers/cxgb4/*
+Files: providers/cxgb4/*
 Copyright: 2003-2016, Chelsio Communications, Inc.
 License: BSD-MIT or GPL-2
 
@@ -199,11 +197,6 @@ Copyright: 2004-2005, Topspin Communications.
            2005, Mellanox Technologies Ltd.
 License: BSD-MIT or GPL-2
 
-Files: providers/nes/*
-Copyright: 2006-2010, Intel Corporation.
-           2006, Open Grid Computing, Inc.
-License: BSD-MIT or GPL-2
-
 Files: providers/ocrdma/*
 Copyright: 2008-2013, Emulex.
 License: BSD-2-clause or GPL-2
@@ -241,7 +234,7 @@ Copyright: 2005, Topspin Communications.
            2006, Mellanox Technologies Ltd.
 License: BSD-MIT or GPL-2
 
-Files: srp_daemon/srp_daemon.1.in
+Files: srp_daemon/srp_daemon.8.in
 Copyright: 2006 Mellanox Technologies.
 License: CPL-1.0 or BSD-2-clause or GPL-2
 

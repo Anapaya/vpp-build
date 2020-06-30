@@ -1,3 +1,0 @@
-aenum
-cffi>=1.6
-ipaddress

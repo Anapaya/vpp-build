@@ -123,6 +123,9 @@ typedef struct pg_stream_t
      for max_packet_bytes. */
   u32 buffer_bytes;
 
+  /* Buffer flags to set in each packet e.g. checksum offload flags */
+  u32 buffer_flags;
+
   /* Last packet length if packet size edit type is increment. */
   u32 last_increment_packet_size;
 
@@ -305,7 +308,7 @@ typedef struct
   u8 gso_enabled;
   u32 gso_size;
   pcap_main_t pcap_main;
-  u8 *pcap_file_name;
+  char *pcap_file_name;
 } pg_interface_t;
 
 /* Per VLIB node data. */
@@ -379,7 +382,7 @@ typedef struct
   u32 hw_if_index;
   u32 dev_instance;
   u8 is_enabled;
-  u8 *pcap_file_name;
+  char *pcap_file_name;
   u32 count;
 } pg_capture_args_t;
 

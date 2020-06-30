@@ -69,6 +69,8 @@
 
 #define vlib_validate_buffer_enqueue_x2(vm,node,next_index,to_next,n_left_to_next,bi0,bi1,next0,next1) \
 do {									\
+  ASSERT (bi0 != 0);							\
+  ASSERT (bi1 != 0);							\
   int enqueue_code = (next0 != next_index) + 2*(next1 != next_index);	\
 									\
   if (PREDICT_FALSE (enqueue_code != 0))				\
@@ -137,6 +139,10 @@ do {									\
 
 #define vlib_validate_buffer_enqueue_x4(vm,node,next_index,to_next,n_left_to_next,bi0,bi1,bi2,bi3,next0,next1,next2,next3) \
 do {                                                                    \
+  ASSERT (bi0 != 0);							\
+  ASSERT (bi1 != 0);							\
+  ASSERT (bi2 != 0);							\
+  ASSERT (bi3 != 0);							\
   /* After the fact: check the [speculative] enqueue to "next" */       \
   u32 fix_speculation = (next_index ^ next0) | (next_index ^ next1)     \
     | (next_index ^ next2) | (next_index ^ next3);                      \
@@ -217,6 +223,7 @@ do {                                                                    \
 */
 #define vlib_validate_buffer_enqueue_x1(vm,node,next_index,to_next,n_left_to_next,bi0,next0) \
 do {									\
+  ASSERT (bi0 != 0);							\
   if (PREDICT_FALSE (next0 != next_index))				\
     {									\
       vlib_put_next_frame (vm, node, next_index, n_left_to_next + 1);	\
@@ -350,17 +357,17 @@ vlib_buffer_enqueue_to_next (vlib_main_t * vm, vlib_node_runtime_t * node,
 	  max = clib_min (n_left_to_next, count);
 	}
 #if defined(CLIB_HAVE_VEC512)
-      u16x32 next32 = u16x32_load_unaligned (nexts);
+      u16x32 next32 = CLIB_MEM_OVERFLOW_LOAD (u16x32_load_unaligned, nexts);
       next32 = (next32 == u16x32_splat (next32[0]));
       u64 bitmap = u16x32_msb_mask (next32);
       n_enqueued = count_trailing_zeros (~bitmap);
 #elif defined(CLIB_HAVE_VEC256)
-      u16x16 next16 = u16x16_load_unaligned (nexts);
+      u16x16 next16 = CLIB_MEM_OVERFLOW_LOAD (u16x16_load_unaligned, nexts);
       next16 = (next16 == u16x16_splat (next16[0]));
       u64 bitmap = u8x32_msb_mask ((u8x32) next16);
       n_enqueued = count_trailing_zeros (~bitmap) / 2;
 #elif defined(CLIB_HAVE_VEC128) && defined(CLIB_HAVE_VEC128_MSB_MASK)
-      u16x8 next8 = u16x8_load_unaligned (nexts);
+      u16x8 next8 = CLIB_MEM_OVERFLOW_LOAD (u16x8_load_unaligned, nexts);
       next8 = (next8 == u16x8_splat (next8[0]));
       u64 bitmap = u8x16_msb_mask ((u8x16) next8);
       n_enqueued = count_trailing_zeros (~bitmap) / 2;

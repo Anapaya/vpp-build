@@ -1,4 +1,6 @@
 /*
+ * node.c
+ *
  * Copyright (c) 2015 Cisco and/or its affiliates.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include <vlib/vlib.h>
 #include <vnet/vnet.h>
 #include <vppinfra/error.h>
@@ -153,7 +156,7 @@ end_ad_processing (vlib_buffer_t * b0,
   /* Make sure next header is valid */
   if (PREDICT_FALSE (next_hdr != IP_PROTOCOL_IPV6 &&
 		     next_hdr != IP_PROTOCOL_IP_IN_IP &&
-		     next_hdr != IP_PROTOCOL_IP6_NONXT))
+		     next_hdr != IP_PROTOCOL_IP6_ETHERNET))
     {
       return;
     }
@@ -172,7 +175,7 @@ end_ad_processing (vlib_buffer_t * b0,
   /* Remove IP header and extensions */
   vlib_buffer_advance (b0, total_size);
 
-  if (next_hdr == IP_PROTOCOL_IP6_NONXT)
+  if (next_hdr == IP_PROTOCOL_IP6_ETHERNET)
     {
       /* Set output interface */
       vnet_buffer (b0)->sw_if_index[VLIB_TX] = ls0_mem->sw_if_index_out;
@@ -705,9 +708,9 @@ VLIB_REGISTER_NODE (srv6_ad6_rewrite_node) = {
 /* *INDENT-ON* */
 
 /*
-* fd.io coding-style-patch-verification: ON
-*
-* Local Variables:
-* eval: (c-set-style "gnu")
-* End:
+ * fd.io coding-style-patch-verification: ON
+ *
+ * Local Variables:
+ * eval: (c-set-style "gnu")
+ * End:
 */

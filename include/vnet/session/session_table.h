@@ -37,7 +37,7 @@ typedef struct _session_lookup_table
   /**
    * Per fib proto and transport proto session rules tables
    */
-  session_rules_table_t session_rules[TRANSPORT_N_PROTO];
+  session_rules_table_t *session_rules;
 
   /** Flag that indicates if table has local scope */
   u8 is_local;
@@ -60,7 +60,6 @@ typedef struct _session_lookup_table
 typedef int (*ip4_session_table_walk_fn_t) (clib_bihash_kv_16_8_t * kvp,
 					    void *ctx);
 
-void ip4_session_table_walk_cb (clib_bihash_kv_16_8_t * kvp, void *arg);
 void ip4_session_table_walk (clib_bihash_16_8_t * hash,
 			     ip4_session_table_walk_fn_t fn, void *arg);
 

@@ -23,7 +23,13 @@
 #include <vlib/log.h>
 
 #define AVF_AQ_ENQ_SUSPEND_TIME		50e-6
-#define AVF_AQ_ENQ_MAX_WAIT_TIME	50e-3
+#define AVF_AQ_ENQ_MAX_WAIT_TIME	250e-3
+
+#define AVF_RESET_SUSPEND_TIME		20e-3
+#define AVF_RESET_MAX_WAIT_TIME		1
+
+#define AVF_SEND_TO_PF_SUSPEND_TIME	10e-3
+#define AVF_SEND_TO_PF_MAX_WAIT_TIME	1
 
 #define AVF_RXD_STATUS(x)		(1ULL << x)
 #define AVF_RXD_STATUS_DD		AVF_RXD_STATUS(0)
@@ -63,7 +69,8 @@
   _(3, VA_DMA, "vaddr-dma") \
   _(4, LINK_UP, "link-up") \
   _(5, SHARED_TXQ_LOCK, "shared-txq-lock") \
-  _(6, ELOG, "elog")
+  _(6, ELOG, "elog") \
+  _(7, PROMISC, "promisc")
 
 enum
 {

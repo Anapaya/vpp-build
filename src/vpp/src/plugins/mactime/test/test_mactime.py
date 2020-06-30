@@ -1,8 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import unittest
 
-from framework import VppTestCase, VppTestRunner, running_extended_tests
+from framework import VppTestCase, VppTestRunner, running_gcov_tests
 from vpp_ip_route import VppIpTable, VppIpRoute, VppRoutePath
 
 
@@ -31,7 +31,7 @@ class TestMactime(VppTestCase):
             self.logger.critical(error)
         self.assertNotIn('FAILED', error)
 
-    @unittest.skipUnless(running_extended_tests, "part of extended tests")
+    @unittest.skipUnless(running_gcov_tests, "part of code coverage tests")
     def test_mactime_unittest(self):
         """ Mactime Plugin Code Coverage Test """
         cmds = ["loopback create",
@@ -44,7 +44,7 @@ class TestMactime(VppTestCase):
                 "bin mactime_enable_disable sw_if_index 1",
                 "set interface state loop0 up",
                 "clear mactime",
-                "set ip arp loop0 192.168.1.1 00:d0:2d:5e:86:85",
+                "set ip neighbor loop0 192.168.1.1 00:d0:2d:5e:86:85",
                 "bin mactime_add_del_range name sallow "
                 "mac 00:d0:2d:5e:86:85 allow-static del",
                 "bin mactime_add_del_range name sallow "

@@ -6,34 +6,6 @@
 
 namespace vapi {
 
-template <> inline void vapi_swap_to_be<vapi_msg_flowprobe_params_reply>(vapi_msg_flowprobe_params_reply *msg)
-{
-  vapi_msg_flowprobe_params_reply_hton(msg);
-}
-
-template <> inline void vapi_swap_to_host<vapi_msg_flowprobe_params_reply>(vapi_msg_flowprobe_params_reply *msg)
-{
-  vapi_msg_flowprobe_params_reply_ntoh(msg);
-}
-
-template <> inline vapi_msg_id_t vapi_get_msg_id_t<vapi_msg_flowprobe_params_reply>()
-{
-  return ::vapi_msg_id_flowprobe_params_reply; 
-}
-
-template <> inline vapi_msg_id_t vapi_get_msg_id_t<Msg<vapi_msg_flowprobe_params_reply>>()
-{
-  return ::vapi_msg_id_flowprobe_params_reply; 
-}
-
-static void __attribute__((constructor)) __vapi_cpp_constructor_flowprobe_params_reply()
-{
-  vapi::vapi_msg_set_msg_id<vapi_msg_flowprobe_params_reply>(vapi_msg_id_flowprobe_params_reply);
-}
-
-template class Msg<vapi_msg_flowprobe_params_reply>;
-
-using Flowprobe_params_reply = Msg<vapi_msg_flowprobe_params_reply>;
 template <> inline void vapi_swap_to_be<vapi_msg_flowprobe_tx_interface_add_del>(vapi_msg_flowprobe_tx_interface_add_del *msg)
 {
   vapi_msg_flowprobe_tx_interface_add_del_hton(msg);
@@ -142,5 +114,33 @@ template class Request<vapi_msg_flowprobe_params, vapi_msg_flowprobe_params_repl
 
 using Flowprobe_params = Request<vapi_msg_flowprobe_params, vapi_msg_flowprobe_params_reply>;
 
+template <> inline void vapi_swap_to_be<vapi_msg_flowprobe_params_reply>(vapi_msg_flowprobe_params_reply *msg)
+{
+  vapi_msg_flowprobe_params_reply_hton(msg);
+}
+
+template <> inline void vapi_swap_to_host<vapi_msg_flowprobe_params_reply>(vapi_msg_flowprobe_params_reply *msg)
+{
+  vapi_msg_flowprobe_params_reply_ntoh(msg);
+}
+
+template <> inline vapi_msg_id_t vapi_get_msg_id_t<vapi_msg_flowprobe_params_reply>()
+{
+  return ::vapi_msg_id_flowprobe_params_reply; 
+}
+
+template <> inline vapi_msg_id_t vapi_get_msg_id_t<Msg<vapi_msg_flowprobe_params_reply>>()
+{
+  return ::vapi_msg_id_flowprobe_params_reply; 
+}
+
+static void __attribute__((constructor)) __vapi_cpp_constructor_flowprobe_params_reply()
+{
+  vapi::vapi_msg_set_msg_id<vapi_msg_flowprobe_params_reply>(vapi_msg_id_flowprobe_params_reply);
+}
+
+template class Msg<vapi_msg_flowprobe_params_reply>;
+
+using Flowprobe_params_reply = Msg<vapi_msg_flowprobe_params_reply>;
 }
 #endif

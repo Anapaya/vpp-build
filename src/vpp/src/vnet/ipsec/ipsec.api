@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-option version = "3.0.0";
+option version = "3.0.2";
 
+import "vnet/ipsec/ipsec_types.api";
+import "vnet/interface_types.api";
 import "vnet/ip/ip_types.api";
 import "vnet/interface_types.api";
 
@@ -30,7 +32,7 @@ autoreply define ipsec_spd_add_del
 {
   u32 client_index;
   u32 context;
-  u8 is_add;
+  bool is_add;
   u32 spd_id;
 };
 
@@ -49,8 +51,8 @@ autoreply define ipsec_interface_add_del_spd
   u32 client_index;
   u32 context;
 
-  u8 is_add;
-  u32 sw_if_index;
+  bool is_add;
+  vl_api_interface_index_t sw_if_index;
   u32 spd_id;
 };
 
@@ -90,10 +92,11 @@ typedef ipsec_spd_entry
 {
   u32 spd_id;
   i32 priority;
-  u8 is_outbound;
+  bool is_outbound;
 
   u32 sa_id;
   vl_api_ipsec_spd_action_t policy;
+  /* Which protocol?? */
   u8 protocol;
 
   // Selector
@@ -119,7 +122,7 @@ define ipsec_spd_entry_add_del
 {
   u32 client_index;
   u32 context;
-  u8 is_add;
+  bool is_add;
   vl_api_ipsec_spd_entry_t entry;
 };
 
@@ -154,7 +157,7 @@ define ipsec_spds_details {
   u32 context;
   u32 spd_id;
   u32 npolicies;
-}; 
+};
 
 /** \brief Dump ipsec policy database data
     @param client_index - opaque cookie to identify the sender
@@ -180,115 +183,6 @@ define ipsec_spd_details {
     vl_api_ipsec_spd_entry_t entry;
 };
 
-/*
- * @brief Support cryptographic algorithms
- */
-enum ipsec_crypto_alg
-{
-  IPSEC_API_CRYPTO_ALG_NONE = 0,
-  IPSEC_API_CRYPTO_ALG_AES_CBC_128,
-  IPSEC_API_CRYPTO_ALG_AES_CBC_192,
-  IPSEC_API_CRYPTO_ALG_AES_CBC_256,
-  IPSEC_API_CRYPTO_ALG_AES_CTR_128,
-  IPSEC_API_CRYPTO_ALG_AES_CTR_192,
-  IPSEC_API_CRYPTO_ALG_AES_CTR_256,
-  IPSEC_API_CRYPTO_ALG_AES_GCM_128,
-  IPSEC_API_CRYPTO_ALG_AES_GCM_192,
-  IPSEC_API_CRYPTO_ALG_AES_GCM_256,
-  IPSEC_API_CRYPTO_ALG_DES_CBC,
-  IPSEC_API_CRYPTO_ALG_3DES_CBC,
-};
-
-/*
- * @brief Supported Integrity Algorithms
- */
-enum ipsec_integ_alg
-{
-  IPSEC_API_INTEG_ALG_NONE = 0,
-  /* RFC2403 */
-  IPSEC_API_INTEG_ALG_MD5_96,
-  /* RFC2404 */
-  IPSEC_API_INTEG_ALG_SHA1_96,
-  /* draft-ietf-ipsec-ciph-sha-256-00 */
-  IPSEC_API_INTEG_ALG_SHA_256_96,
-  /* RFC4868 */
-  IPSEC_API_INTEG_ALG_SHA_256_128,
-  /* RFC4868 */
-  IPSEC_API_INTEG_ALG_SHA_384_192,
-  /* RFC4868 */
-  IPSEC_API_INTEG_ALG_SHA_512_256,
-};
-
-enum ipsec_sad_flags
-{
-  IPSEC_API_SAD_FLAG_NONE = 0,
-  /* Enable extended sequence numbers */
-  IPSEC_API_SAD_FLAG_USE_ESN = 0x01,
-  /* Enable Anti-replay */
-  IPSEC_API_SAD_FLAG_USE_ANTI_REPLAY = 0x02,
-  /* IPsec tunnel mode if non-zero, else transport mode */
-  IPSEC_API_SAD_FLAG_IS_TUNNEL = 0x04,
-  /* IPsec tunnel mode is IPv6 if non-zero,
-   *  else IPv4 tunnel only valid if is_tunnel is non-zero */
-  IPSEC_API_SAD_FLAG_IS_TUNNEL_V6 = 0x08,
-  /* enable UDP encapsulation for NAT traversal */
-  IPSEC_API_SAD_FLAG_UDP_ENCAP = 0x10,
-  /* IPsec SA is for inbound traffic */
-  IPSEC_API_SAD_FLAG_IS_INBOUND = 0x40,
-};
-
-enum ipsec_proto
-{
-  IPSEC_API_PROTO_ESP,
-  IPSEC_API_PROTO_AH,
-};
-
-typedef key
-{
-  /* the length of the key */
-  u8 length;
-  /* The data for the key */
-  u8 data[128];
-};
-
-/** \brief IPsec: Security Association Database entry
-    @param client_index - opaque cookie to identify the sender
-    @param context - sender context, to match reply w/ request
-    @param is_add - add SAD entry if non-zero, else delete
-    @param sad_id - sad id
-    @param spi - security parameter index
-    @param protocol - 0 = AH, 1 = ESP
-    @param crypto_algorithm - a supported crypto algorithm
-    @param crypto_key - crypto keying material
-    @param integrity_algorithm - one of the supported algorithms
-    @param integrity_key - integrity keying material
-    @param tunnel_src_address - IPsec tunnel source address IPv6 if is_tunnel_ipv6 is non-zero, else IPv4. Only valid if is_tunnel is non-zero
-    @param tunnel_dst_address - IPsec tunnel destination address IPv6 if is_tunnel_ipv6 is non-zero, else IPv4. Only valid if is_tunnel is non-zero
-    @param tx_table_id - the FIB id used for encapsulated packets
-    @param salt - for use with counter mode ciphers
- */
-typedef ipsec_sad_entry
-{
-  u32 sad_id;
-
-  u32 spi;
-
-  vl_api_ipsec_proto_t protocol;
-
-  vl_api_ipsec_crypto_alg_t crypto_algorithm;
-  vl_api_key_t crypto_key;
-
-  vl_api_ipsec_integ_alg_t integrity_algorithm;
-  vl_api_key_t integrity_key;
-
-  vl_api_ipsec_sad_flags_t flags;
-
-  vl_api_address_t tunnel_src;
-  vl_api_address_t tunnel_dst;
-  u32 tx_table_id;
-  u32 salt;
-};
-
 /** \brief IPsec: Add/delete Security Association Database entry
     @param client_index - opaque cookie to identify the sender
     @param context - sender context, to match reply w/ request
@@ -298,7 +192,7 @@ define ipsec_sad_entry_add_del
 {
   u32 client_index;
   u32 context;
-  u8 is_add;
+  bool is_add;
   vl_api_ipsec_sad_entry_t entry;
 };
 define ipsec_sad_entry_add_del_reply
@@ -343,12 +237,16 @@ define ipsec_sad_entry_add_del_reply
     @param client_index - opaque cookie to identify the sender
     @param context - sender context, to match reply w/ request
     @param sw_id_index - Tunnel interface to protect
+    @param nh - The peer/next-hop on the tunnel to which the traffic
+                should be protected. For a P2P interface set this to the
+                all 0s address.
     @param sa_in - The ID [set] of inbound SAs
     @param sa_out - The ID of outbound SA
 */
 typedef ipsec_tunnel_protect
 {
   vl_api_interface_index_t sw_if_index;
+  vl_api_address_t nh;
   u32 sa_out;
   u8 n_sa_in;
   u32 sa_in[n_sa_in];
@@ -368,8 +266,12 @@ autoreply define ipsec_tunnel_protect_del
   u32 context;
 
   vl_api_interface_index_t sw_if_index;
+  vl_api_address_t nh;
 };
 
+/**
+ * @brief Dump all tunnel protections
+ */
 define ipsec_tunnel_protect_dump
 {
   u32 client_index;
@@ -405,10 +307,14 @@ define ipsec_spd_interface_dump {
 define ipsec_spd_interface_details {
     u32 context;
     u32 spd_index;
-    u32 sw_if_index;
+    vl_api_interface_index_t sw_if_index;
 };
 
 /** \brief Add or delete IPsec tunnel interface
+
+    !!DEPRECATED!!
+         use the tunnel protect APIs instead
+
     @param client_index - opaque cookie to identify the sender
     @param context - sender context, to match reply w/ request
     @param is_add - add IPsec tunnel interface if nonzero, else delete
@@ -438,9 +344,9 @@ define ipsec_spd_interface_details {
 define ipsec_tunnel_if_add_del {
   u32 client_index;
   u32 context;
-  u8 is_add;
-  u8 esn;
-  u8 anti_replay;
+  bool is_add;
+  bool esn;
+  bool anti_replay;
   vl_api_address_t local_ip;
   vl_api_address_t remote_ip;
   u32 local_spi;
@@ -455,9 +361,9 @@ define ipsec_tunnel_if_add_del {
   u8 local_integ_key[128];
   u8 remote_integ_key_len;
   u8 remote_integ_key[128];
-  u8 renumber;
+  bool renumber;
   u32 show_instance;
-  u8 udp_encap;
+  bool udp_encap;
   u32 tx_table_id;
   u32 salt;
 };
@@ -470,7 +376,7 @@ define ipsec_tunnel_if_add_del {
 define ipsec_tunnel_if_add_del_reply {
   u32 context;
   i32 retval;
-  u32 sw_if_index;
+  vl_api_interface_index_t sw_if_index;
 };
 
 /** \brief Dump IPsec security association
@@ -486,7 +392,7 @@ define ipsec_sa_dump {
 
 /** \brief IPsec security association database response
     @param context - sender context which was passed in the request
-    @param sa_id - SA ID, policy-based SAs >=0, tunnel interface SAs = 0 
+    @param sa_id - SA ID, policy-based SAs >=0, tunnel interface SAs = 0
     @param sw_if_index - sw_if_index of tunnel interface, policy-based SAs = ~0
     @param spi - security parameter index
     @param protocol - IPsec protocol (value from ipsec_protocol_t)
@@ -502,29 +408,32 @@ define ipsec_sa_dump {
     @param is_tunnel_ipv6 - If using tunnel mode, endpoints are IPv6
     @param tunnel_src_addr - Tunnel source address if using tunnel mode
     @param tunnel_dst_addr - Tunnel destination address is using tunnel mode
-    @param salt - 4 byte salt 
+    @param salt - 4 byte salt
     @param seq - current sequence number for outbound
-    @param seq_hi - high 32 bits of ESN for outbound 
+    @param seq_hi - high 32 bits of ESN for outbound
     @param last_seq - highest sequence number received inbound
     @param last_seq_hi - high 32 bits of highest ESN received inbound
     @param replay_window - bit map of seq nums received relative to last_seq if using anti-replay
-    @param total_data_size - total bytes sent or received
+    @param stat_index - index for the SA in the stats segment @ /net/ipsec/sa
     @param udp_encap - 1 if UDP encap enabled, 0 otherwise
 */
 define ipsec_sa_details {
   u32 context;
   vl_api_ipsec_sad_entry_t entry;
 
-  u32 sw_if_index;
+  vl_api_interface_index_t sw_if_index;
   u32 salt;
   u64 seq_outbound;
   u64 last_seq_inbound;
   u64 replay_window;
 
-  u64 total_data_size;
+  u32 stat_index;
 };
 
 /** \brief Set new SA on IPsec interface
+
+    !! DEPRECATED !!
+
     @param client_index - opaque cookie to identify the sender
     @param context - sender context, to match reply w/ request
     @param sw_if_index - index of tunnel interface
@@ -534,7 +443,7 @@ define ipsec_sa_details {
 autoreply define ipsec_tunnel_if_set_sa {
   u32 client_index;
   u32 context;
-  u32 sw_if_index;
+  vl_api_interface_index_t sw_if_index;
   u32 sa_id;
   u8 is_outbound;
 };
@@ -556,10 +465,10 @@ define ipsec_backend_dump {
 */
 define ipsec_backend_details {
   u32 context;
-  u8 name[128];
+  string name[128];
   vl_api_ipsec_proto_t protocol;
   u8 index;
-  u8 active;
+  bool active;
 };
 
 /** \brief Select IPsec backend
@@ -580,4 +489,3 @@ autoreply define ipsec_select_backend {
  * eval: (c-set-style "gnu")
  * End:
  */
- 

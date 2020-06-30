@@ -75,17 +75,19 @@ send_data_chunk (echo_client_main_t * ecm, eclient_session_t * s)
     }
   else
     {
+      svm_fifo_t *f = s->data.tx_fifo;
+      u32 max_enqueue = svm_fifo_max_enqueue_prod (f);
+
+      if (max_enqueue < sizeof (session_dgram_hdr_t))
+	return;
+
+      max_enqueue -= sizeof (session_dgram_hdr_t);
+
       if (ecm->no_copy)
 	{
 	  session_dgram_hdr_t hdr;
-	  svm_fifo_t *f = s->data.tx_fifo;
 	  app_session_transport_t *at = &s->data.transport;
-	  u32 max_enqueue = svm_fifo_max_enqueue_prod (f);
 
-	  if (max_enqueue <= sizeof (session_dgram_hdr_t))
-	    return;
-
-	  max_enqueue -= sizeof (session_dgram_hdr_t);
 	  rv = clib_min (max_enqueue, bytes_this_chunk);
 
 	  hdr.data_length = rv;
@@ -104,8 +106,11 @@ send_data_chunk (echo_client_main_t * ecm, eclient_session_t * s)
 						SESSION_IO_EVT_TX);
 	}
       else
-	rv = app_send_dgram (&s->data, test_data + test_buf_offset,
-			     bytes_this_chunk, 0);
+	{
+	  bytes_this_chunk = clib_min (bytes_this_chunk, max_enqueue);
+	  rv = app_send_dgram (&s->data, test_data + test_buf_offset,
+			       bytes_this_chunk, 0);
+	}
     }
 
   /* If we managed to enqueue data... */
@@ -318,7 +323,7 @@ VLIB_REGISTER_NODE (echo_clients_node) =
 static int
 create_api_loopback (echo_client_main_t * ecm)
 {
-  api_main_t *am = &api_main;
+  api_main_t *am = vlibapi_get_main ();
   vl_shmem_hdr_t *shmem_hdr;
 
   shmem_hdr = am->shmem_hdr;
@@ -362,7 +367,8 @@ echo_clients_init (vlib_main_t * vm)
 
 static int
 quic_echo_clients_qsession_connected_callback (u32 app_index, u32 api_context,
-					       session_t * s, u8 is_fail)
+					       session_t * s,
+					       session_error_t err)
 {
   echo_client_main_t *ecm = &echo_client_main;
   vnet_connect_args_t *a = 0;
@@ -406,7 +412,8 @@ quic_echo_clients_qsession_connected_callback (u32 app_index, u32 api_context,
 
 static int
 quic_echo_clients_session_connected_callback (u32 app_index, u32 api_context,
-					      session_t * s, u8 is_fail)
+					      session_t * s,
+					      session_error_t err)
 {
   echo_client_main_t *ecm = &echo_client_main;
   eclient_session_t *session;
@@ -416,7 +423,7 @@ quic_echo_clients_session_connected_callback (u32 app_index, u32 api_context,
   if (PREDICT_FALSE (ecm->run_test != ECHO_CLIENTS_STARTING))
     return -1;
 
-  if (is_fail)
+  if (err)
     {
       clib_warning ("connection %d failed!", api_context);
       ecm->run_test = ECHO_CLIENTS_EXITING;
@@ -427,7 +434,7 @@ quic_echo_clients_session_connected_callback (u32 app_index, u32 api_context,
   if (s->listener_handle == SESSION_INVALID_HANDLE)
     return quic_echo_clients_qsession_connected_callback (app_index,
 							  api_context, s,
-							  is_fail);
+							  err);
   DBG ("STREAM Connection callback %d", api_context);
 
   thread_index = s->thread_index;
@@ -479,7 +486,7 @@ quic_echo_clients_session_connected_callback (u32 app_index, u32 api_context,
 
 static int
 echo_clients_session_connected_callback (u32 app_index, u32 api_context,
-					 session_t * s, u8 is_fail)
+					 session_t * s, session_error_t err)
 {
   echo_client_main_t *ecm = &echo_client_main;
   eclient_session_t *session;
@@ -489,7 +496,7 @@ echo_clients_session_connected_callback (u32 app_index, u32 api_context,
   if (PREDICT_FALSE (ecm->run_test != ECHO_CLIENTS_STARTING))
     return -1;
 
-  if (is_fail)
+  if (err)
     {
       clib_warning ("connection %d failed!", api_context);
       ecm->run_test = ECHO_CLIENTS_EXITING;
@@ -630,10 +637,12 @@ static session_cb_vft_t echo_clients = {
 static clib_error_t *
 echo_clients_attach (u8 * appns_id, u64 appns_flags, u64 appns_secret)
 {
+  vnet_app_add_tls_cert_args_t _a_cert, *a_cert = &_a_cert;
+  vnet_app_add_tls_key_args_t _a_key, *a_key = &_a_key;
   u32 prealloc_fifos, segment_size = 256 << 20;
   echo_client_main_t *ecm = &echo_client_main;
   vnet_app_attach_args_t _a, *a = &_a;
-  u64 options[16];
+  u64 options[18];
   int rv;
 
   clib_memset (a, 0, sizeof (*a));
@@ -659,6 +668,7 @@ echo_clients_attach (u8 * appns_id, u64 appns_flags, u64 appns_secret)
   options[APP_OPTIONS_PREALLOC_FIFO_PAIRS] = prealloc_fifos;
   options[APP_OPTIONS_FLAGS] = APP_OPTIONS_FLAGS_IS_BUILTIN;
   options[APP_OPTIONS_TLS_ENGINE] = ecm->tls_engine;
+  options[APP_OPTIONS_PCT_FIRST_ALLOC] = 100;
   if (appns_id)
     {
       options[APP_OPTIONS_FLAGS] |= appns_flags;
@@ -671,6 +681,18 @@ echo_clients_attach (u8 * appns_id, u64 appns_flags, u64 appns_secret)
     return clib_error_return (0, "attach returned %d", rv);
 
   ecm->app_index = a->app_index;
+
+  clib_memset (a_cert, 0, sizeof (*a_cert));
+  a_cert->app_index = a->app_index;
+  vec_validate (a_cert->cert, test_srv_crt_rsa_len);
+  clib_memcpy_fast (a_cert->cert, test_srv_crt_rsa, test_srv_crt_rsa_len);
+  vnet_app_add_tls_cert (a_cert);
+
+  clib_memset (a_key, 0, sizeof (*a_key));
+  a_key->app_index = a->app_index;
+  vec_validate (a_key->key, test_srv_key_rsa_len);
+  clib_memcpy_fast (a_key->key, test_srv_key_rsa, test_srv_key_rsa_len);
+  vnet_app_add_tls_key (a_key);
   return 0;
 }
 
@@ -727,8 +749,14 @@ echo_clients_connect (vlib_main_t * vm, u32 n_clients)
       a->uri = (char *) ecm->connect_uri;
       a->api_context = i;
       a->app_index = ecm->app_index;
+
+      vlib_worker_thread_barrier_sync (vm);
       if ((rv = vnet_connect_uri (a)))
-	return clib_error_return (0, "connect returned: %d", rv);
+	{
+	  vlib_worker_thread_barrier_release (vm);
+	  return clib_error_return (0, "connect returned: %d", rv);
+	}
+      vlib_worker_thread_barrier_release (vm);
 
       /* Crude pacing for call setups  */
       if ((i % 16) == 0)
@@ -775,7 +803,7 @@ echo_clients_command_fn (vlib_main_t * vm,
   ecm->test_bytes = 0;
   ecm->test_failed = 0;
   ecm->vlib_main = vm;
-  ecm->tls_engine = TLS_ENGINE_OPENSSL;
+  ecm->tls_engine = CRYPTO_ENGINE_OPENSSL;
   ecm->no_copy = 0;
   ecm->run_test = ECHO_CLIENTS_STARTING;
 
@@ -903,7 +931,9 @@ echo_clients_command_fn (vlib_main_t * vm,
   /* Fire off connect requests */
   time_before_connects = vlib_time_now (vm);
   if ((error = echo_clients_connect (vm, n_clients)))
-    goto cleanup;
+    {
+      goto cleanup;
+    }
 
   /* Park until the sessions come up, or ten seconds elapse... */
   vlib_process_wait_for_event_or_clock (vm, syn_timeout);

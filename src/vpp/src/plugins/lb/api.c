@@ -23,44 +23,17 @@
 #include <vlibapi/api.h>
 #include <vlibmemory/api.h>
 #include <vpp/app/version.h>
+#include <vnet/format_fns.h>
 #include <vnet/ip/ip_types_api.h>
 
 /* define message IDs */
-#include <lb/lb_msg_enum.h>
+#include <lb/lb.api_enum.h>
+#include <lb/lb.api_types.h>
 
-/* define message structures */
-#define vl_typedefs
-#include <lb/lb_all_api_h.h>
-#undef vl_typedefs
-
-/* define generated endian-swappers */
-#define vl_endianfun
-#include <lb/lb_all_api_h.h>
-#undef vl_endianfun
-
-/* instantiate all the print functions we know about */
 #define vl_print(handle, ...) vlib_cli_output (handle, __VA_ARGS__)
-#define vl_printfun
-#include <lb/lb_all_api_h.h>
-#undef vl_printfun
-
-/* Get the API version number */
-#define vl_api_version(n,v) static u32 api_version=(v);
-#include <lb/lb_all_api_h.h>
-#undef vl_api_version
 
 #define REPLY_MSG_ID_BASE lbm->msg_id_base
 #include <vlibapi/api_helper_macros.h>
-
-/* List of message types that this plugin understands */
-#define foreach_lb_plugin_api_msg            \
-_(LB_CONF, lb_conf)                          \
-_(LB_ADD_DEL_VIP, lb_add_del_vip)            \
-_(LB_ADD_DEL_AS, lb_add_del_as)              \
-_(LB_VIP_DUMP, lb_vip_dump)                  \
-_(LB_AS_DUMP, lb_as_dump)                    \
-_(LB_FLUSH_VIP, lb_flush_vip)                \
-
 
 /* Macro to finish up custom dump fns */
 #define FINISH                                  \
@@ -75,19 +48,19 @@ vl_api_lb_conf_t_handler
 {
   lb_main_t *lbm = &lb_main;
   vl_api_lb_conf_reply_t * rmp;
+  u32 sticky_buckets_per_core, flow_timeout;
   int rv = 0;
 
-  if (mp->sticky_buckets_per_core == ~0) {
-    mp->sticky_buckets_per_core = lbm->per_cpu_sticky_buckets;
-  }
-  if (mp->flow_timeout == ~0) {
-    mp->flow_timeout = lbm->flow_timeout;
-  }
+  sticky_buckets_per_core = mp->sticky_buckets_per_core == ~0
+			    ? lbm->per_cpu_sticky_buckets
+			    : ntohl(mp->sticky_buckets_per_core);
+  flow_timeout = mp->flow_timeout == ~0
+		 ? lbm->flow_timeout
+		 : ntohl(mp->flow_timeout);
 
   rv = lb_conf((ip4_address_t *)&mp->ip4_src_address,
-               (ip6_address_t *)&mp->ip6_src_address,
-               mp->sticky_buckets_per_core,
-               mp->flow_timeout);
+	       (ip6_address_t *)&mp->ip6_src_address,
+	       sticky_buckets_per_core, flow_timeout);
 
  REPLY_MACRO (VL_API_LB_CONF_REPLY);
 }
@@ -120,7 +93,7 @@ vl_api_lb_add_del_vip_t_handler
       mp->protocol = ~0;
     }
 
-  memcpy (&(args.prefix.ip6), &mp->pfx.address.un.ip6, sizeof(args.prefix.ip6));
+  ip_address_decode (&mp->pfx.address, &(args.prefix));
 
   if (mp->is_del) {
     u32 vip_index;
@@ -210,20 +183,15 @@ vl_api_lb_add_del_as_t_handler
   int rv = 0;
   u32 vip_index;
   ip46_address_t vip_ip_prefix;
+  ip46_address_t as_address;
 
   /* if port == 0, it means all-port VIP */
   if (mp->port == 0)
     {
       mp->protocol = ~0;
     }
-
-  memcpy(&vip_ip_prefix.ip6, &mp->pfx.address.un.ip6,
-              sizeof(vip_ip_prefix.ip6));
-
-  ip46_address_t as_address;
-
-  memcpy(&as_address.ip6, &mp->as_address.un.ip6,
-         sizeof(as_address.ip6));
+  ip_address_decode (&mp->pfx.address, &vip_ip_prefix);
+  ip_address_decode (&mp->as_address, &as_address);
 
   if ((rv = lb_vip_find_index(&vip_ip_prefix, mp->pfx.len,
                               mp->protocol, ntohs(mp->port), &vip_index)))
@@ -399,6 +367,46 @@ vl_api_lb_flush_vip_t_handler
  REPLY_MACRO (VL_API_LB_FLUSH_VIP_REPLY);
 }
 
+static void vl_api_lb_add_del_intf_nat4_t_handler
+  (vl_api_lb_add_del_intf_nat4_t * mp)
+{
+  lb_main_t *lbm = &lb_main;
+  vl_api_lb_add_del_intf_nat4_reply_t *rmp;
+  u32 sw_if_index = ntohl (mp->sw_if_index);
+  u8 is_del;
+  int rv = 0;
+
+  is_del = !mp->is_add;
+
+  VALIDATE_SW_IF_INDEX (mp);
+
+  rv = lb_nat4_interface_add_del(sw_if_index, is_del);
+
+  BAD_SW_IF_INDEX_LABEL;
+
+  REPLY_MACRO (VL_API_LB_ADD_DEL_INTF_NAT4_REPLY);
+}
+
+static void vl_api_lb_add_del_intf_nat6_t_handler
+  (vl_api_lb_add_del_intf_nat6_t * mp)
+{
+  lb_main_t *lbm = &lb_main;
+  vl_api_lb_add_del_intf_nat6_reply_t *rmp;
+  u32 sw_if_index = ntohl (mp->sw_if_index);
+  u8 is_del;
+  int rv = 0;
+
+  is_del = !mp->is_add;
+
+  VALIDATE_SW_IF_INDEX (mp);
+
+  rv = lb_nat6_interface_add_del(sw_if_index, is_del);
+
+  BAD_SW_IF_INDEX_LABEL;
+
+  REPLY_MACRO (VL_API_LB_ADD_DEL_INTF_NAT6_REPLY);
+}
+
 static void *vl_api_lb_flush_vip_t_print
 (vl_api_lb_flush_vip_t *mp, void * handle)
 {
@@ -412,60 +420,18 @@ static void *vl_api_lb_flush_vip_t_print
   FINISH;
 }
 
-/* Set up the API message handling tables */
-static clib_error_t *
-lb_plugin_api_hookup (vlib_main_t *vm)
-{
-lb_main_t *lbm = &lb_main;
-#define _(N,n)                                                  \
-    vl_msg_api_set_handlers((VL_API_##N + lbm->msg_id_base),     \
-                           #n,                  \
-                           vl_api_##n##_t_handler,              \
-                           vl_noop_handler,                     \
-                           vl_api_##n##_t_endian,               \
-                           vl_api_##n##_t_print,                \
-                           sizeof(vl_api_##n##_t), 1);
-  foreach_lb_plugin_api_msg;
-#undef _
-
-    return 0;
-}
-
-#define vl_msg_name_crc_list
-#include <lb/lb_all_api_h.h>
-#undef vl_msg_name_crc_list
-
-static void
-setup_message_id_table (lb_main_t * lmp, api_main_t * am)
-{
-#define _(id,n,crc)   vl_msg_api_add_msg_name_crc (am, #n "_" #crc, id + lmp->msg_id_base);
-  foreach_vl_msg_name_crc_lb ;
-#undef _
-}
-
+#include <lb/lb.api.c>
 static clib_error_t * lb_api_init (vlib_main_t * vm)
 {
   lb_main_t * lbm = &lb_main;
-  clib_error_t * error = 0;
-  u8 * name;
 
   lbm->vlib_main = vm;
   lbm->vnet_main = vnet_get_main();
 
-  name = format (0, "lb_%08x%c", api_version, 0);
-
   /* Ask for a correctly-sized block of API message decode slots */
-  lbm->msg_id_base = vl_msg_api_get_msg_ids
-      ((char *) name, VL_MSG_FIRST_AVAILABLE);
+  lbm->msg_id_base = setup_message_id_table ();
 
-  error = lb_plugin_api_hookup (vm);
-
-  /* Add our API messages to the global name_crc hash table */
-  setup_message_id_table (lbm, &api_main);
-
-  vec_free (name);
-
-  return error;
+  return 0;
 }
 
 VLIB_INIT_FUNCTION (lb_api_init);

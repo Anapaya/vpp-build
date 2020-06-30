@@ -210,29 +210,6 @@ unformat_vlib_cli_sub_command (unformat_input_t * i, va_list * args)
   vlib_cli_main_t *cm = &vm->cli_main;
   uword *match_bitmap, is_unique, index;
 
-  {
-    vlib_cli_sub_rule_t *sr;
-    vlib_cli_parse_rule_t *r;
-    vec_foreach (sr, c->sub_rules)
-    {
-      void **d;
-      r = vec_elt_at_index (cm->parse_rules, sr->rule_index);
-      vec_add2 (cm->parse_rule_data, d, 1);
-      vec_reset_length (d[0]);
-      if (r->data_size)
-	d[0] = _vec_resize (d[0],
-			    /* length increment */ 1,
-			    r->data_size,
-			    /* header_bytes */ 0,
-			    /* data align */ sizeof (uword));
-      if (unformat_user (i, r->unformat_function, vm, d[0]))
-	{
-	  *result = vec_elt_at_index (cm->commands, sr->command_index);
-	  return 1;
-	}
-    }
-  }
-
   match_bitmap = vlib_cli_sub_command_match (c, i);
   is_unique = clib_bitmap_count_set_bits (match_bitmap) == 1;
   index = ~0;
@@ -363,49 +340,11 @@ format_vlib_cli_command_help (u8 * s, va_list * args)
 }
 
 static u8 *
-format_vlib_cli_parse_rule_name (u8 * s, va_list * args)
-{
-  vlib_cli_parse_rule_t *r = va_arg (*args, vlib_cli_parse_rule_t *);
-  return format (s, "<%U>", format_c_identifier, r->name);
-}
-
-static u8 *
 format_vlib_cli_path (u8 * s, va_list * args)
 {
   u8 *path = va_arg (*args, u8 *);
-  int i, in_rule;
-  in_rule = 0;
-  for (i = 0; i < vec_len (path); i++)
-    {
-      switch (path[i])
-	{
-	case '%':
-	  in_rule = 1;
-	  vec_add1 (s, '<');	/* start of <RULE> */
-	  break;
 
-	case '_':
-	  /* _ -> space in rules. */
-	  vec_add1 (s, in_rule ? ' ' : '_');
-	  break;
-
-	case ' ':
-	  if (in_rule)
-	    {
-	      vec_add1 (s, '>');	/* end of <RULE> */
-	      in_rule = 0;
-	    }
-	  vec_add1 (s, ' ');
-	  break;
-
-	default:
-	  vec_add1 (s, path[i]);
-	  break;
-	}
-    }
-
-  if (in_rule)
-    vec_add1 (s, '>');		/* terminate <RULE> */
+  s = format (s, "%v", path);
 
   return s;
 }
@@ -415,13 +354,10 @@ all_subs (vlib_cli_main_t * cm, vlib_cli_command_t * subs, u32 command_index)
 {
   vlib_cli_command_t *c = vec_elt_at_index (cm->commands, command_index);
   vlib_cli_sub_command_t *sc;
-  vlib_cli_sub_rule_t *sr;
 
   if (c->function)
     vec_add1 (subs, c[0]);
 
-  vec_foreach (sr, c->sub_rules)
-    subs = all_subs (cm, subs, sr->command_index);
   vec_foreach (sc, c->sub_commands) subs = all_subs (cm, subs, sc->index);
 
   return subs;
@@ -484,17 +420,14 @@ vlib_cli_dispatch_sub_commands (vlib_main_t * vm,
 	vlib_cli_output (vm, "%U", format_vlib_cli_command_help, c,
 			 /* is_long */ 1);
 
-      else if (vec_len (c->sub_commands) + vec_len (c->sub_rules) == 0)
+      else if (vec_len (c->sub_commands) == 0)
 	vlib_cli_output (vm, "%v: no sub-commands", c->path);
 
       else
 	{
+	  vlib_cli_sub_rule_t *sr, *subs = 0;
 	  vlib_cli_sub_command_t *sc;
-	  vlib_cli_sub_rule_t *sr, *subs;
 
-	  subs = vec_dup (c->sub_rules);
-
-	  /* Add in rules if any. */
 	  vec_foreach (sc, c->sub_commands)
 	  {
 	    vec_add2 (subs, sr, 1);
@@ -508,25 +441,11 @@ vlib_cli_dispatch_sub_commands (vlib_main_t * vm,
 	  for (i = 0; i < vec_len (subs); i++)
 	    {
 	      vlib_cli_command_t *d;
-	      vlib_cli_parse_rule_t *r;
 
 	      d = vec_elt_at_index (cm->commands, subs[i].command_index);
-	      r =
-		subs[i].rule_index != ~0 ? vec_elt_at_index (cm->parse_rules,
-							     subs
-							     [i].rule_index) :
-		0;
-
-	      if (r)
-		vlib_cli_output
-		  (vm, "  %-30U %U",
-		   format_vlib_cli_parse_rule_name, r,
-		   format_vlib_cli_command_help, d, /* is_long */ 0);
-	      else
-		vlib_cli_output
-		  (vm, "  %-30v %U",
-		   subs[i].name,
-		   format_vlib_cli_command_help, d, /* is_long */ 0);
+	      vlib_cli_output
+		(vm, "  %-30v %U", subs[i].name,
+		 format_vlib_cli_command_help, d, /* is_long */ 0);
 	    }
 
 	  vec_free (subs);
@@ -639,7 +558,7 @@ vlib_cli_dispatch_sub_commands (vlib_main_t * vm,
 		    u32 c;
 		  } *ed;
 		  ed = ELOG_DATA (&vm->elog_main, e);
-		  ed->c = elog_string (&vm->elog_main, c->path);
+		  ed->c = elog_string (&vm->elog_main, "%v", c->path);
 		}
 
 	      if (!c->is_mp_safe)
@@ -665,12 +584,12 @@ vlib_cli_dispatch_sub_commands (vlib_main_t * vm,
 		    u32 c, err;
 		  } *ed;
 		  ed = ELOG_DATA (&vm->elog_main, e);
-		  ed->c = elog_string (&vm->elog_main, c->path);
+		  ed->c = elog_string (&vm->elog_main, "%v", c->path);
 		  if (c_error)
 		    {
 		      vec_add1 (c_error->what, 0);
-		      ed->err = elog_string (&vm->elog_main,
-					     (char *) c_error->what);
+		      ed->err =
+			elog_string (&vm->elog_main, (char *) c_error->what);
 		      _vec_len (c_error->what) -= 1;
 		    }
 		  else
@@ -732,7 +651,6 @@ vlib_cli_input (vlib_main_t * vm,
 		vlib_cli_output_function_t * function, uword function_arg)
 {
   vlib_process_t *cp = vlib_get_current_process (vm);
-  vlib_cli_main_t *cm = &vm->cli_main;
   clib_error_t *error;
   vlib_cli_output_function_t *save_function;
   uword save_function_arg;
@@ -746,9 +664,8 @@ vlib_cli_input (vlib_main_t * vm,
 
   do
     {
-      vec_reset_length (cm->parse_rule_data);
-      error = vlib_cli_dispatch_sub_commands (vm, &vm->cli_main, input,	/* parent */
-					      0);
+      error = vlib_cli_dispatch_sub_commands (vm, &vm->cli_main, input,
+					      /* parent */ 0);
     }
   while (!error && !unformat (input, "%U", unformat_eof));
 
@@ -816,9 +733,10 @@ show_memory_usage (vlib_main_t * vm,
 		   unformat_input_t * input, vlib_cli_command_t * cmd)
 {
   int verbose __attribute__ ((unused)) = 0;
-  int api_segment = 0, stats_segment = 0, main_heap = 0;
+  int api_segment = 0, stats_segment = 0, main_heap = 0, numa_heaps = 0;
   clib_error_t *error;
   u32 index = 0;
+  int i;
   uword clib_mem_trace_enable_disable (uword enable);
   uword was_enabled;
 
@@ -833,6 +751,8 @@ show_memory_usage (vlib_main_t * vm,
 	stats_segment = 1;
       else if (unformat (input, "main-heap"))
 	main_heap = 1;
+      else if (unformat (input, "numa-heaps"))
+	numa_heaps = 1;
       else
 	{
 	  error = clib_error_return (0, "unknown input `%U'",
@@ -841,9 +761,9 @@ show_memory_usage (vlib_main_t * vm,
 	}
     }
 
-  if ((api_segment + stats_segment + main_heap) == 0)
+  if ((api_segment + stats_segment + main_heap + numa_heaps) == 0)
     return clib_error_return
-      (0, "Please supply one of api-segment, stats-segment or main-heap");
+      (0, "Need one of api-segment, stats-segment, main-heap or numa-heaps");
 
   if (api_segment)
     {
@@ -884,22 +804,7 @@ show_memory_usage (vlib_main_t * vm,
       vec_free (s);
     }
 
-#if USE_DLMALLOC == 0
-  /* *INDENT-OFF* */
-  foreach_vlib_main (
-  ({
-      mheap_t *h = mheap_header (clib_per_cpu_mheaps[index]);
-      vlib_cli_output (vm, "%sThread %d %s\n", index ? "\n":"", index,
-		       vlib_worker_threads[index].name);
-      vlib_cli_output (vm, "  %U\n", format_page_map, pointer_to_uword (h) -
-		       h->vm_alloc_offset_from_header,
-		       h->vm_alloc_size);
-      vlib_cli_output (vm, "  %U\n", format_mheap, clib_per_cpu_mheaps[index],
-                       verbose);
-      index++;
-  }));
-  /* *INDENT-ON* */
-#else
+
   {
     if (main_heap)
       {
@@ -932,15 +837,41 @@ show_memory_usage (vlib_main_t * vm,
 	/* Restore the trace flag */
 	clib_mem_trace_enable_disable (was_enabled);
       }
+    if (numa_heaps)
+      {
+	struct dlmallinfo mi;
+	void *mspace;
+
+	for (i = 0; i < ARRAY_LEN (clib_per_numa_mheaps); i++)
+	  {
+	    if (clib_per_numa_mheaps[i] == 0)
+	      continue;
+	    if (clib_per_numa_mheaps[i] == clib_per_cpu_mheaps[i])
+	      {
+		vlib_cli_output (vm, "Numa %d uses the main heap...", i);
+		continue;
+	      }
+	    was_enabled = clib_mem_trace_enable_disable (0);
+	    mspace = clib_per_numa_mheaps[i];
+
+	    mi = mspace_mallinfo (mspace);
+	    vlib_cli_output (vm, "Numa %d:", i);
+	    vlib_cli_output (vm, "  %U\n", format_page_map,
+			     pointer_to_uword (mspace_least_addr (mspace)),
+			     mi.arena);
+	    vlib_cli_output (vm, "  %U\n", format_mheap,
+			     clib_per_numa_mheaps[index], verbose);
+	  }
+      }
   }
-#endif /* USE_DLMALLOC */
   return 0;
 }
 
 /* *INDENT-OFF* */
 VLIB_CLI_COMMAND (show_memory_usage_command, static) = {
   .path = "show memory",
-  .short_help = "show memory [api-segment][stats-segment][verbose]",
+  .short_help = "show memory [api-segment][stats-segment][verbose]\n"
+  "            [numa-heaps]",
   .function = show_memory_usage,
 };
 /* *INDENT-ON* */
@@ -988,6 +919,7 @@ enable_disable_memory_trace (vlib_main_t * vm,
   int api_segment = 0;
   int stats_segment = 0;
   int main_heap = 0;
+  u32 numa_id = ~0;
   void *oldheap;
 
   if (!unformat_user (input, unformat_line_input, line_input))
@@ -1003,6 +935,8 @@ enable_disable_memory_trace (vlib_main_t * vm,
 	stats_segment = 1;
       else if (unformat (line_input, "main-heap"))
 	main_heap = 1;
+      else if (unformat (line_input, "numa-heap %d", &numa_id))
+	;
       else
 	{
 	  unformat_free (line_input);
@@ -1011,10 +945,12 @@ enable_disable_memory_trace (vlib_main_t * vm,
     }
   unformat_free (line_input);
 
-  if ((api_segment + stats_segment + main_heap + (enable == 0)) == 0)
+  if ((api_segment + stats_segment + main_heap + (enable == 0)
+       + (numa_id != ~0)) == 0)
     {
       return clib_error_return
-	(0, "Need one of main-heap, stats-segment or api-segment");
+	(0, "Need one of main-heap, stats-segment, api-segment,\n"
+	 "numa-heap <nn> or disable");
     }
 
   /* Turn off current trace, if any */
@@ -1058,80 +994,32 @@ enable_disable_memory_trace (vlib_main_t * vm,
       clib_mem_trace (main_heap);
     }
 
+  if (numa_id != ~0)
+    {
+      if (numa_id >= ARRAY_LEN (clib_per_numa_mheaps))
+	return clib_error_return (0, "Numa %d out of range", numa_id);
+      if (clib_per_numa_mheaps[numa_id] == 0)
+	return clib_error_return (0, "Numa %d heap not active", numa_id);
+
+      if (clib_per_numa_mheaps[numa_id] == clib_mem_get_heap ())
+	return clib_error_return (0, "Numa %d uses the main heap...",
+				  numa_id);
+      current_traced_heap = clib_per_numa_mheaps[numa_id];
+      oldheap = clib_mem_set_heap (current_traced_heap);
+      clib_mem_trace (1);
+      clib_mem_set_heap (oldheap);
+    }
+
+
   return 0;
 }
 
 /* *INDENT-OFF* */
 VLIB_CLI_COMMAND (enable_disable_memory_trace_command, static) = {
   .path = "memory-trace",
-  .short_help = "memory-trace on|off [api-segment][stats-segment][main-heap]\n",
+  .short_help = "memory-trace on|off [api-segment][stats-segment][main-heap]\n"
+  "                   [numa-heap <numa-id>]\n",
   .function = enable_disable_memory_trace,
-};
-/* *INDENT-ON* */
-
-
-static clib_error_t *
-test_heap_validate (vlib_main_t * vm, unformat_input_t * input,
-		    vlib_cli_command_t * cmd)
-{
-#if USE_DLMALLOC == 0
-  clib_error_t *error = 0;
-  void *heap;
-  mheap_t *mheap;
-
-  if (unformat (input, "on"))
-    {
-        /* *INDENT-OFF* */
-        foreach_vlib_main({
-          heap = clib_per_cpu_mheaps[this_vlib_main->thread_index];
-          mheap = mheap_header(heap);
-          mheap->flags |= MHEAP_FLAG_VALIDATE;
-          // Turn off small object cache because it delays detection of errors
-          mheap->flags &= ~MHEAP_FLAG_SMALL_OBJECT_CACHE;
-        });
-        /* *INDENT-ON* */
-
-    }
-  else if (unformat (input, "off"))
-    {
-        /* *INDENT-OFF* */
-        foreach_vlib_main({
-          heap = clib_per_cpu_mheaps[this_vlib_main->thread_index];
-          mheap = mheap_header(heap);
-          mheap->flags &= ~MHEAP_FLAG_VALIDATE;
-          mheap->flags |= MHEAP_FLAG_SMALL_OBJECT_CACHE;
-        });
-        /* *INDENT-ON* */
-    }
-  else if (unformat (input, "now"))
-    {
-        /* *INDENT-OFF* */
-        foreach_vlib_main({
-          heap = clib_per_cpu_mheaps[this_vlib_main->thread_index];
-          mheap = mheap_header(heap);
-          mheap_validate(heap);
-        });
-        /* *INDENT-ON* */
-      vlib_cli_output (vm, "heap validation complete");
-
-    }
-  else
-    {
-      return clib_error_return (0, "unknown input `%U'",
-				format_unformat_error, input);
-    }
-
-  return error;
-#else
-  return clib_error_return (0, "unimplemented...");
-#endif /* USE_DLMALLOC */
-}
-
-/* *INDENT-OFF* */
-VLIB_CLI_COMMAND (cmd_test_heap_validate,static) = {
-    .path = "test heap-validate",
-    .short_help = "<on/off/now> validate heap on future allocs/frees or right now",
-    .function = test_heap_validate,
 };
 /* *INDENT-ON* */
 
@@ -1296,19 +1184,11 @@ add_sub_command (vlib_cli_main_t * cm, uword parent_index, uword child_index)
 	  return;
 	}
 
-      q = hash_get_mem (cm->parse_rule_index_by_name, sub_name);
-      if (!q)
-	{
-	  clib_error ("reference to unknown rule `%%%v' in path `%v'",
-		      sub_name, c->path);
-	  return;
-	}
-
       hash_set_mem (p->sub_rule_index_by_name, sub_name,
 		    vec_len (p->sub_rules));
       vec_add2 (p->sub_rules, sr, 1);
       sr->name = sub_name;
-      sr->rule_index = q[0];
+      sr->rule_index = sr - p->sub_rules;
       sr->command_index = child_index;
       return;
     }
@@ -1492,6 +1372,8 @@ vlib_cli_register (vlib_main_t * vm, vlib_cli_command_t * c)
   return 0;
 }
 
+#if 0
+/* $$$ turn back on again someday, maybe */
 clib_error_t *
 vlib_cli_register_parse_rule (vlib_main_t * vm, vlib_cli_parse_rule_t * r_reg)
 {
@@ -1524,8 +1406,6 @@ vlib_cli_register_parse_rule (vlib_main_t * vm, vlib_cli_parse_rule_t * r_reg)
   return error;
 }
 
-#if 0
-/* $$$ turn back on again someday, maybe */
 static clib_error_t *vlib_cli_register_parse_rules (vlib_main_t * vm,
 						    vlib_cli_parse_rule_t *
 						    lo,

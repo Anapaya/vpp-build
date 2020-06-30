@@ -1,5 +1,5 @@
 /*
- * VLIB API definitions 2020-06-13 05:58:03
+ * VLIB API definitions 2020-06-30 12:41:59
  * Input file: memif.api
  * Automatically generated: please edit the input file NOT this file!
  */
@@ -16,6 +16,11 @@
 #endif
 
 #define VL_API_PACKED(x) x __attribute__ ((packed))
+/* Imported API files */
+#ifndef vl_api_version
+#include <vnet/interface_types.api.h>
+#include <vnet/ethernet/ethernet_types.api.h>
+#endif
 
 /****** Message ID / handler enum ******/
 
@@ -49,145 +54,66 @@ vl_msg_name(vl_api_memif_dump_t, 1)
 
 #ifdef vl_msg_name_crc_list
 #define foreach_vl_msg_name_crc_memif \
-_(VL_API_MEMIF_SOCKET_FILENAME_ADD_DEL, memif_socket_filename_add_del, 30e3929d) \
+_(VL_API_MEMIF_SOCKET_FILENAME_ADD_DEL, memif_socket_filename_add_del, a2ce1a10) \
 _(VL_API_MEMIF_SOCKET_FILENAME_ADD_DEL_REPLY, memif_socket_filename_add_del_reply, e8d4e804) \
-_(VL_API_MEMIF_CREATE, memif_create, 6597cdb2) \
-_(VL_API_MEMIF_CREATE_REPLY, memif_create_reply, fda5941f) \
-_(VL_API_MEMIF_DELETE, memif_delete, 529cb13f) \
+_(VL_API_MEMIF_CREATE, memif_create, b1b25061) \
+_(VL_API_MEMIF_CREATE_REPLY, memif_create_reply, 5383d31f) \
+_(VL_API_MEMIF_DELETE, memif_delete, f9e6675e) \
 _(VL_API_MEMIF_DELETE_REPLY, memif_delete_reply, e8d4e804) \
-_(VL_API_MEMIF_SOCKET_FILENAME_DETAILS, memif_socket_filename_details, e347e32f) \
+_(VL_API_MEMIF_SOCKET_FILENAME_DETAILS, memif_socket_filename_details, 7ff326f7) \
 _(VL_API_MEMIF_SOCKET_FILENAME_DUMP, memif_socket_filename_dump, 51077d14) \
-_(VL_API_MEMIF_DETAILS, memif_details, 4f5a3397) \
+_(VL_API_MEMIF_DETAILS, memif_details, d0382c4c) \
 _(VL_API_MEMIF_DUMP, memif_dump, 51077d14) 
 #endif
-
 /****** Typedefs ******/
 
 #ifdef vl_typedefs
-#ifndef included_memif_api
-#define included_memif_api
-#ifndef _vl_api_defined_memif_socket_filename_add_del
-#define _vl_api_defined_memif_socket_filename_add_del
-typedef VL_API_PACKED(struct _vl_api_memif_socket_filename_add_del {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u8 is_add;
-    u32 socket_id;
-    u8 socket_filename[128];
-}) vl_api_memif_socket_filename_add_del_t;
+#include "memif.api_types.h"
 #endif
-
-#ifndef _vl_api_defined_memif_socket_filename_add_del_reply
-#define _vl_api_defined_memif_socket_filename_add_del_reply
-typedef VL_API_PACKED(struct _vl_api_memif_socket_filename_add_del_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_memif_socket_filename_add_del_reply_t;
-#endif
-
-#ifndef _vl_api_defined_memif_create
-#define _vl_api_defined_memif_create
-typedef VL_API_PACKED(struct _vl_api_memif_create {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u8 role;
-    u8 mode;
-    u8 rx_queues;
-    u8 tx_queues;
-    u32 id;
-    u32 socket_id;
-    u8 secret[24];
-    u32 ring_size;
-    u16 buffer_size;
-    u8 hw_addr[6];
-}) vl_api_memif_create_t;
-#endif
-
-#ifndef _vl_api_defined_memif_create_reply
-#define _vl_api_defined_memif_create_reply
-typedef VL_API_PACKED(struct _vl_api_memif_create_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-    u32 sw_if_index;
-}) vl_api_memif_create_reply_t;
-#endif
-
-#ifndef _vl_api_defined_memif_delete
-#define _vl_api_defined_memif_delete
-typedef VL_API_PACKED(struct _vl_api_memif_delete {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u32 sw_if_index;
-}) vl_api_memif_delete_t;
-#endif
-
-#ifndef _vl_api_defined_memif_delete_reply
-#define _vl_api_defined_memif_delete_reply
-typedef VL_API_PACKED(struct _vl_api_memif_delete_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_memif_delete_reply_t;
-#endif
-
-#ifndef _vl_api_defined_memif_socket_filename_details
-#define _vl_api_defined_memif_socket_filename_details
-typedef VL_API_PACKED(struct _vl_api_memif_socket_filename_details {
-    u16 _vl_msg_id;
-    u32 context;
-    u32 socket_id;
-    u8 socket_filename[128];
-}) vl_api_memif_socket_filename_details_t;
-#endif
-
-#ifndef _vl_api_defined_memif_socket_filename_dump
-#define _vl_api_defined_memif_socket_filename_dump
-typedef VL_API_PACKED(struct _vl_api_memif_socket_filename_dump {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-}) vl_api_memif_socket_filename_dump_t;
-#endif
-
-#ifndef _vl_api_defined_memif_details
-#define _vl_api_defined_memif_details
-typedef VL_API_PACKED(struct _vl_api_memif_details {
-    u16 _vl_msg_id;
-    u32 context;
-    u32 sw_if_index;
-    u8 if_name[64];
-    u8 hw_addr[6];
-    u32 id;
-    u8 role;
-    u8 mode;
-    u32 socket_id;
-    u32 ring_size;
-    u16 buffer_size;
-    u8 admin_up_down;
-    u8 link_up_down;
-}) vl_api_memif_details_t;
-#endif
-
-#ifndef _vl_api_defined_memif_dump
-#define _vl_api_defined_memif_dump
-typedef VL_API_PACKED(struct _vl_api_memif_dump {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-}) vl_api_memif_dump_t;
-#endif
-
-
-#endif
-#endif
-
 /****** Print functions *****/
 #ifdef vl_printfun
+#ifndef included_memif_printfun_types
+#define included_memif_printfun_types
+
+static inline u8 *format_vl_api_memif_role_t (u8 *s, va_list * args)
+{
+    vl_api_memif_role_t *a = va_arg (*args, vl_api_memif_role_t *);
+    u32 indent __attribute__((unused)) = va_arg (*args, u32);
+    int i __attribute__((unused));
+    indent += 2;
+    switch(*a) {
+    case 0:
+        return format(s, "MEMIF_ROLE_API_MASTER");
+    case 1:
+        return format(s, "MEMIF_ROLE_API_SLAVE");
+    }
+    return s;
+}
+
+static inline u8 *format_vl_api_memif_mode_t (u8 *s, va_list * args)
+{
+    vl_api_memif_mode_t *a = va_arg (*args, vl_api_memif_mode_t *);
+    u32 indent __attribute__((unused)) = va_arg (*args, u32);
+    int i __attribute__((unused));
+    indent += 2;
+    switch(*a) {
+    case 0:
+        return format(s, "MEMIF_MODE_API_ETHERNET");
+    case 1:
+        return format(s, "MEMIF_MODE_API_IP");
+    case 2:
+        return format(s, "MEMIF_MODE_API_PUNT_INJECT");
+    }
+    return s;
+}
+
+
+#endif
+#endif /* vl_printfun_types */
+/****** Print functions *****/
+#ifdef vl_printfun
+#ifndef included_memif_printfun
+#define included_memif_printfun
 
 #ifdef LP64
 #define _uword_fmt "%lld"
@@ -197,161 +123,176 @@ typedef VL_API_PACKED(struct _vl_api_memif_dump {
 #define _uword_cast long
 #endif
 
-#ifndef _vl_api_defined_memif_socket_filename_add_del_t_print
-#define _vl_api_defined_memif_socket_filename_add_del_t_print
-static inline void *vl_api_memif_socket_filename_add_del_t_print (vl_api_memif_socket_filename_add_del_t *a,void *handle)
+static inline void *vl_api_memif_socket_filename_add_del_t_print (vl_api_memif_socket_filename_add_del_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_memif_socket_filename_add_del_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "is_add: %u\n", a->is_add);
-    vl_print(handle, "socket_id: %u\n", a->socket_id);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_memif_socket_filename_add_del_t: */
+    s = format(s, "vl_api_memif_socket_filename_add_del_t:");
+    s = format(s, "\n%Uis_add: %u", format_white_space, indent, a->is_add);
+    s = format(s, "\n%Usocket_id: %u", format_white_space, indent, a->socket_id);
+    s = format(s, "\n%Usocket_filename: %s", format_white_space, indent, a->socket_filename);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_memif_socket_filename_add_del_reply_t_print
-#define _vl_api_defined_memif_socket_filename_add_del_reply_t_print
-static inline void *vl_api_memif_socket_filename_add_del_reply_t_print (vl_api_memif_socket_filename_add_del_reply_t *a,void *handle)
+static inline void *vl_api_memif_socket_filename_add_del_reply_t_print (vl_api_memif_socket_filename_add_del_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_memif_socket_filename_add_del_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_memif_socket_filename_add_del_reply_t: */
+    s = format(s, "vl_api_memif_socket_filename_add_del_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_memif_create_t_print
-#define _vl_api_defined_memif_create_t_print
-static inline void *vl_api_memif_create_t_print (vl_api_memif_create_t *a,void *handle)
+static inline void *vl_api_memif_create_t_print (vl_api_memif_create_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_memif_create_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "role: %u\n", a->role);
-    vl_print(handle, "mode: %u\n", a->mode);
-    vl_print(handle, "rx_queues: %u\n", a->rx_queues);
-    vl_print(handle, "tx_queues: %u\n", a->tx_queues);
-    vl_print(handle, "id: %u\n", a->id);
-    vl_print(handle, "socket_id: %u\n", a->socket_id);
-    vl_print(handle, "ring_size: %u\n", a->ring_size);
-    vl_print(handle, "buffer_size: %u\n", a->buffer_size);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_memif_create_t: */
+    s = format(s, "vl_api_memif_create_t:");
+    s = format(s, "\n%Urole: %U", format_white_space, indent, format_vl_api_memif_role_t, &a->role, indent);
+    s = format(s, "\n%Umode: %U", format_white_space, indent, format_vl_api_memif_mode_t, &a->mode, indent);
+    s = format(s, "\n%Urx_queues: %u", format_white_space, indent, a->rx_queues);
+    s = format(s, "\n%Utx_queues: %u", format_white_space, indent, a->tx_queues);
+    s = format(s, "\n%Uid: %u", format_white_space, indent, a->id);
+    s = format(s, "\n%Usocket_id: %u", format_white_space, indent, a->socket_id);
+    s = format(s, "\n%Uring_size: %u", format_white_space, indent, a->ring_size);
+    s = format(s, "\n%Ubuffer_size: %u", format_white_space, indent, a->buffer_size);
+    s = format(s, "\n%Uno_zero_copy: %u", format_white_space, indent, a->no_zero_copy);
+    s = format(s, "\n%Uhw_addr: %U", format_white_space, indent, format_vl_api_mac_address_t, &a->hw_addr, indent);
+    s = format(s, "\n%Usecret: %s", format_white_space, indent, a->secret);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_memif_create_reply_t_print
-#define _vl_api_defined_memif_create_reply_t_print
-static inline void *vl_api_memif_create_reply_t_print (vl_api_memif_create_reply_t *a,void *handle)
+static inline void *vl_api_memif_create_reply_t_print (vl_api_memif_create_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_memif_create_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
-    vl_print(handle, "sw_if_index: %u\n", a->sw_if_index);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_memif_create_reply_t: */
+    s = format(s, "vl_api_memif_create_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    s = format(s, "\n%Usw_if_index: %U", format_white_space, indent, format_vl_api_interface_index_t, &a->sw_if_index, indent);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_memif_delete_t_print
-#define _vl_api_defined_memif_delete_t_print
-static inline void *vl_api_memif_delete_t_print (vl_api_memif_delete_t *a,void *handle)
+static inline void *vl_api_memif_delete_t_print (vl_api_memif_delete_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_memif_delete_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "sw_if_index: %u\n", a->sw_if_index);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_memif_delete_t: */
+    s = format(s, "vl_api_memif_delete_t:");
+    s = format(s, "\n%Usw_if_index: %U", format_white_space, indent, format_vl_api_interface_index_t, &a->sw_if_index, indent);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_memif_delete_reply_t_print
-#define _vl_api_defined_memif_delete_reply_t_print
-static inline void *vl_api_memif_delete_reply_t_print (vl_api_memif_delete_reply_t *a,void *handle)
+static inline void *vl_api_memif_delete_reply_t_print (vl_api_memif_delete_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_memif_delete_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_memif_delete_reply_t: */
+    s = format(s, "vl_api_memif_delete_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_memif_socket_filename_details_t_print
-#define _vl_api_defined_memif_socket_filename_details_t_print
-static inline void *vl_api_memif_socket_filename_details_t_print (vl_api_memif_socket_filename_details_t *a,void *handle)
+static inline void *vl_api_memif_socket_filename_details_t_print (vl_api_memif_socket_filename_details_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_memif_socket_filename_details_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "socket_id: %u\n", a->socket_id);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_memif_socket_filename_details_t: */
+    s = format(s, "vl_api_memif_socket_filename_details_t:");
+    s = format(s, "\n%Usocket_id: %u", format_white_space, indent, a->socket_id);
+    s = format(s, "\n%Usocket_filename: %s", format_white_space, indent, a->socket_filename);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_memif_socket_filename_dump_t_print
-#define _vl_api_defined_memif_socket_filename_dump_t_print
-static inline void *vl_api_memif_socket_filename_dump_t_print (vl_api_memif_socket_filename_dump_t *a,void *handle)
+static inline void *vl_api_memif_socket_filename_dump_t_print (vl_api_memif_socket_filename_dump_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_memif_socket_filename_dump_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_memif_socket_filename_dump_t: */
+    s = format(s, "vl_api_memif_socket_filename_dump_t:");
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_memif_details_t_print
-#define _vl_api_defined_memif_details_t_print
-static inline void *vl_api_memif_details_t_print (vl_api_memif_details_t *a,void *handle)
+static inline void *vl_api_memif_details_t_print (vl_api_memif_details_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_memif_details_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "sw_if_index: %u\n", a->sw_if_index);
-    vl_print(handle, "id: %u\n", a->id);
-    vl_print(handle, "role: %u\n", a->role);
-    vl_print(handle, "mode: %u\n", a->mode);
-    vl_print(handle, "socket_id: %u\n", a->socket_id);
-    vl_print(handle, "ring_size: %u\n", a->ring_size);
-    vl_print(handle, "buffer_size: %u\n", a->buffer_size);
-    vl_print(handle, "admin_up_down: %u\n", a->admin_up_down);
-    vl_print(handle, "link_up_down: %u\n", a->link_up_down);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_memif_details_t: */
+    s = format(s, "vl_api_memif_details_t:");
+    s = format(s, "\n%Usw_if_index: %U", format_white_space, indent, format_vl_api_interface_index_t, &a->sw_if_index, indent);
+    s = format(s, "\n%Uhw_addr: %U", format_white_space, indent, format_vl_api_mac_address_t, &a->hw_addr, indent);
+    s = format(s, "\n%Uid: %u", format_white_space, indent, a->id);
+    s = format(s, "\n%Urole: %U", format_white_space, indent, format_vl_api_memif_role_t, &a->role, indent);
+    s = format(s, "\n%Umode: %U", format_white_space, indent, format_vl_api_memif_mode_t, &a->mode, indent);
+    s = format(s, "\n%Uzero_copy: %u", format_white_space, indent, a->zero_copy);
+    s = format(s, "\n%Usocket_id: %u", format_white_space, indent, a->socket_id);
+    s = format(s, "\n%Uring_size: %u", format_white_space, indent, a->ring_size);
+    s = format(s, "\n%Ubuffer_size: %u", format_white_space, indent, a->buffer_size);
+    s = format(s, "\n%Uflags: %U", format_white_space, indent, format_vl_api_if_status_flags_t, &a->flags, indent);
+    s = format(s, "\n%Uif_name: %s", format_white_space, indent, a->if_name);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_memif_dump_t_print
-#define _vl_api_defined_memif_dump_t_print
-static inline void *vl_api_memif_dump_t_print (vl_api_memif_dump_t *a,void *handle)
+static inline void *vl_api_memif_dump_t_print (vl_api_memif_dump_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_memif_dump_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_memif_dump_t: */
+    s = format(s, "vl_api_memif_dump_t:");
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
+
 #endif
-
-
 #endif /* vl_printfun */
 
 /****** Endian swap functions *****/
 #ifdef vl_endianfun
+#ifndef included_memif_endianfun
+#define included_memif_endianfun
 
 #undef clib_net_to_host_uword
 #ifdef LP64
@@ -360,151 +301,141 @@ static inline void *vl_api_memif_dump_t_print (vl_api_memif_dump_t *a,void *hand
 #define clib_net_to_host_uword clib_net_to_host_u32
 #endif
 
-#ifndef _vl_api_defined_memif_socket_filename_add_del_t_endian
-#define _vl_api_defined_memif_socket_filename_add_del_t_endian
+static inline void vl_api_memif_role_t_endian (vl_api_memif_role_t *a)
+{
+    int i __attribute__((unused));
+    *a = clib_net_to_host_u32(*a);
+}
+
+static inline void vl_api_memif_mode_t_endian (vl_api_memif_mode_t *a)
+{
+    int i __attribute__((unused));
+    *a = clib_net_to_host_u32(*a);
+}
+
 static inline void vl_api_memif_socket_filename_add_del_t_endian (vl_api_memif_socket_filename_add_del_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
     /* a->is_add = a->is_add (no-op) */
     a->socket_id = clib_net_to_host_u32(a->socket_id);
+    /* a->socket_filename = a->socket_filename (no-op) */
 }
 
-#endif
-
-#ifndef _vl_api_defined_memif_socket_filename_add_del_reply_t_endian
-#define _vl_api_defined_memif_socket_filename_add_del_reply_t_endian
 static inline void vl_api_memif_socket_filename_add_del_reply_t_endian (vl_api_memif_socket_filename_add_del_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
-#endif
-
-#ifndef _vl_api_defined_memif_create_t_endian
-#define _vl_api_defined_memif_create_t_endian
 static inline void vl_api_memif_create_t_endian (vl_api_memif_create_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
-    /* a->role = a->role (no-op) */
-    /* a->mode = a->mode (no-op) */
+    vl_api_memif_role_t_endian(&a->role);
+    vl_api_memif_mode_t_endian(&a->mode);
     /* a->rx_queues = a->rx_queues (no-op) */
     /* a->tx_queues = a->tx_queues (no-op) */
     a->id = clib_net_to_host_u32(a->id);
     a->socket_id = clib_net_to_host_u32(a->socket_id);
     a->ring_size = clib_net_to_host_u32(a->ring_size);
     a->buffer_size = clib_net_to_host_u16(a->buffer_size);
+    /* a->no_zero_copy = a->no_zero_copy (no-op) */
+    vl_api_mac_address_t_endian(&a->hw_addr);
+    /* a->secret = a->secret (no-op) */
 }
 
-#endif
-
-#ifndef _vl_api_defined_memif_create_reply_t_endian
-#define _vl_api_defined_memif_create_reply_t_endian
 static inline void vl_api_memif_create_reply_t_endian (vl_api_memif_create_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
-    a->sw_if_index = clib_net_to_host_u32(a->sw_if_index);
+    a->retval = clib_net_to_host_i32(a->retval);
+    vl_api_interface_index_t_endian(&a->sw_if_index);
 }
 
-#endif
-
-#ifndef _vl_api_defined_memif_delete_t_endian
-#define _vl_api_defined_memif_delete_t_endian
 static inline void vl_api_memif_delete_t_endian (vl_api_memif_delete_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
-    a->sw_if_index = clib_net_to_host_u32(a->sw_if_index);
+    vl_api_interface_index_t_endian(&a->sw_if_index);
 }
 
-#endif
-
-#ifndef _vl_api_defined_memif_delete_reply_t_endian
-#define _vl_api_defined_memif_delete_reply_t_endian
 static inline void vl_api_memif_delete_reply_t_endian (vl_api_memif_delete_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
-#endif
-
-#ifndef _vl_api_defined_memif_socket_filename_details_t_endian
-#define _vl_api_defined_memif_socket_filename_details_t_endian
 static inline void vl_api_memif_socket_filename_details_t_endian (vl_api_memif_socket_filename_details_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
     a->socket_id = clib_net_to_host_u32(a->socket_id);
+    /* a->socket_filename = a->socket_filename (no-op) */
 }
 
-#endif
-
-#ifndef _vl_api_defined_memif_socket_filename_dump_t_endian
-#define _vl_api_defined_memif_socket_filename_dump_t_endian
 static inline void vl_api_memif_socket_filename_dump_t_endian (vl_api_memif_socket_filename_dump_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
 }
 
-#endif
-
-#ifndef _vl_api_defined_memif_details_t_endian
-#define _vl_api_defined_memif_details_t_endian
 static inline void vl_api_memif_details_t_endian (vl_api_memif_details_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->sw_if_index = clib_net_to_host_u32(a->sw_if_index);
+    vl_api_interface_index_t_endian(&a->sw_if_index);
+    vl_api_mac_address_t_endian(&a->hw_addr);
     a->id = clib_net_to_host_u32(a->id);
-    /* a->role = a->role (no-op) */
-    /* a->mode = a->mode (no-op) */
+    vl_api_memif_role_t_endian(&a->role);
+    vl_api_memif_mode_t_endian(&a->mode);
+    /* a->zero_copy = a->zero_copy (no-op) */
     a->socket_id = clib_net_to_host_u32(a->socket_id);
     a->ring_size = clib_net_to_host_u32(a->ring_size);
     a->buffer_size = clib_net_to_host_u16(a->buffer_size);
-    /* a->admin_up_down = a->admin_up_down (no-op) */
-    /* a->link_up_down = a->link_up_down (no-op) */
+    vl_api_if_status_flags_t_endian(&a->flags);
+    /* a->if_name = a->if_name (no-op) */
 }
 
-#endif
-
-#ifndef _vl_api_defined_memif_dump_t_endian
-#define _vl_api_defined_memif_dump_t_endian
 static inline void vl_api_memif_dump_t_endian (vl_api_memif_dump_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
 }
 
+
 #endif
-
-
 #endif /* vl_endianfun */
 
 /****** Version tuple *****/
 
 #ifdef vl_api_version_tuple
 
-vl_api_version_tuple(memif.api, 2, 0, 0)
+vl_api_version_tuple(memif.api, 3, 0, 0)
 
 #endif /* vl_api_version_tuple */
 
 /****** API CRC (whole file) *****/
 
 #ifdef vl_api_version
-vl_api_version(memif.api, 0x939f78a7)
+vl_api_version(memif.api, 0x1cebc00e)
 
 #endif
 

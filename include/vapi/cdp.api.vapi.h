@@ -95,7 +95,7 @@ static inline void vapi_set_vapi_msg_cdp_enable_disable_reply_event_cb (
 #ifndef defined_vapi_msg_cdp_enable_disable
 #define defined_vapi_msg_cdp_enable_disable
 typedef struct __attribute__ ((__packed__)) {
-  u8 enable_disable; 
+  bool enable_disable; 
 } vapi_payload_cdp_enable_disable;
 
 typedef struct __attribute__ ((__packed__)) {
@@ -193,7 +193,7 @@ static inline vapi_error_e vapi_cdp_enable_disable(struct vapi_ctx_s *ctx,
 static void __attribute__((constructor)) __vapi_constructor_cdp_enable_disable()
 {
   static const char name[] = "cdp_enable_disable";
-  static const char name_with_crc[] = "cdp_enable_disable_4eec6097";
+  static const char name_with_crc[] = "cdp_enable_disable_2e7b47df";
   static vapi_message_desc_t __vapi_metadata_cdp_enable_disable = {
     name,
     sizeof(name) - 1,

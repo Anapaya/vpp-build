@@ -24,12 +24,12 @@ struct efa_context {
 	uint32_t max_llq_size;
 	size_t cqe_size;
 	struct efa_qp **qp_table;
+	unsigned int qp_table_sz_m1;
 	pthread_spinlock_t qp_table_lock;
 };
 
 struct efa_pd {
 	struct ibv_pd ibvpd;
-	struct efa_context *context;
 	uint16_t pdn;
 };
 
@@ -90,18 +90,28 @@ struct efa_sq {
 	uint32_t desc_offset;
 	size_t desc_ring_mmap_size;
 	size_t max_inline_data;
+	size_t max_wr_rdma_sge;
 	uint16_t sub_cq_idx;
+
+	/* Buffer for pending WR entries in the current session */
+	uint8_t *local_queue;
+	/* Number of WR entries posted in the current session */
+	uint32_t num_wqe_pending;
+	/* Phase before current session */
+	int phase_rb;
+	/* Current wqe being built */
+	struct efa_io_tx_wqe *curr_tx_wqe;
 };
 
 struct efa_qp {
-	struct ibv_qp ibvqp;
-	struct efa_context *ctx;
+	struct verbs_qp verbs_qp;
 	struct efa_sq sq;
 	struct efa_rq rq;
 	int page_size;
 	struct efa_cq *rcq;
 	struct efa_cq *scq;
 	int sq_sig_all;
+	int wr_session_err;
 };
 
 struct efa_mr {
@@ -115,13 +125,20 @@ struct efa_ah {
 
 struct efa_dev {
 	struct verbs_device vdev;
-	uint8_t abi_version;
 	uint32_t pg_sz;
+	uint32_t device_caps;
 	uint32_t max_sq_wr;
 	uint32_t max_rq_wr;
 	uint16_t max_sq_sge;
 	uint16_t max_rq_sge;
+	uint32_t max_rdma_size;
+	uint16_t max_wr_rdma_sge;
 };
+
+static inline bool is_rdma_read_cap(struct efa_dev *dev)
+{
+	return dev->device_caps & EFA_QUERY_DEVICE_CAPS_RDMA_READ;
+}
 
 static inline struct efa_dev *to_efa_dev(struct ibv_device *ibvdev)
 {
@@ -145,7 +162,12 @@ static inline struct efa_cq *to_efa_cq(struct ibv_cq *ibvcq)
 
 static inline struct efa_qp *to_efa_qp(struct ibv_qp *ibvqp)
 {
-	return container_of(ibvqp, struct efa_qp, ibvqp);
+	return container_of(ibvqp, struct efa_qp, verbs_qp.qp);
+}
+
+static inline struct efa_qp *to_efa_qp_ex(struct ibv_qp_ex *ibvqpx)
+{
+	return container_of(ibvqpx, struct efa_qp, verbs_qp.qp_ex);
 }
 
 static inline struct efa_ah *to_efa_ah(struct ibv_ah *ibvah)

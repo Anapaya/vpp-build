@@ -30,40 +30,13 @@
 #include <vpp/app/version.h>
 
 /* define message IDs */
-#include <nsim/nsim_msg_enum.h>
-
-/* define message structures */
-#define vl_typedefs
-#include <nsim/nsim_all_api_h.h>
-#undef vl_typedefs
-
-/* define generated endian-swappers */
-#define vl_endianfun
-#include <nsim/nsim_all_api_h.h>
-#undef vl_endianfun
-
-/* instantiate all the print functions we know about */
-#define vl_print(handle, ...) vlib_cli_output (handle, __VA_ARGS__)
-#define vl_printfun
-#include <nsim/nsim_all_api_h.h>
-#undef vl_printfun
-
-/* Get the API version number */
-#define vl_api_version(n,v) static u32 api_version=(v);
-#include <nsim/nsim_all_api_h.h>
-#undef vl_api_version
+#include <nsim/nsim.api_enum.h>
+#include <nsim/nsim.api_types.h>
 
 #define REPLY_MSG_ID_BASE nsm->msg_id_base
 #include <vlibapi/api_helper_macros.h>
 
 nsim_main_t nsim_main;
-
-/* List of message types that this plugin understands */
-
-#define foreach_nsim_plugin_api_msg                                     \
-_(NSIM_CROSS_CONNECT_ENABLE_DISABLE, nsim_cross_connect_enable_disable) \
-_(NSIM_OUTPUT_FEATURE_ENABLE_DISABLE, nsim_output_feature_enable_disable) \
-_(NSIM_CONFIGURE, nsim_configure)
 
 /* Action functions shared between message handlers and debug CLI */
 
@@ -209,7 +182,8 @@ nsim_configure (nsim_main_t * nsm, f64 bandwidth, f64 delay, f64 packet_size,
   vec_validate (nsm->wheel_by_thread, num_workers);
 
   /* Initialize the output scheduler wheels */
-  for (i = num_workers ? 1 : 0; i < num_workers + 1; i++)
+  i = (!nsm->poll_main_thread && num_workers) ? 1 : 0;
+  for (; i < num_workers + 1; i++)
     {
       nsim_wheel_t *wp;
 
@@ -232,7 +206,8 @@ nsim_configure (nsim_main_t * nsm, f64 bandwidth, f64 delay, f64 packet_size,
   vlib_worker_thread_barrier_sync (vm);
 
   /* turn on the ring scrapers */
-  for (i = num_workers ? 1 : 0; i < num_workers + 1; i++)
+  i = (!nsm->poll_main_thread && num_workers) ? 1 : 0;
+  for (; i < num_workers + 1; i++)
     {
       vlib_main_t *this_vm = vlib_mains[i];
 
@@ -313,6 +288,28 @@ nsim_cross_connect_enable_disable_command_fn (vlib_main_t * vm,
     }
   return 0;
 }
+
+static clib_error_t *
+nsim_config (vlib_main_t * vm, unformat_input_t * input)
+{
+  nsim_main_t *nsm = &nsim_main;
+
+  while (unformat_check_input (input) != UNFORMAT_END_OF_INPUT)
+    {
+      if (unformat (input, "poll-main-thread"))
+	{
+	  nsm->poll_main_thread = 1;
+	}
+      else
+	{
+	  return clib_error_return (0, "unknown input '%U'",
+				    format_unformat_error, input);
+	}
+    }
+  return 0;
+}
+
+VLIB_CONFIG_FUNCTION (nsim_config, "nsim");
 
 /*?
  * Enable or disable network simulation cross-connect on two interfaces
@@ -503,61 +500,19 @@ VLIB_CLI_COMMAND (nsim_output_feature_enable_disable_command, static) =
 };
 /* *INDENT-ON* */
 
-/* Set up the API message handling tables */
-static clib_error_t *
-nsim_plugin_api_hookup (vlib_main_t * vm)
-{
-  nsim_main_t *nsm = &nsim_main;
-#define _(N,n)                                                  \
-    vl_msg_api_set_handlers((VL_API_##N + nsm->msg_id_base),     \
-                           #n,					\
-                           vl_api_##n##_t_handler,              \
-                           vl_noop_handler,                     \
-                           vl_api_##n##_t_endian,               \
-                           vl_api_##n##_t_print,                \
-                           sizeof(vl_api_##n##_t), 1);
-  foreach_nsim_plugin_api_msg;
-#undef _
-
-  return 0;
-}
-
-#define vl_msg_name_crc_list
-#include <nsim/nsim_all_api_h.h>
-#undef vl_msg_name_crc_list
-
-static void
-setup_message_id_table (nsim_main_t * nsm, api_main_t * am)
-{
-#define _(id,n,crc)   vl_msg_api_add_msg_name_crc (am, #n "_" #crc, id + nsm->msg_id_base);
-  foreach_vl_msg_name_crc_nsim;
-#undef _
-}
-
+#include <nsim/nsim.api.c>
 static clib_error_t *
 nsim_init (vlib_main_t * vm)
 {
   nsim_main_t *nsm = &nsim_main;
-  clib_error_t *error = 0;
-  u8 *name;
 
   nsm->vlib_main = vm;
   nsm->vnet_main = vnet_get_main ();
 
-  name = format (0, "nsim_%08x%c", api_version, 0);
-
   /* Ask for a correctly-sized block of API message decode slots */
-  nsm->msg_id_base = vl_msg_api_get_msg_ids
-    ((char *) name, VL_MSG_FIRST_AVAILABLE);
+  nsm->msg_id_base = setup_message_id_table ();
 
-  error = nsim_plugin_api_hookup (vm);
-
-  /* Add our API messages to the global name_crc hash table */
-  setup_message_id_table (nsm, &api_main);
-
-  vec_free (name);
-
-  return error;
+  return 0;
 }
 
 VLIB_INIT_FUNCTION (nsim_init);
@@ -653,6 +608,8 @@ set_nsim_command_fn (vlib_main_t * vm,
 	    return clib_error_return
 	      (0, "drop fraction must be between zero and 1");
 	}
+      else if (unformat (input, "poll-main-thread"))
+	nsm->poll_main_thread = 1;
       else
 	break;
     }

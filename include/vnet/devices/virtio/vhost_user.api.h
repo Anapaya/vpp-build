@@ -1,5 +1,5 @@
 /*
- * VLIB API definitions 2020-06-13 05:56:05
+ * VLIB API definitions 2020-06-30 12:39:07
  * Input file: vhost_user.api
  * Automatically generated: please edit the input file NOT this file!
  */
@@ -16,6 +16,12 @@
 #endif
 
 #define VL_API_PACKED(x) x __attribute__ ((packed))
+/* Imported API files */
+#ifndef vl_api_version
+#include <vnet/interface_types.api.h>
+#include <vnet/ethernet/ethernet_types.api.h>
+#include <vnet/devices/virtio/virtio_types.api.h>
+#endif
 
 /****** Message ID / handler enum ******/
 
@@ -45,124 +51,32 @@ vl_msg_name(vl_api_sw_interface_vhost_user_dump_t, 1)
 
 #ifdef vl_msg_name_crc_list
 #define foreach_vl_msg_name_crc_vhost_user \
-_(VL_API_CREATE_VHOST_USER_IF, create_vhost_user_if, a3438cd4) \
-_(VL_API_CREATE_VHOST_USER_IF_REPLY, create_vhost_user_if_reply, fda5941f) \
-_(VL_API_MODIFY_VHOST_USER_IF, modify_vhost_user_if, 3fd4c094) \
+_(VL_API_CREATE_VHOST_USER_IF, create_vhost_user_if, c785c6fc) \
+_(VL_API_CREATE_VHOST_USER_IF_REPLY, create_vhost_user_if_reply, 5383d31f) \
+_(VL_API_MODIFY_VHOST_USER_IF, modify_vhost_user_if, 0e71d40b) \
 _(VL_API_MODIFY_VHOST_USER_IF_REPLY, modify_vhost_user_if_reply, e8d4e804) \
-_(VL_API_DELETE_VHOST_USER_IF, delete_vhost_user_if, 529cb13f) \
+_(VL_API_DELETE_VHOST_USER_IF, delete_vhost_user_if, f9e6675e) \
 _(VL_API_DELETE_VHOST_USER_IF_REPLY, delete_vhost_user_if_reply, e8d4e804) \
-_(VL_API_SW_INTERFACE_VHOST_USER_DETAILS, sw_interface_vhost_user_details, 91ff3307) \
-_(VL_API_SW_INTERFACE_VHOST_USER_DUMP, sw_interface_vhost_user_dump, 51077d14) 
+_(VL_API_SW_INTERFACE_VHOST_USER_DETAILS, sw_interface_vhost_user_details, 98530df1) \
+_(VL_API_SW_INTERFACE_VHOST_USER_DUMP, sw_interface_vhost_user_dump, f9e6675e) 
 #endif
-
 /****** Typedefs ******/
 
 #ifdef vl_typedefs
-#ifndef included_vhost_user_api
-#define included_vhost_user_api
-#ifndef _vl_api_defined_create_vhost_user_if
-#define _vl_api_defined_create_vhost_user_if
-typedef VL_API_PACKED(struct _vl_api_create_vhost_user_if {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u8 is_server;
-    u8 sock_filename[256];
-    u8 renumber;
-    u8 disable_mrg_rxbuf;
-    u8 disable_indirect_desc;
-    u8 enable_gso;
-    u32 custom_dev_instance;
-    u8 use_custom_mac;
-    u8 mac_address[6];
-    u8 tag[64];
-}) vl_api_create_vhost_user_if_t;
+#include "vhost_user.api_types.h"
 #endif
-
-#ifndef _vl_api_defined_create_vhost_user_if_reply
-#define _vl_api_defined_create_vhost_user_if_reply
-typedef VL_API_PACKED(struct _vl_api_create_vhost_user_if_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-    u32 sw_if_index;
-}) vl_api_create_vhost_user_if_reply_t;
-#endif
-
-#ifndef _vl_api_defined_modify_vhost_user_if
-#define _vl_api_defined_modify_vhost_user_if
-typedef VL_API_PACKED(struct _vl_api_modify_vhost_user_if {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u32 sw_if_index;
-    u8 is_server;
-    u8 sock_filename[256];
-    u8 renumber;
-    u8 enable_gso;
-    u32 custom_dev_instance;
-}) vl_api_modify_vhost_user_if_t;
-#endif
-
-#ifndef _vl_api_defined_modify_vhost_user_if_reply
-#define _vl_api_defined_modify_vhost_user_if_reply
-typedef VL_API_PACKED(struct _vl_api_modify_vhost_user_if_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_modify_vhost_user_if_reply_t;
-#endif
-
-#ifndef _vl_api_defined_delete_vhost_user_if
-#define _vl_api_defined_delete_vhost_user_if
-typedef VL_API_PACKED(struct _vl_api_delete_vhost_user_if {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u32 sw_if_index;
-}) vl_api_delete_vhost_user_if_t;
-#endif
-
-#ifndef _vl_api_defined_delete_vhost_user_if_reply
-#define _vl_api_defined_delete_vhost_user_if_reply
-typedef VL_API_PACKED(struct _vl_api_delete_vhost_user_if_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_delete_vhost_user_if_reply_t;
-#endif
-
-#ifndef _vl_api_defined_sw_interface_vhost_user_details
-#define _vl_api_defined_sw_interface_vhost_user_details
-typedef VL_API_PACKED(struct _vl_api_sw_interface_vhost_user_details {
-    u16 _vl_msg_id;
-    u32 context;
-    u32 sw_if_index;
-    u8 interface_name[64];
-    u32 virtio_net_hdr_sz;
-    u64 features;
-    u8 is_server;
-    u8 sock_filename[256];
-    u32 num_regions;
-    i32 sock_errno;
-}) vl_api_sw_interface_vhost_user_details_t;
-#endif
-
-#ifndef _vl_api_defined_sw_interface_vhost_user_dump
-#define _vl_api_defined_sw_interface_vhost_user_dump
-typedef VL_API_PACKED(struct _vl_api_sw_interface_vhost_user_dump {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-}) vl_api_sw_interface_vhost_user_dump_t;
-#endif
-
-
-#endif
-#endif
-
 /****** Print functions *****/
 #ifdef vl_printfun
+#ifndef included_vhost_user_printfun_types
+#define included_vhost_user_printfun_types
+
+
+#endif
+#endif /* vl_printfun_types */
+/****** Print functions *****/
+#ifdef vl_printfun
+#ifndef included_vhost_user_printfun
+#define included_vhost_user_printfun
 
 #ifdef LP64
 #define _uword_fmt "%lld"
@@ -172,134 +86,151 @@ typedef VL_API_PACKED(struct _vl_api_sw_interface_vhost_user_dump {
 #define _uword_cast long
 #endif
 
-#ifndef _vl_api_defined_create_vhost_user_if_t_print
-#define _vl_api_defined_create_vhost_user_if_t_print
-static inline void *vl_api_create_vhost_user_if_t_print (vl_api_create_vhost_user_if_t *a,void *handle)
+static inline void *vl_api_create_vhost_user_if_t_print (vl_api_create_vhost_user_if_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_create_vhost_user_if_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "is_server: %u\n", a->is_server);
-    vl_print(handle, "renumber: %u\n", a->renumber);
-    vl_print(handle, "disable_mrg_rxbuf: %u\n", a->disable_mrg_rxbuf);
-    vl_print(handle, "disable_indirect_desc: %u\n", a->disable_indirect_desc);
-    vl_print(handle, "enable_gso: %u\n", a->enable_gso);
-    vl_print(handle, "custom_dev_instance: %u\n", a->custom_dev_instance);
-    vl_print(handle, "use_custom_mac: %u\n", a->use_custom_mac);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_create_vhost_user_if_t: */
+    s = format(s, "vl_api_create_vhost_user_if_t:");
+    s = format(s, "\n%Uis_server: %u", format_white_space, indent, a->is_server);
+    s = format(s, "\n%Usock_filename: %s", format_white_space, indent, a->sock_filename);
+    s = format(s, "\n%Urenumber: %u", format_white_space, indent, a->renumber);
+    s = format(s, "\n%Udisable_mrg_rxbuf: %u", format_white_space, indent, a->disable_mrg_rxbuf);
+    s = format(s, "\n%Udisable_indirect_desc: %u", format_white_space, indent, a->disable_indirect_desc);
+    s = format(s, "\n%Uenable_gso: %u", format_white_space, indent, a->enable_gso);
+    s = format(s, "\n%Uenable_packed: %u", format_white_space, indent, a->enable_packed);
+    s = format(s, "\n%Ucustom_dev_instance: %u", format_white_space, indent, a->custom_dev_instance);
+    s = format(s, "\n%Uuse_custom_mac: %u", format_white_space, indent, a->use_custom_mac);
+    s = format(s, "\n%Umac_address: %U", format_white_space, indent, format_vl_api_mac_address_t, &a->mac_address, indent);
+    s = format(s, "\n%Utag: %s", format_white_space, indent, a->tag);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_create_vhost_user_if_reply_t_print
-#define _vl_api_defined_create_vhost_user_if_reply_t_print
-static inline void *vl_api_create_vhost_user_if_reply_t_print (vl_api_create_vhost_user_if_reply_t *a,void *handle)
+static inline void *vl_api_create_vhost_user_if_reply_t_print (vl_api_create_vhost_user_if_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_create_vhost_user_if_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
-    vl_print(handle, "sw_if_index: %u\n", a->sw_if_index);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_create_vhost_user_if_reply_t: */
+    s = format(s, "vl_api_create_vhost_user_if_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    s = format(s, "\n%Usw_if_index: %U", format_white_space, indent, format_vl_api_interface_index_t, &a->sw_if_index, indent);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_modify_vhost_user_if_t_print
-#define _vl_api_defined_modify_vhost_user_if_t_print
-static inline void *vl_api_modify_vhost_user_if_t_print (vl_api_modify_vhost_user_if_t *a,void *handle)
+static inline void *vl_api_modify_vhost_user_if_t_print (vl_api_modify_vhost_user_if_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_modify_vhost_user_if_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "sw_if_index: %u\n", a->sw_if_index);
-    vl_print(handle, "is_server: %u\n", a->is_server);
-    vl_print(handle, "renumber: %u\n", a->renumber);
-    vl_print(handle, "enable_gso: %u\n", a->enable_gso);
-    vl_print(handle, "custom_dev_instance: %u\n", a->custom_dev_instance);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_modify_vhost_user_if_t: */
+    s = format(s, "vl_api_modify_vhost_user_if_t:");
+    s = format(s, "\n%Usw_if_index: %U", format_white_space, indent, format_vl_api_interface_index_t, &a->sw_if_index, indent);
+    s = format(s, "\n%Uis_server: %u", format_white_space, indent, a->is_server);
+    s = format(s, "\n%Usock_filename: %s", format_white_space, indent, a->sock_filename);
+    s = format(s, "\n%Urenumber: %u", format_white_space, indent, a->renumber);
+    s = format(s, "\n%Uenable_gso: %u", format_white_space, indent, a->enable_gso);
+    s = format(s, "\n%Uenable_packed: %u", format_white_space, indent, a->enable_packed);
+    s = format(s, "\n%Ucustom_dev_instance: %u", format_white_space, indent, a->custom_dev_instance);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_modify_vhost_user_if_reply_t_print
-#define _vl_api_defined_modify_vhost_user_if_reply_t_print
-static inline void *vl_api_modify_vhost_user_if_reply_t_print (vl_api_modify_vhost_user_if_reply_t *a,void *handle)
+static inline void *vl_api_modify_vhost_user_if_reply_t_print (vl_api_modify_vhost_user_if_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_modify_vhost_user_if_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_modify_vhost_user_if_reply_t: */
+    s = format(s, "vl_api_modify_vhost_user_if_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_delete_vhost_user_if_t_print
-#define _vl_api_defined_delete_vhost_user_if_t_print
-static inline void *vl_api_delete_vhost_user_if_t_print (vl_api_delete_vhost_user_if_t *a,void *handle)
+static inline void *vl_api_delete_vhost_user_if_t_print (vl_api_delete_vhost_user_if_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_delete_vhost_user_if_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "sw_if_index: %u\n", a->sw_if_index);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_delete_vhost_user_if_t: */
+    s = format(s, "vl_api_delete_vhost_user_if_t:");
+    s = format(s, "\n%Usw_if_index: %U", format_white_space, indent, format_vl_api_interface_index_t, &a->sw_if_index, indent);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_delete_vhost_user_if_reply_t_print
-#define _vl_api_defined_delete_vhost_user_if_reply_t_print
-static inline void *vl_api_delete_vhost_user_if_reply_t_print (vl_api_delete_vhost_user_if_reply_t *a,void *handle)
+static inline void *vl_api_delete_vhost_user_if_reply_t_print (vl_api_delete_vhost_user_if_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_delete_vhost_user_if_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_delete_vhost_user_if_reply_t: */
+    s = format(s, "vl_api_delete_vhost_user_if_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_sw_interface_vhost_user_details_t_print
-#define _vl_api_defined_sw_interface_vhost_user_details_t_print
-static inline void *vl_api_sw_interface_vhost_user_details_t_print (vl_api_sw_interface_vhost_user_details_t *a,void *handle)
+static inline void *vl_api_sw_interface_vhost_user_details_t_print (vl_api_sw_interface_vhost_user_details_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_sw_interface_vhost_user_details_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "sw_if_index: %u\n", a->sw_if_index);
-    vl_print(handle, "virtio_net_hdr_sz: %u\n", a->virtio_net_hdr_sz);
-    vl_print(handle, "features: %llu\n", a->features);
-    vl_print(handle, "is_server: %u\n", a->is_server);
-    vl_print(handle, "num_regions: %u\n", a->num_regions);
-    vl_print(handle, "sock_errno: %ld\n", a->sock_errno);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_sw_interface_vhost_user_details_t: */
+    s = format(s, "vl_api_sw_interface_vhost_user_details_t:");
+    s = format(s, "\n%Usw_if_index: %U", format_white_space, indent, format_vl_api_interface_index_t, &a->sw_if_index, indent);
+    s = format(s, "\n%Uinterface_name: %s", format_white_space, indent, a->interface_name);
+    s = format(s, "\n%Uvirtio_net_hdr_sz: %u", format_white_space, indent, a->virtio_net_hdr_sz);
+    s = format(s, "\n%Ufeatures_first_32: %U", format_white_space, indent, format_vl_api_virtio_net_features_first_32_t, &a->features_first_32, indent);
+    s = format(s, "\n%Ufeatures_last_32: %U", format_white_space, indent, format_vl_api_virtio_net_features_last_32_t, &a->features_last_32, indent);
+    s = format(s, "\n%Uis_server: %u", format_white_space, indent, a->is_server);
+    s = format(s, "\n%Usock_filename: %s", format_white_space, indent, a->sock_filename);
+    s = format(s, "\n%Unum_regions: %u", format_white_space, indent, a->num_regions);
+    s = format(s, "\n%Usock_errno: %ld", format_white_space, indent, a->sock_errno);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_sw_interface_vhost_user_dump_t_print
-#define _vl_api_defined_sw_interface_vhost_user_dump_t_print
-static inline void *vl_api_sw_interface_vhost_user_dump_t_print (vl_api_sw_interface_vhost_user_dump_t *a,void *handle)
+static inline void *vl_api_sw_interface_vhost_user_dump_t_print (vl_api_sw_interface_vhost_user_dump_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_sw_interface_vhost_user_dump_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_sw_interface_vhost_user_dump_t: */
+    s = format(s, "vl_api_sw_interface_vhost_user_dump_t:");
+    s = format(s, "\n%Usw_if_index: %U", format_white_space, indent, format_vl_api_interface_index_t, &a->sw_if_index, indent);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
+
 #endif
-
-
 #endif /* vl_printfun */
 
 /****** Endian swap functions *****/
 #ifdef vl_endianfun
+#ifndef included_vhost_user_endianfun
+#define included_vhost_user_endianfun
 
 #undef clib_net_to_host_uword
 #ifdef LP64
@@ -308,128 +239,115 @@ static inline void *vl_api_sw_interface_vhost_user_dump_t_print (vl_api_sw_inter
 #define clib_net_to_host_uword clib_net_to_host_u32
 #endif
 
-#ifndef _vl_api_defined_create_vhost_user_if_t_endian
-#define _vl_api_defined_create_vhost_user_if_t_endian
 static inline void vl_api_create_vhost_user_if_t_endian (vl_api_create_vhost_user_if_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
     /* a->is_server = a->is_server (no-op) */
+    /* a->sock_filename = a->sock_filename (no-op) */
     /* a->renumber = a->renumber (no-op) */
     /* a->disable_mrg_rxbuf = a->disable_mrg_rxbuf (no-op) */
     /* a->disable_indirect_desc = a->disable_indirect_desc (no-op) */
     /* a->enable_gso = a->enable_gso (no-op) */
+    /* a->enable_packed = a->enable_packed (no-op) */
     a->custom_dev_instance = clib_net_to_host_u32(a->custom_dev_instance);
     /* a->use_custom_mac = a->use_custom_mac (no-op) */
+    vl_api_mac_address_t_endian(&a->mac_address);
+    /* a->tag = a->tag (no-op) */
 }
 
-#endif
-
-#ifndef _vl_api_defined_create_vhost_user_if_reply_t_endian
-#define _vl_api_defined_create_vhost_user_if_reply_t_endian
 static inline void vl_api_create_vhost_user_if_reply_t_endian (vl_api_create_vhost_user_if_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
-    a->sw_if_index = clib_net_to_host_u32(a->sw_if_index);
+    a->retval = clib_net_to_host_i32(a->retval);
+    vl_api_interface_index_t_endian(&a->sw_if_index);
 }
 
-#endif
-
-#ifndef _vl_api_defined_modify_vhost_user_if_t_endian
-#define _vl_api_defined_modify_vhost_user_if_t_endian
 static inline void vl_api_modify_vhost_user_if_t_endian (vl_api_modify_vhost_user_if_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
-    a->sw_if_index = clib_net_to_host_u32(a->sw_if_index);
+    vl_api_interface_index_t_endian(&a->sw_if_index);
     /* a->is_server = a->is_server (no-op) */
+    /* a->sock_filename = a->sock_filename (no-op) */
     /* a->renumber = a->renumber (no-op) */
     /* a->enable_gso = a->enable_gso (no-op) */
+    /* a->enable_packed = a->enable_packed (no-op) */
     a->custom_dev_instance = clib_net_to_host_u32(a->custom_dev_instance);
 }
 
-#endif
-
-#ifndef _vl_api_defined_modify_vhost_user_if_reply_t_endian
-#define _vl_api_defined_modify_vhost_user_if_reply_t_endian
 static inline void vl_api_modify_vhost_user_if_reply_t_endian (vl_api_modify_vhost_user_if_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
-#endif
-
-#ifndef _vl_api_defined_delete_vhost_user_if_t_endian
-#define _vl_api_defined_delete_vhost_user_if_t_endian
 static inline void vl_api_delete_vhost_user_if_t_endian (vl_api_delete_vhost_user_if_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
-    a->sw_if_index = clib_net_to_host_u32(a->sw_if_index);
+    vl_api_interface_index_t_endian(&a->sw_if_index);
 }
 
-#endif
-
-#ifndef _vl_api_defined_delete_vhost_user_if_reply_t_endian
-#define _vl_api_defined_delete_vhost_user_if_reply_t_endian
 static inline void vl_api_delete_vhost_user_if_reply_t_endian (vl_api_delete_vhost_user_if_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
-#endif
-
-#ifndef _vl_api_defined_sw_interface_vhost_user_details_t_endian
-#define _vl_api_defined_sw_interface_vhost_user_details_t_endian
 static inline void vl_api_sw_interface_vhost_user_details_t_endian (vl_api_sw_interface_vhost_user_details_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->sw_if_index = clib_net_to_host_u32(a->sw_if_index);
+    vl_api_interface_index_t_endian(&a->sw_if_index);
+    /* a->interface_name = a->interface_name (no-op) */
     a->virtio_net_hdr_sz = clib_net_to_host_u32(a->virtio_net_hdr_sz);
-    a->features = clib_net_to_host_u64(a->features);
+    vl_api_virtio_net_features_first_32_t_endian(&a->features_first_32);
+    vl_api_virtio_net_features_last_32_t_endian(&a->features_last_32);
     /* a->is_server = a->is_server (no-op) */
+    /* a->sock_filename = a->sock_filename (no-op) */
     a->num_regions = clib_net_to_host_u32(a->num_regions);
-    a->sock_errno = clib_net_to_host_u32(a->sock_errno);
+    a->sock_errno = clib_net_to_host_i32(a->sock_errno);
 }
 
-#endif
-
-#ifndef _vl_api_defined_sw_interface_vhost_user_dump_t_endian
-#define _vl_api_defined_sw_interface_vhost_user_dump_t_endian
 static inline void vl_api_sw_interface_vhost_user_dump_t_endian (vl_api_sw_interface_vhost_user_dump_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
+    vl_api_interface_index_t_endian(&a->sw_if_index);
 }
 
+
 #endif
-
-
 #endif /* vl_endianfun */
 
 /****** Version tuple *****/
 
 #ifdef vl_api_version_tuple
 
-vl_api_version_tuple(vhost_user.api, 3, 0, 0)
+vl_api_version_tuple(vhost_user.api, 4, 0, 1)
 
 #endif /* vl_api_version_tuple */
 
 /****** API CRC (whole file) *****/
 
 #ifdef vl_api_version
-vl_api_version(vhost_user.api, 0x2762ee64)
+vl_api_version(vhost_user.api, 0xcd48ff69)
 
 #endif
 

@@ -6,34 +6,6 @@
 
 namespace vapi {
 
-template <> inline void vapi_swap_to_be<vapi_msg_lldp_config_reply>(vapi_msg_lldp_config_reply *msg)
-{
-  vapi_msg_lldp_config_reply_hton(msg);
-}
-
-template <> inline void vapi_swap_to_host<vapi_msg_lldp_config_reply>(vapi_msg_lldp_config_reply *msg)
-{
-  vapi_msg_lldp_config_reply_ntoh(msg);
-}
-
-template <> inline vapi_msg_id_t vapi_get_msg_id_t<vapi_msg_lldp_config_reply>()
-{
-  return ::vapi_msg_id_lldp_config_reply; 
-}
-
-template <> inline vapi_msg_id_t vapi_get_msg_id_t<Msg<vapi_msg_lldp_config_reply>>()
-{
-  return ::vapi_msg_id_lldp_config_reply; 
-}
-
-static void __attribute__((constructor)) __vapi_cpp_constructor_lldp_config_reply()
-{
-  vapi::vapi_msg_set_msg_id<vapi_msg_lldp_config_reply>(vapi_msg_id_lldp_config_reply);
-}
-
-template class Msg<vapi_msg_lldp_config_reply>;
-
-using Lldp_config_reply = Msg<vapi_msg_lldp_config_reply>;
 template <> inline void vapi_swap_to_be<vapi_msg_lldp_config>(vapi_msg_lldp_config *msg)
 {
   vapi_msg_lldp_config_hton(msg);
@@ -74,34 +46,34 @@ template class Request<vapi_msg_lldp_config, vapi_msg_lldp_config_reply>;
 
 using Lldp_config = Request<vapi_msg_lldp_config, vapi_msg_lldp_config_reply>;
 
-template <> inline void vapi_swap_to_be<vapi_msg_sw_interface_set_lldp_reply>(vapi_msg_sw_interface_set_lldp_reply *msg)
+template <> inline void vapi_swap_to_be<vapi_msg_lldp_config_reply>(vapi_msg_lldp_config_reply *msg)
 {
-  vapi_msg_sw_interface_set_lldp_reply_hton(msg);
+  vapi_msg_lldp_config_reply_hton(msg);
 }
 
-template <> inline void vapi_swap_to_host<vapi_msg_sw_interface_set_lldp_reply>(vapi_msg_sw_interface_set_lldp_reply *msg)
+template <> inline void vapi_swap_to_host<vapi_msg_lldp_config_reply>(vapi_msg_lldp_config_reply *msg)
 {
-  vapi_msg_sw_interface_set_lldp_reply_ntoh(msg);
+  vapi_msg_lldp_config_reply_ntoh(msg);
 }
 
-template <> inline vapi_msg_id_t vapi_get_msg_id_t<vapi_msg_sw_interface_set_lldp_reply>()
+template <> inline vapi_msg_id_t vapi_get_msg_id_t<vapi_msg_lldp_config_reply>()
 {
-  return ::vapi_msg_id_sw_interface_set_lldp_reply; 
+  return ::vapi_msg_id_lldp_config_reply; 
 }
 
-template <> inline vapi_msg_id_t vapi_get_msg_id_t<Msg<vapi_msg_sw_interface_set_lldp_reply>>()
+template <> inline vapi_msg_id_t vapi_get_msg_id_t<Msg<vapi_msg_lldp_config_reply>>()
 {
-  return ::vapi_msg_id_sw_interface_set_lldp_reply; 
+  return ::vapi_msg_id_lldp_config_reply; 
 }
 
-static void __attribute__((constructor)) __vapi_cpp_constructor_sw_interface_set_lldp_reply()
+static void __attribute__((constructor)) __vapi_cpp_constructor_lldp_config_reply()
 {
-  vapi::vapi_msg_set_msg_id<vapi_msg_sw_interface_set_lldp_reply>(vapi_msg_id_sw_interface_set_lldp_reply);
+  vapi::vapi_msg_set_msg_id<vapi_msg_lldp_config_reply>(vapi_msg_id_lldp_config_reply);
 }
 
-template class Msg<vapi_msg_sw_interface_set_lldp_reply>;
+template class Msg<vapi_msg_lldp_config_reply>;
 
-using Sw_interface_set_lldp_reply = Msg<vapi_msg_sw_interface_set_lldp_reply>;
+using Lldp_config_reply = Msg<vapi_msg_lldp_config_reply>;
 template <> inline void vapi_swap_to_be<vapi_msg_sw_interface_set_lldp>(vapi_msg_sw_interface_set_lldp *msg)
 {
   vapi_msg_sw_interface_set_lldp_hton(msg);
@@ -142,5 +114,33 @@ template class Request<vapi_msg_sw_interface_set_lldp, vapi_msg_sw_interface_set
 
 using Sw_interface_set_lldp = Request<vapi_msg_sw_interface_set_lldp, vapi_msg_sw_interface_set_lldp_reply>;
 
+template <> inline void vapi_swap_to_be<vapi_msg_sw_interface_set_lldp_reply>(vapi_msg_sw_interface_set_lldp_reply *msg)
+{
+  vapi_msg_sw_interface_set_lldp_reply_hton(msg);
+}
+
+template <> inline void vapi_swap_to_host<vapi_msg_sw_interface_set_lldp_reply>(vapi_msg_sw_interface_set_lldp_reply *msg)
+{
+  vapi_msg_sw_interface_set_lldp_reply_ntoh(msg);
+}
+
+template <> inline vapi_msg_id_t vapi_get_msg_id_t<vapi_msg_sw_interface_set_lldp_reply>()
+{
+  return ::vapi_msg_id_sw_interface_set_lldp_reply; 
+}
+
+template <> inline vapi_msg_id_t vapi_get_msg_id_t<Msg<vapi_msg_sw_interface_set_lldp_reply>>()
+{
+  return ::vapi_msg_id_sw_interface_set_lldp_reply; 
+}
+
+static void __attribute__((constructor)) __vapi_cpp_constructor_sw_interface_set_lldp_reply()
+{
+  vapi::vapi_msg_set_msg_id<vapi_msg_sw_interface_set_lldp_reply>(vapi_msg_id_sw_interface_set_lldp_reply);
+}
+
+template class Msg<vapi_msg_sw_interface_set_lldp_reply>;
+
+using Sw_interface_set_lldp_reply = Msg<vapi_msg_sw_interface_set_lldp_reply>;
 }
 #endif

@@ -13,24 +13,24 @@ extern "C" {
 #endif
 #include <vapi/vpe.api.vapi.h>
 
-extern vapi_msg_id_t vapi_msg_id_syslog_set_filter_reply;
-extern vapi_msg_id_t vapi_msg_id_syslog_set_filter;
-extern vapi_msg_id_t vapi_msg_id_syslog_get_sender;
 extern vapi_msg_id_t vapi_msg_id_syslog_set_sender;
-extern vapi_msg_id_t vapi_msg_id_syslog_get_filter_reply;
 extern vapi_msg_id_t vapi_msg_id_syslog_set_sender_reply;
-extern vapi_msg_id_t vapi_msg_id_syslog_get_filter;
+extern vapi_msg_id_t vapi_msg_id_syslog_get_sender;
 extern vapi_msg_id_t vapi_msg_id_syslog_get_sender_reply;
+extern vapi_msg_id_t vapi_msg_id_syslog_set_filter;
+extern vapi_msg_id_t vapi_msg_id_syslog_set_filter_reply;
+extern vapi_msg_id_t vapi_msg_id_syslog_get_filter;
+extern vapi_msg_id_t vapi_msg_id_syslog_get_filter_reply;
 
 #define DEFINE_VAPI_MSG_IDS_SYSLOG_API_JSON\
-  vapi_msg_id_t vapi_msg_id_syslog_set_filter_reply;\
-  vapi_msg_id_t vapi_msg_id_syslog_set_filter;\
-  vapi_msg_id_t vapi_msg_id_syslog_get_sender;\
   vapi_msg_id_t vapi_msg_id_syslog_set_sender;\
-  vapi_msg_id_t vapi_msg_id_syslog_get_filter_reply;\
   vapi_msg_id_t vapi_msg_id_syslog_set_sender_reply;\
+  vapi_msg_id_t vapi_msg_id_syslog_get_sender;\
+  vapi_msg_id_t vapi_msg_id_syslog_get_sender_reply;\
+  vapi_msg_id_t vapi_msg_id_syslog_set_filter;\
+  vapi_msg_id_t vapi_msg_id_syslog_set_filter_reply;\
   vapi_msg_id_t vapi_msg_id_syslog_get_filter;\
-  vapi_msg_id_t vapi_msg_id_syslog_get_sender_reply;
+  vapi_msg_id_t vapi_msg_id_syslog_get_filter_reply;
 
 
 #ifndef defined_vapi_enum_address_family
@@ -38,7 +38,7 @@ extern vapi_msg_id_t vapi_msg_id_syslog_get_sender_reply;
 typedef enum {
   ADDRESS_IP4 = 0,
   ADDRESS_IP6 = 1,
-} vapi_enum_address_family;
+} __attribute__((packed)) vapi_enum_address_family;
 
 #endif
 
@@ -49,7 +49,7 @@ typedef enum {
   IP_API_ECN_ECT0 = 1,
   IP_API_ECN_ECT1 = 2,
   IP_API_ECN_CE = 3,
-} vapi_enum_ip_ecn;
+} __attribute__((packed)) vapi_enum_ip_ecn;
 
 #endif
 
@@ -77,7 +77,7 @@ typedef enum {
   IP_API_DSCP_EF = 46,
   IP_API_DSCP_CS6 = 48,
   IP_API_DSCP_CS7 = 50,
-} vapi_enum_ip_dscp;
+} __attribute__((packed)) vapi_enum_ip_dscp;
 
 #endif
 
@@ -90,13 +90,14 @@ typedef enum {
   IP_API_PROTO_TCP = 6,
   IP_API_PROTO_UDP = 17,
   IP_API_PROTO_GRE = 47,
-  IP_API_PROTO_AH = 50,
-  IP_API_PROTO_ESP = 51,
+  IP_API_PROTO_ESP = 50,
+  IP_API_PROTO_AH = 51,
+  IP_API_PROTO_ICMP6 = 58,
   IP_API_PROTO_EIGRP = 88,
   IP_API_PROTO_OSPF = 89,
   IP_API_PROTO_SCTP = 132,
   IP_API_PROTO_RESERVED = 255,
-} vapi_enum_ip_proto;
+} __attribute__((packed)) vapi_enum_ip_proto;
 
 #endif
 
@@ -111,7 +112,7 @@ typedef enum {
   SYSLOG_API_SEVERITY_NOTICE = 5,
   SYSLOG_API_SEVERITY_INFO = 6,
   SYSLOG_API_SEVERITY_DBG = 7,
-} vapi_enum_syslog_severity;
+}  vapi_enum_syslog_severity;
 
 #endif
 
@@ -163,12 +164,12 @@ typedef struct __attribute__((__packed__)) {
 
 static inline void vapi_type_address_hton(vapi_type_address *msg)
 {
-  msg->af = (vapi_enum_address_family)htobe32(msg->af);
+
 }
 
 static inline void vapi_type_address_ntoh(vapi_type_address *msg)
 {
-  msg->af = (vapi_enum_address_family)be32toh(msg->af);
+
 }
 #endif
 
@@ -181,12 +182,12 @@ typedef struct __attribute__((__packed__)) {
 
 static inline void vapi_type_prefix_hton(vapi_type_prefix *msg)
 {
-  vapi_type_address_hton(&msg->address);
+
 }
 
 static inline void vapi_type_prefix_ntoh(vapi_type_prefix *msg)
 {
-  vapi_type_address_ntoh(&msg->address);
+
 }
 #endif
 
@@ -201,13 +202,11 @@ typedef struct __attribute__((__packed__)) {
 
 static inline void vapi_type_mprefix_hton(vapi_type_mprefix *msg)
 {
-  msg->af = (vapi_enum_address_family)htobe32(msg->af);
   msg->grp_address_length = htobe16(msg->grp_address_length);
 }
 
 static inline void vapi_type_mprefix_ntoh(vapi_type_mprefix *msg)
 {
-  msg->af = (vapi_enum_address_family)be32toh(msg->af);
   msg->grp_address_length = be16toh(msg->grp_address_length);
 }
 #endif
@@ -248,9 +247,9 @@ static inline void vapi_type_ip4_prefix_ntoh(vapi_type_ip4_prefix *msg)
 }
 #endif
 
-#ifndef defined_vapi_type_ip6_address_with_prefix
-#define defined_vapi_type_ip6_address_with_prefix
-typedef vapi_type_ip6_prefix vapi_type_ip6_address_with_prefix;
+#ifndef defined_vapi_type_address_with_prefix
+#define defined_vapi_type_address_with_prefix
+typedef vapi_type_prefix vapi_type_address_with_prefix;
 
 #endif
 
@@ -260,390 +259,10 @@ typedef vapi_type_ip4_prefix vapi_type_ip4_address_with_prefix;
 
 #endif
 
-#ifndef defined_vapi_type_address_with_prefix
-#define defined_vapi_type_address_with_prefix
-typedef vapi_type_prefix vapi_type_address_with_prefix;
+#ifndef defined_vapi_type_ip6_address_with_prefix
+#define defined_vapi_type_ip6_address_with_prefix
+typedef vapi_type_ip6_prefix vapi_type_ip6_address_with_prefix;
 
-#endif
-
-#ifndef defined_vapi_msg_syslog_set_filter_reply
-#define defined_vapi_msg_syslog_set_filter_reply
-typedef struct __attribute__ ((__packed__)) {
-  i32 retval; 
-} vapi_payload_syslog_set_filter_reply;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header1_t header;
-  vapi_payload_syslog_set_filter_reply payload;
-} vapi_msg_syslog_set_filter_reply;
-
-static inline void vapi_msg_syslog_set_filter_reply_payload_hton(vapi_payload_syslog_set_filter_reply *payload)
-{
-  payload->retval = htobe32(payload->retval);
-}
-
-static inline void vapi_msg_syslog_set_filter_reply_payload_ntoh(vapi_payload_syslog_set_filter_reply *payload)
-{
-  payload->retval = be32toh(payload->retval);
-}
-
-static inline void vapi_msg_syslog_set_filter_reply_hton(vapi_msg_syslog_set_filter_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_syslog_set_filter_reply'@%p to big endian", msg);
-  vapi_type_msg_header1_t_hton(&msg->header);
-  vapi_msg_syslog_set_filter_reply_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_syslog_set_filter_reply_ntoh(vapi_msg_syslog_set_filter_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_syslog_set_filter_reply'@%p to host byte order", msg);
-  vapi_type_msg_header1_t_ntoh(&msg->header);
-  vapi_msg_syslog_set_filter_reply_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_syslog_set_filter_reply_msg_size(vapi_msg_syslog_set_filter_reply *msg)
-{
-  return sizeof(*msg);
-}
-
-static void __attribute__((constructor)) __vapi_constructor_syslog_set_filter_reply()
-{
-  static const char name[] = "syslog_set_filter_reply";
-  static const char name_with_crc[] = "syslog_set_filter_reply_e8d4e804";
-  static vapi_message_desc_t __vapi_metadata_syslog_set_filter_reply = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header1_t, context),
-    offsetof(vapi_msg_syslog_set_filter_reply, payload),
-    sizeof(vapi_msg_syslog_set_filter_reply),
-    (generic_swap_fn_t)vapi_msg_syslog_set_filter_reply_hton,
-    (generic_swap_fn_t)vapi_msg_syslog_set_filter_reply_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_syslog_set_filter_reply = vapi_register_msg(&__vapi_metadata_syslog_set_filter_reply);
-  VAPI_DBG("Assigned msg id %d to syslog_set_filter_reply", vapi_msg_id_syslog_set_filter_reply);
-}
-
-static inline void vapi_set_vapi_msg_syslog_set_filter_reply_event_cb (
-  struct vapi_ctx_s *ctx, 
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_syslog_set_filter_reply *payload),
-  void *callback_ctx)
-{
-  vapi_set_event_cb(ctx, vapi_msg_id_syslog_set_filter_reply, (vapi_event_cb)callback, callback_ctx);
-};
-#endif
-
-#ifndef defined_vapi_msg_syslog_set_filter
-#define defined_vapi_msg_syslog_set_filter
-typedef struct __attribute__ ((__packed__)) {
-  vapi_enum_syslog_severity severity; 
-} vapi_payload_syslog_set_filter;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header2_t header;
-  vapi_payload_syslog_set_filter payload;
-} vapi_msg_syslog_set_filter;
-
-static inline void vapi_msg_syslog_set_filter_payload_hton(vapi_payload_syslog_set_filter *payload)
-{
-  payload->severity = (vapi_enum_syslog_severity)htobe32(payload->severity);
-}
-
-static inline void vapi_msg_syslog_set_filter_payload_ntoh(vapi_payload_syslog_set_filter *payload)
-{
-  payload->severity = (vapi_enum_syslog_severity)be32toh(payload->severity);
-}
-
-static inline void vapi_msg_syslog_set_filter_hton(vapi_msg_syslog_set_filter *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_syslog_set_filter'@%p to big endian", msg);
-  vapi_type_msg_header2_t_hton(&msg->header);
-  vapi_msg_syslog_set_filter_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_syslog_set_filter_ntoh(vapi_msg_syslog_set_filter *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_syslog_set_filter'@%p to host byte order", msg);
-  vapi_type_msg_header2_t_ntoh(&msg->header);
-  vapi_msg_syslog_set_filter_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_syslog_set_filter_msg_size(vapi_msg_syslog_set_filter *msg)
-{
-  return sizeof(*msg);
-}
-
-static inline vapi_msg_syslog_set_filter* vapi_alloc_syslog_set_filter(struct vapi_ctx_s *ctx)
-{
-  vapi_msg_syslog_set_filter *msg = NULL;
-  const size_t size = sizeof(vapi_msg_syslog_set_filter);
-  /* cast here required to play nicely with C++ world ... */
-  msg = (vapi_msg_syslog_set_filter*)vapi_msg_alloc(ctx, size);
-  if (!msg) {
-    return NULL;
-  }
-  msg->header.client_index = vapi_get_client_index(ctx);
-  msg->header.context = 0;
-  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_syslog_set_filter);
-
-  return msg;
-}
-
-static inline vapi_error_e vapi_syslog_set_filter(struct vapi_ctx_s *ctx,
-  vapi_msg_syslog_set_filter *msg,
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
-                           void *callback_ctx,
-                           vapi_error_e rv,
-                           bool is_last,
-                           vapi_payload_syslog_set_filter_reply *reply),
-  void *callback_ctx)
-{
-  if (!msg || !callback) {
-    return VAPI_EINVAL;
-  }
-  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
-    return VAPI_EAGAIN;
-  }
-  vapi_error_e rv;
-  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
-    return rv;
-  }
-  u32 req_context = vapi_gen_req_context(ctx);
-  msg->header.context = req_context;
-  vapi_msg_syslog_set_filter_hton(msg);
-  if (VAPI_OK == (rv = vapi_send (ctx, msg))) {
-    vapi_store_request(ctx, req_context, false, (vapi_cb_t)callback, callback_ctx);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-    if (vapi_is_nonblocking(ctx)) {
-      rv = VAPI_OK;
-    } else {
-      rv = vapi_dispatch(ctx);
-    }
-  } else {
-    vapi_msg_syslog_set_filter_ntoh(msg);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-  }
-  return rv;
-}
-
-
-static void __attribute__((constructor)) __vapi_constructor_syslog_set_filter()
-{
-  static const char name[] = "syslog_set_filter";
-  static const char name_with_crc[] = "syslog_set_filter_571348c3";
-  static vapi_message_desc_t __vapi_metadata_syslog_set_filter = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header2_t, context),
-    offsetof(vapi_msg_syslog_set_filter, payload),
-    sizeof(vapi_msg_syslog_set_filter),
-    (generic_swap_fn_t)vapi_msg_syslog_set_filter_hton,
-    (generic_swap_fn_t)vapi_msg_syslog_set_filter_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_syslog_set_filter = vapi_register_msg(&__vapi_metadata_syslog_set_filter);
-  VAPI_DBG("Assigned msg id %d to syslog_set_filter", vapi_msg_id_syslog_set_filter);
-}
-#endif
-
-#ifndef defined_vapi_msg_syslog_get_sender_reply
-#define defined_vapi_msg_syslog_get_sender_reply
-typedef struct __attribute__ ((__packed__)) {
-  i32 retval;
-  vapi_type_ip4_address src_address;
-  vapi_type_ip4_address collector_address;
-  u16 collector_port;
-  u32 vrf_id;
-  u32 max_msg_size; 
-} vapi_payload_syslog_get_sender_reply;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header1_t header;
-  vapi_payload_syslog_get_sender_reply payload;
-} vapi_msg_syslog_get_sender_reply;
-
-static inline void vapi_msg_syslog_get_sender_reply_payload_hton(vapi_payload_syslog_get_sender_reply *payload)
-{
-  payload->retval = htobe32(payload->retval);
-  payload->collector_port = htobe16(payload->collector_port);
-  payload->vrf_id = htobe32(payload->vrf_id);
-  payload->max_msg_size = htobe32(payload->max_msg_size);
-}
-
-static inline void vapi_msg_syslog_get_sender_reply_payload_ntoh(vapi_payload_syslog_get_sender_reply *payload)
-{
-  payload->retval = be32toh(payload->retval);
-  payload->collector_port = be16toh(payload->collector_port);
-  payload->vrf_id = be32toh(payload->vrf_id);
-  payload->max_msg_size = be32toh(payload->max_msg_size);
-}
-
-static inline void vapi_msg_syslog_get_sender_reply_hton(vapi_msg_syslog_get_sender_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_syslog_get_sender_reply'@%p to big endian", msg);
-  vapi_type_msg_header1_t_hton(&msg->header);
-  vapi_msg_syslog_get_sender_reply_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_syslog_get_sender_reply_ntoh(vapi_msg_syslog_get_sender_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_syslog_get_sender_reply'@%p to host byte order", msg);
-  vapi_type_msg_header1_t_ntoh(&msg->header);
-  vapi_msg_syslog_get_sender_reply_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_syslog_get_sender_reply_msg_size(vapi_msg_syslog_get_sender_reply *msg)
-{
-  return sizeof(*msg);
-}
-
-static void __attribute__((constructor)) __vapi_constructor_syslog_get_sender_reply()
-{
-  static const char name[] = "syslog_get_sender_reply";
-  static const char name_with_crc[] = "syslog_get_sender_reply_d3da60ac";
-  static vapi_message_desc_t __vapi_metadata_syslog_get_sender_reply = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header1_t, context),
-    offsetof(vapi_msg_syslog_get_sender_reply, payload),
-    sizeof(vapi_msg_syslog_get_sender_reply),
-    (generic_swap_fn_t)vapi_msg_syslog_get_sender_reply_hton,
-    (generic_swap_fn_t)vapi_msg_syslog_get_sender_reply_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_syslog_get_sender_reply = vapi_register_msg(&__vapi_metadata_syslog_get_sender_reply);
-  VAPI_DBG("Assigned msg id %d to syslog_get_sender_reply", vapi_msg_id_syslog_get_sender_reply);
-}
-
-static inline void vapi_set_vapi_msg_syslog_get_sender_reply_event_cb (
-  struct vapi_ctx_s *ctx, 
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_syslog_get_sender_reply *payload),
-  void *callback_ctx)
-{
-  vapi_set_event_cb(ctx, vapi_msg_id_syslog_get_sender_reply, (vapi_event_cb)callback, callback_ctx);
-};
-#endif
-
-#ifndef defined_vapi_msg_syslog_get_sender
-#define defined_vapi_msg_syslog_get_sender
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header2_t header;
-} vapi_msg_syslog_get_sender;
-
-static inline void vapi_msg_syslog_get_sender_hton(vapi_msg_syslog_get_sender *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_syslog_get_sender'@%p to big endian", msg);
-  vapi_type_msg_header2_t_hton(&msg->header);
-
-}
-
-static inline void vapi_msg_syslog_get_sender_ntoh(vapi_msg_syslog_get_sender *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_syslog_get_sender'@%p to host byte order", msg);
-  vapi_type_msg_header2_t_ntoh(&msg->header);
-
-}
-
-static inline uword vapi_calc_syslog_get_sender_msg_size(vapi_msg_syslog_get_sender *msg)
-{
-  return sizeof(*msg);
-}
-
-static inline vapi_msg_syslog_get_sender* vapi_alloc_syslog_get_sender(struct vapi_ctx_s *ctx)
-{
-  vapi_msg_syslog_get_sender *msg = NULL;
-  const size_t size = sizeof(vapi_msg_syslog_get_sender);
-  /* cast here required to play nicely with C++ world ... */
-  msg = (vapi_msg_syslog_get_sender*)vapi_msg_alloc(ctx, size);
-  if (!msg) {
-    return NULL;
-  }
-  msg->header.client_index = vapi_get_client_index(ctx);
-  msg->header.context = 0;
-  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_syslog_get_sender);
-
-  return msg;
-}
-
-static inline vapi_error_e vapi_syslog_get_sender(struct vapi_ctx_s *ctx,
-  vapi_msg_syslog_get_sender *msg,
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
-                           void *callback_ctx,
-                           vapi_error_e rv,
-                           bool is_last,
-                           vapi_payload_syslog_get_sender_reply *reply),
-  void *callback_ctx)
-{
-  if (!msg || !callback) {
-    return VAPI_EINVAL;
-  }
-  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
-    return VAPI_EAGAIN;
-  }
-  vapi_error_e rv;
-  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
-    return rv;
-  }
-  u32 req_context = vapi_gen_req_context(ctx);
-  msg->header.context = req_context;
-  vapi_msg_syslog_get_sender_hton(msg);
-  if (VAPI_OK == (rv = vapi_send (ctx, msg))) {
-    vapi_store_request(ctx, req_context, false, (vapi_cb_t)callback, callback_ctx);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-    if (vapi_is_nonblocking(ctx)) {
-      rv = VAPI_OK;
-    } else {
-      rv = vapi_dispatch(ctx);
-    }
-  } else {
-    vapi_msg_syslog_get_sender_ntoh(msg);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-  }
-  return rv;
-}
-
-
-static void __attribute__((constructor)) __vapi_constructor_syslog_get_sender()
-{
-  static const char name[] = "syslog_get_sender";
-  static const char name_with_crc[] = "syslog_get_sender_51077d14";
-  static vapi_message_desc_t __vapi_metadata_syslog_get_sender = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header2_t, context),
-    VAPI_INVALID_MSG_ID,
-    sizeof(vapi_msg_syslog_get_sender),
-    (generic_swap_fn_t)vapi_msg_syslog_get_sender_hton,
-    (generic_swap_fn_t)vapi_msg_syslog_get_sender_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_syslog_get_sender = vapi_register_msg(&__vapi_metadata_syslog_get_sender);
-  VAPI_DBG("Assigned msg id %d to syslog_get_sender", vapi_msg_id_syslog_get_sender);
-}
 #endif
 
 #ifndef defined_vapi_msg_syslog_set_sender_reply
@@ -843,6 +462,386 @@ static void __attribute__((constructor)) __vapi_constructor_syslog_set_sender()
 
   vapi_msg_id_syslog_set_sender = vapi_register_msg(&__vapi_metadata_syslog_set_sender);
   VAPI_DBG("Assigned msg id %d to syslog_set_sender", vapi_msg_id_syslog_set_sender);
+}
+#endif
+
+#ifndef defined_vapi_msg_syslog_get_sender_reply
+#define defined_vapi_msg_syslog_get_sender_reply
+typedef struct __attribute__ ((__packed__)) {
+  i32 retval;
+  vapi_type_ip4_address src_address;
+  vapi_type_ip4_address collector_address;
+  u16 collector_port;
+  u32 vrf_id;
+  u32 max_msg_size; 
+} vapi_payload_syslog_get_sender_reply;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header1_t header;
+  vapi_payload_syslog_get_sender_reply payload;
+} vapi_msg_syslog_get_sender_reply;
+
+static inline void vapi_msg_syslog_get_sender_reply_payload_hton(vapi_payload_syslog_get_sender_reply *payload)
+{
+  payload->retval = htobe32(payload->retval);
+  payload->collector_port = htobe16(payload->collector_port);
+  payload->vrf_id = htobe32(payload->vrf_id);
+  payload->max_msg_size = htobe32(payload->max_msg_size);
+}
+
+static inline void vapi_msg_syslog_get_sender_reply_payload_ntoh(vapi_payload_syslog_get_sender_reply *payload)
+{
+  payload->retval = be32toh(payload->retval);
+  payload->collector_port = be16toh(payload->collector_port);
+  payload->vrf_id = be32toh(payload->vrf_id);
+  payload->max_msg_size = be32toh(payload->max_msg_size);
+}
+
+static inline void vapi_msg_syslog_get_sender_reply_hton(vapi_msg_syslog_get_sender_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_syslog_get_sender_reply'@%p to big endian", msg);
+  vapi_type_msg_header1_t_hton(&msg->header);
+  vapi_msg_syslog_get_sender_reply_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_syslog_get_sender_reply_ntoh(vapi_msg_syslog_get_sender_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_syslog_get_sender_reply'@%p to host byte order", msg);
+  vapi_type_msg_header1_t_ntoh(&msg->header);
+  vapi_msg_syslog_get_sender_reply_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_syslog_get_sender_reply_msg_size(vapi_msg_syslog_get_sender_reply *msg)
+{
+  return sizeof(*msg);
+}
+
+static void __attribute__((constructor)) __vapi_constructor_syslog_get_sender_reply()
+{
+  static const char name[] = "syslog_get_sender_reply";
+  static const char name_with_crc[] = "syslog_get_sender_reply_d3da60ac";
+  static vapi_message_desc_t __vapi_metadata_syslog_get_sender_reply = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header1_t, context),
+    offsetof(vapi_msg_syslog_get_sender_reply, payload),
+    sizeof(vapi_msg_syslog_get_sender_reply),
+    (generic_swap_fn_t)vapi_msg_syslog_get_sender_reply_hton,
+    (generic_swap_fn_t)vapi_msg_syslog_get_sender_reply_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_syslog_get_sender_reply = vapi_register_msg(&__vapi_metadata_syslog_get_sender_reply);
+  VAPI_DBG("Assigned msg id %d to syslog_get_sender_reply", vapi_msg_id_syslog_get_sender_reply);
+}
+
+static inline void vapi_set_vapi_msg_syslog_get_sender_reply_event_cb (
+  struct vapi_ctx_s *ctx, 
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_syslog_get_sender_reply *payload),
+  void *callback_ctx)
+{
+  vapi_set_event_cb(ctx, vapi_msg_id_syslog_get_sender_reply, (vapi_event_cb)callback, callback_ctx);
+};
+#endif
+
+#ifndef defined_vapi_msg_syslog_get_sender
+#define defined_vapi_msg_syslog_get_sender
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header2_t header;
+} vapi_msg_syslog_get_sender;
+
+static inline void vapi_msg_syslog_get_sender_hton(vapi_msg_syslog_get_sender *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_syslog_get_sender'@%p to big endian", msg);
+  vapi_type_msg_header2_t_hton(&msg->header);
+
+}
+
+static inline void vapi_msg_syslog_get_sender_ntoh(vapi_msg_syslog_get_sender *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_syslog_get_sender'@%p to host byte order", msg);
+  vapi_type_msg_header2_t_ntoh(&msg->header);
+
+}
+
+static inline uword vapi_calc_syslog_get_sender_msg_size(vapi_msg_syslog_get_sender *msg)
+{
+  return sizeof(*msg);
+}
+
+static inline vapi_msg_syslog_get_sender* vapi_alloc_syslog_get_sender(struct vapi_ctx_s *ctx)
+{
+  vapi_msg_syslog_get_sender *msg = NULL;
+  const size_t size = sizeof(vapi_msg_syslog_get_sender);
+  /* cast here required to play nicely with C++ world ... */
+  msg = (vapi_msg_syslog_get_sender*)vapi_msg_alloc(ctx, size);
+  if (!msg) {
+    return NULL;
+  }
+  msg->header.client_index = vapi_get_client_index(ctx);
+  msg->header.context = 0;
+  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_syslog_get_sender);
+
+  return msg;
+}
+
+static inline vapi_error_e vapi_syslog_get_sender(struct vapi_ctx_s *ctx,
+  vapi_msg_syslog_get_sender *msg,
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
+                           void *callback_ctx,
+                           vapi_error_e rv,
+                           bool is_last,
+                           vapi_payload_syslog_get_sender_reply *reply),
+  void *callback_ctx)
+{
+  if (!msg || !callback) {
+    return VAPI_EINVAL;
+  }
+  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
+    return VAPI_EAGAIN;
+  }
+  vapi_error_e rv;
+  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
+    return rv;
+  }
+  u32 req_context = vapi_gen_req_context(ctx);
+  msg->header.context = req_context;
+  vapi_msg_syslog_get_sender_hton(msg);
+  if (VAPI_OK == (rv = vapi_send (ctx, msg))) {
+    vapi_store_request(ctx, req_context, false, (vapi_cb_t)callback, callback_ctx);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+    if (vapi_is_nonblocking(ctx)) {
+      rv = VAPI_OK;
+    } else {
+      rv = vapi_dispatch(ctx);
+    }
+  } else {
+    vapi_msg_syslog_get_sender_ntoh(msg);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+  }
+  return rv;
+}
+
+
+static void __attribute__((constructor)) __vapi_constructor_syslog_get_sender()
+{
+  static const char name[] = "syslog_get_sender";
+  static const char name_with_crc[] = "syslog_get_sender_51077d14";
+  static vapi_message_desc_t __vapi_metadata_syslog_get_sender = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header2_t, context),
+    VAPI_INVALID_MSG_ID,
+    sizeof(vapi_msg_syslog_get_sender),
+    (generic_swap_fn_t)vapi_msg_syslog_get_sender_hton,
+    (generic_swap_fn_t)vapi_msg_syslog_get_sender_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_syslog_get_sender = vapi_register_msg(&__vapi_metadata_syslog_get_sender);
+  VAPI_DBG("Assigned msg id %d to syslog_get_sender", vapi_msg_id_syslog_get_sender);
+}
+#endif
+
+#ifndef defined_vapi_msg_syslog_set_filter_reply
+#define defined_vapi_msg_syslog_set_filter_reply
+typedef struct __attribute__ ((__packed__)) {
+  i32 retval; 
+} vapi_payload_syslog_set_filter_reply;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header1_t header;
+  vapi_payload_syslog_set_filter_reply payload;
+} vapi_msg_syslog_set_filter_reply;
+
+static inline void vapi_msg_syslog_set_filter_reply_payload_hton(vapi_payload_syslog_set_filter_reply *payload)
+{
+  payload->retval = htobe32(payload->retval);
+}
+
+static inline void vapi_msg_syslog_set_filter_reply_payload_ntoh(vapi_payload_syslog_set_filter_reply *payload)
+{
+  payload->retval = be32toh(payload->retval);
+}
+
+static inline void vapi_msg_syslog_set_filter_reply_hton(vapi_msg_syslog_set_filter_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_syslog_set_filter_reply'@%p to big endian", msg);
+  vapi_type_msg_header1_t_hton(&msg->header);
+  vapi_msg_syslog_set_filter_reply_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_syslog_set_filter_reply_ntoh(vapi_msg_syslog_set_filter_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_syslog_set_filter_reply'@%p to host byte order", msg);
+  vapi_type_msg_header1_t_ntoh(&msg->header);
+  vapi_msg_syslog_set_filter_reply_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_syslog_set_filter_reply_msg_size(vapi_msg_syslog_set_filter_reply *msg)
+{
+  return sizeof(*msg);
+}
+
+static void __attribute__((constructor)) __vapi_constructor_syslog_set_filter_reply()
+{
+  static const char name[] = "syslog_set_filter_reply";
+  static const char name_with_crc[] = "syslog_set_filter_reply_e8d4e804";
+  static vapi_message_desc_t __vapi_metadata_syslog_set_filter_reply = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header1_t, context),
+    offsetof(vapi_msg_syslog_set_filter_reply, payload),
+    sizeof(vapi_msg_syslog_set_filter_reply),
+    (generic_swap_fn_t)vapi_msg_syslog_set_filter_reply_hton,
+    (generic_swap_fn_t)vapi_msg_syslog_set_filter_reply_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_syslog_set_filter_reply = vapi_register_msg(&__vapi_metadata_syslog_set_filter_reply);
+  VAPI_DBG("Assigned msg id %d to syslog_set_filter_reply", vapi_msg_id_syslog_set_filter_reply);
+}
+
+static inline void vapi_set_vapi_msg_syslog_set_filter_reply_event_cb (
+  struct vapi_ctx_s *ctx, 
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_syslog_set_filter_reply *payload),
+  void *callback_ctx)
+{
+  vapi_set_event_cb(ctx, vapi_msg_id_syslog_set_filter_reply, (vapi_event_cb)callback, callback_ctx);
+};
+#endif
+
+#ifndef defined_vapi_msg_syslog_set_filter
+#define defined_vapi_msg_syslog_set_filter
+typedef struct __attribute__ ((__packed__)) {
+  vapi_enum_syslog_severity severity; 
+} vapi_payload_syslog_set_filter;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header2_t header;
+  vapi_payload_syslog_set_filter payload;
+} vapi_msg_syslog_set_filter;
+
+static inline void vapi_msg_syslog_set_filter_payload_hton(vapi_payload_syslog_set_filter *payload)
+{
+  payload->severity = (vapi_enum_syslog_severity)htobe32(payload->severity);
+}
+
+static inline void vapi_msg_syslog_set_filter_payload_ntoh(vapi_payload_syslog_set_filter *payload)
+{
+  payload->severity = (vapi_enum_syslog_severity)be32toh(payload->severity);
+}
+
+static inline void vapi_msg_syslog_set_filter_hton(vapi_msg_syslog_set_filter *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_syslog_set_filter'@%p to big endian", msg);
+  vapi_type_msg_header2_t_hton(&msg->header);
+  vapi_msg_syslog_set_filter_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_syslog_set_filter_ntoh(vapi_msg_syslog_set_filter *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_syslog_set_filter'@%p to host byte order", msg);
+  vapi_type_msg_header2_t_ntoh(&msg->header);
+  vapi_msg_syslog_set_filter_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_syslog_set_filter_msg_size(vapi_msg_syslog_set_filter *msg)
+{
+  return sizeof(*msg);
+}
+
+static inline vapi_msg_syslog_set_filter* vapi_alloc_syslog_set_filter(struct vapi_ctx_s *ctx)
+{
+  vapi_msg_syslog_set_filter *msg = NULL;
+  const size_t size = sizeof(vapi_msg_syslog_set_filter);
+  /* cast here required to play nicely with C++ world ... */
+  msg = (vapi_msg_syslog_set_filter*)vapi_msg_alloc(ctx, size);
+  if (!msg) {
+    return NULL;
+  }
+  msg->header.client_index = vapi_get_client_index(ctx);
+  msg->header.context = 0;
+  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_syslog_set_filter);
+
+  return msg;
+}
+
+static inline vapi_error_e vapi_syslog_set_filter(struct vapi_ctx_s *ctx,
+  vapi_msg_syslog_set_filter *msg,
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
+                           void *callback_ctx,
+                           vapi_error_e rv,
+                           bool is_last,
+                           vapi_payload_syslog_set_filter_reply *reply),
+  void *callback_ctx)
+{
+  if (!msg || !callback) {
+    return VAPI_EINVAL;
+  }
+  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
+    return VAPI_EAGAIN;
+  }
+  vapi_error_e rv;
+  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
+    return rv;
+  }
+  u32 req_context = vapi_gen_req_context(ctx);
+  msg->header.context = req_context;
+  vapi_msg_syslog_set_filter_hton(msg);
+  if (VAPI_OK == (rv = vapi_send (ctx, msg))) {
+    vapi_store_request(ctx, req_context, false, (vapi_cb_t)callback, callback_ctx);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+    if (vapi_is_nonblocking(ctx)) {
+      rv = VAPI_OK;
+    } else {
+      rv = vapi_dispatch(ctx);
+    }
+  } else {
+    vapi_msg_syslog_set_filter_ntoh(msg);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+  }
+  return rv;
+}
+
+
+static void __attribute__((constructor)) __vapi_constructor_syslog_set_filter()
+{
+  static const char name[] = "syslog_set_filter";
+  static const char name_with_crc[] = "syslog_set_filter_571348c3";
+  static vapi_message_desc_t __vapi_metadata_syslog_set_filter = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header2_t, context),
+    offsetof(vapi_msg_syslog_set_filter, payload),
+    sizeof(vapi_msg_syslog_set_filter),
+    (generic_swap_fn_t)vapi_msg_syslog_set_filter_hton,
+    (generic_swap_fn_t)vapi_msg_syslog_set_filter_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_syslog_set_filter = vapi_register_msg(&__vapi_metadata_syslog_set_filter);
+  VAPI_DBG("Assigned msg id %d to syslog_set_filter", vapi_msg_id_syslog_set_filter);
 }
 #endif
 

@@ -36,11 +36,6 @@
 
 #define DR_RULE_MAX_STE_CHAIN (DR_RULE_MAX_STES + DR_ACTION_MAX_STES)
 
-struct dr_rule_action_member {
-	struct mlx5dv_dr_action *action;
-	struct list_node	list;
-};
-
 static int dr_rule_append_to_miss_list(struct dr_ste *new_last_ste,
 				       struct list_head *miss_list,
 				       struct list_head *send_list)
@@ -263,6 +258,7 @@ static struct dr_ste *dr_rule_rehash_copy_ste(struct mlx5dv_dr_matcher *matcher,
 
 	/* Copy STE control and tag */
 	memcpy(hw_ste, cur_ste->hw_ste, DR_STE_SIZE_REDUCED);
+	dr_ste_set_miss_addr(hw_ste, nic_matcher->e_anchor->chunk->icm_addr);
 
 	new_idx = dr_ste_calc_hash_index(hw_ste, new_htbl);
 	new_ste = &new_htbl->ste_arr[new_idx];
@@ -814,12 +810,10 @@ again:
 			 * it means that all the previous stes are the same,
 			 * if so, this rule is duplicated.
 			 */
-			if (dr_ste_is_last_in_rule(nic_matcher, matched_ste->ste_chain_location)) {
-				dr_dbg(dmn, "Duplicate rule inserted, aborting\n");
-				errno = EINVAL;
-				return NULL;
-			}
-			return matched_ste;
+			if (!dr_ste_is_last_in_rule(nic_matcher, ste_location))
+				return matched_ste;
+
+			dr_dbg(dmn, "Duplicate rule inserted\n");
 		}
 
 		if (!skip_rehash && dr_rule_need_enlarge_hash(cur_htbl, dmn, nic_dmn)) {
@@ -887,7 +881,7 @@ static bool dr_rule_verify(struct mlx5dv_dr_matcher *matcher,
 	uint32_t s_idx, e_idx;
 
 	if (!value_size ||
-	    (value_size > sizeof(struct dr_match_param) ||
+	    (value_size > DEVX_ST_SZ_BYTES(dr_match_param) ||
 	     (value_size % sizeof(uint32_t)))) {
 		dr_dbg(dmn, "Rule parameters length is incorrect\n");
 		errno = EINVAL;
@@ -982,6 +976,7 @@ static int dr_rule_destroy_rule(struct mlx5dv_dr_rule *rule)
 	}
 
 	dr_rule_remove_action_members(rule);
+	list_del(&rule->rule_list);
 	free(rule);
 	return 0;
 }
@@ -1177,6 +1172,7 @@ dr_rule_create_rule(struct mlx5dv_dr_matcher *matcher,
 
 	rule->matcher = matcher;
 	list_head_init(&rule->rule_actions_list);
+	list_node_init(&rule->rule_list);
 
 	ret = dr_rule_add_action_members(rule, num_actions, actions);
 	if (ret)
@@ -1208,6 +1204,7 @@ dr_rule_create_rule(struct mlx5dv_dr_matcher *matcher,
 	if (ret)
 		goto remove_action_members;
 
+	list_add_tail(&matcher->rule_list, &rule->rule_list);
 	return rule;
 
 remove_action_members:
@@ -1225,6 +1222,7 @@ dr_rule_create_rule_root(struct mlx5dv_dr_matcher *matcher,
 			 struct mlx5dv_dr_action *actions[])
 {
 	struct mlx5dv_flow_action_attr *attr;
+	struct mlx5_flow_action_attr_aux *attr_aux;
 	struct mlx5dv_dr_rule *rule;
 	int ret;
 
@@ -1243,27 +1241,37 @@ dr_rule_create_rule_root(struct mlx5dv_dr_matcher *matcher,
 		goto free_rule;
 	}
 
-	ret = dr_actions_build_attr(matcher, actions, num_actions, attr);
-	if (ret)
+	attr_aux = calloc(num_actions, sizeof(*attr_aux));
+	if (!attr_aux) {
+		errno = ENOMEM;
 		goto free_attr;
+	}
+
+	ret = dr_actions_build_attr(matcher, actions, num_actions, attr, attr_aux);
+	if (ret)
+		goto free_attr_aux;
 
 	ret = dr_rule_add_action_members(rule, num_actions, actions);
 	if (ret)
-		goto free_attr;
+		goto free_attr_aux;
 
-	rule->flow = mlx5dv_create_flow(matcher->dv_matcher,
-					value,
-					num_actions,
-					attr);
+	rule->flow = __mlx5dv_create_flow(matcher->dv_matcher,
+					  value,
+					  num_actions,
+					  attr,
+					  attr_aux);
 	if (!rule->flow)
 		goto remove_action_members;
 
 	free(attr);
+	free(attr_aux);
 
 	return rule;
 
 remove_action_members:
 	dr_rule_remove_action_members(rule);
+free_attr_aux:
+	free(attr_aux);
 free_attr:
 	free(attr);
 free_rule:

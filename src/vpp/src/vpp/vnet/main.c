@@ -20,6 +20,7 @@
 #include <vppinfra/cpu.h>
 #include <vlib/vlib.h>
 #include <vlib/unix/unix.h>
+#include <vlib/threads.h>
 #include <vnet/plugin/plugin.h>
 #include <vnet/ethernet/ethernet.h>
 #include <vpp/app/version.h>
@@ -107,6 +108,7 @@ main (int argc, char *argv[])
   u32 size;
   int main_core = 1;
   cpu_set_t cpuset;
+  void *main_heap;
 
 #if __x86_64__
   CLIB_UNUSED (const char *msg)
@@ -273,8 +275,17 @@ defaulted:
   vl_msg_api_set_first_available_msg_id (VL_MSG_FIRST_AVAILABLE);
 
   /* Allocate main heap */
-  if (clib_mem_init_thread_safe (0, main_heap_size))
+  if ((main_heap = clib_mem_init_thread_safe (0, main_heap_size)))
     {
+      vlib_worker_thread_t tmp;
+
+      /* Figure out which numa runs the main thread */
+      vlib_get_thread_core_numa (&tmp, main_core);
+      __os_numa_index = tmp.numa_id;
+
+      /* and use the main heap as that numa's numa heap */
+      clib_mem_set_per_numa_heap (main_heap);
+
       vm->init_functions_called = hash_create (0, /* value bytes */ 0);
       vpe_main_init (vm);
       return vlib_unix_main (argc, argv);
@@ -495,6 +506,16 @@ VLIB_CLI_COMMAND (show_bihash_command, static) =
   .function = show_bihash_command_fn,
 };
 /* *INDENT-ON* */
+
+#ifdef CLIB_SANITIZE_ADDR
+/* default options for Address Sanitizer */
+const char *
+__asan_default_options (void)
+{
+  return
+    "unmap_shadow_on_exit=1:disable_coredump=0:abort_on_error=1:detect_leaks=0";
+}
+#endif /* CLIB_SANITIZE_ADDR */
 
 /*
  * fd.io coding-style-patch-verification: ON

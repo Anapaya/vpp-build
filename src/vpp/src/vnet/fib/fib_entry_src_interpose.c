@@ -61,17 +61,17 @@ fib_entry_src_rr_get_next_best (const fib_entry_src_t *src,
         /*
          * skip to the next best source after this one
          */
-        if (source <= src->fes_src)
+        switch (fib_source_cmp(source, src->fes_src))
         {
+        case FIB_SOURCE_CMP_BETTER:
+        case FIB_SOURCE_CMP_EQUAL:
             continue;
-        }
-        else
-        {
+        case FIB_SOURCE_CMP_WORSE:
             best_src = next_src;
-            break;
+            goto out;
         }
     }));
-
+ out:
     return (best_src);
 }
 
@@ -114,6 +114,20 @@ fib_entry_src_interpose_activate (fib_entry_src_t *src,
                  * next best source activated ok, use its path list
                  */
                 src->fes_pl = best_src->fes_pl;
+            }
+            else
+            {
+                /*
+                 * the best source won't install so will use a drop
+                 */
+                dpo_proto_t dproto;
+
+                dproto = fib_proto_to_dpo(fib_entry->fe_prefix.fp_proto);
+
+                src->fes_pl =
+                    fib_path_list_create_special(dproto,
+                                                 FIB_PATH_LIST_FLAG_DROP,
+                                                 drop_dpo_get(dproto));
             }
         }
         else
@@ -207,7 +221,7 @@ fib_entry_src_interpose_deactivate (fib_entry_src_t *src,
              * there is another source for this entry. activate it so it
              * can provide forwarding
              */
-            FIB_ENTRY_SRC_VFT_INVOKE(best_src, fesv_deactivate,
+            FIB_ENTRY_SRC_VFT_INVOKE(fib_entry, best_src, fesv_deactivate,
                                      (best_src, fib_entry));
         }
     }
@@ -366,5 +380,6 @@ const static fib_entry_src_vft_t interpose_src_vft = {
 void
 fib_entry_src_interpose_register (void)
 {
-    fib_entry_src_register(FIB_SOURCE_INTERPOSE, &interpose_src_vft);
+    fib_entry_src_behaviour_register(FIB_SOURCE_BH_INTERPOSE,
+                                     &interpose_src_vft);
 }

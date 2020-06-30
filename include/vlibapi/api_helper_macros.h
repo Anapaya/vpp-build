@@ -59,6 +59,37 @@ do {                                                                    \
     vl_api_send_msg (rp, (u8 *)rmp);                                    \
 } while(0);
 
+#define REPLY_MACRO2_ZERO(t, body)                                      \
+do {                                                                    \
+    vl_api_registration_t *rp;                                          \
+    rv = vl_msg_api_pd_handler (mp, rv);                                \
+    rp = vl_api_client_index_to_registration (mp->client_index);        \
+    if (rp == 0)                                                        \
+      return;                                                           \
+                                                                        \
+    rmp = vl_msg_api_alloc_zero (sizeof (*rmp));                        \
+    rmp->_vl_msg_id = htons((t)+(REPLY_MSG_ID_BASE));                   \
+    rmp->context = mp->context;                                         \
+    rmp->retval = ntohl(rv);                                            \
+    do {body;} while (0);                                               \
+    vl_api_send_msg (rp, (u8 *)rmp);                                    \
+} while(0);
+
+#define REPLY_MACRO_DETAILS2(t, body)                                   \
+do {                                                                    \
+    vl_api_registration_t *rp;                                          \
+    rv = vl_msg_api_pd_handler (mp, rv);                                \
+    rp = vl_api_client_index_to_registration (mp->client_index);        \
+    if (rp == 0)                                                        \
+      return;                                                           \
+                                                                        \
+    rmp = vl_msg_api_alloc (sizeof (*rmp));                             \
+    rmp->_vl_msg_id = htons((t)+(REPLY_MSG_ID_BASE));                   \
+    rmp->context = mp->context;                                         \
+    do {body;} while (0);                                               \
+    vl_api_send_msg (rp, (u8 *)rmp);                                    \
+} while(0);
+
 #define REPLY_MACRO3(t, n, body)                                        \
 do {                                                                    \
     vl_api_registration_t *rp;                                          \
@@ -68,6 +99,22 @@ do {                                                                    \
       return;                                                           \
                                                                         \
     rmp = vl_msg_api_alloc (sizeof (*rmp) + n);                         \
+    rmp->_vl_msg_id = htons((t)+(REPLY_MSG_ID_BASE));                   \
+    rmp->context = mp->context;                                         \
+    rmp->retval = ntohl(rv);                                            \
+    do {body;} while (0);                                               \
+    vl_api_send_msg (rp, (u8 *)rmp);                                    \
+} while(0);
+
+#define REPLY_MACRO3_ZERO(t, n, body)                                   \
+do {                                                                    \
+    vl_api_registration_t *rp;                                          \
+    rv = vl_msg_api_pd_handler (mp, rv);                                \
+    rp = vl_api_client_index_to_registration (mp->client_index);        \
+    if (rp == 0)                                                        \
+      return;                                                           \
+                                                                        \
+    rmp = vl_msg_api_alloc_zero (sizeof (*rmp) + n);                    \
     rmp->_vl_msg_id = htons((t)+(REPLY_MSG_ID_BASE));                   \
     rmp->context = mp->context;                                         \
     rmp->retval = ntohl(rv);                                            \
@@ -235,8 +282,7 @@ _(to_netconf_client)                            \
 _(from_netconf_client)                          \
 _(oam_events)                                   \
 _(bfd_events)                                   \
-_(wc_ip6_nd_events)                             \
-_(wc_ip4_arp_events)                            \
+_(l2_arp_term_events)                           \
 _(ip6_ra_events)                                \
 _(dhcp6_pd_reply_events)                        \
 _(dhcp6_reply_events)
@@ -247,23 +293,15 @@ typedef struct
   u32 client_pid;
 } vpe_client_registration_t;
 
-struct _vl_api_ip4_arp_event;
-struct _vl_api_ip6_nd_event;
-
 typedef struct
 {
-#define _(a) uword *a##_registration_hash;              \
-    vpe_client_registration_t * a##_registrations;
+#define _(a)                                            \
+  uword *a##_registration_hash;                         \
+  vpe_client_registration_t * a##_registrations;
   foreach_registration_hash
 #undef _
     /* notifications happen really early in the game */
   u8 link_state_process_up;
-
-  /* ip4 arp event registration pool */
-  struct _vl_api_ip4_arp_event *arp_events;
-
-  /* ip6 nd event registration pool */
-  struct _vl_api_ip6_nd_event *nd_events;
 
   /* convenience */
   vlib_main_t *vlib_main;

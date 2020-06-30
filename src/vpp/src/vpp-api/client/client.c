@@ -86,17 +86,6 @@ static void
 vac_client_constructor (void)
 {
   clib_mem_init (0, 1 << 30);
-#if USE_DLMALLOC == 0
-  {
-      u8 *heap;
-      mheap_t *h;
-
-      heap = clib_mem_get_per_cpu_heap ();
-      h = mheap_header (heap);
-      /* make the main heap thread-safe */
-      h->flags |= MHEAP_FLAG_THREAD_SAFE;
-  }
-#endif
   if (mem_trace)
     clib_mem_trace (1);
 }
@@ -177,7 +166,7 @@ vac_rx_thread_fn (void *arg)
   vl_api_memclnt_keepalive_t *mp;
   vl_api_memclnt_keepalive_reply_t *rmp;
   vac_main_t *pm = &vac_main;
-  api_main_t *am = &api_main;
+  api_main_t *am = vlibapi_get_main();
   vl_shmem_hdr_t *shmem_hdr;
   uword msg;
 
@@ -186,6 +175,7 @@ vac_rx_thread_fn (void *arg)
   while (1)
     while (!svm_queue_sub(q, (u8 *)&msg, SVM_Q_WAIT, 0))
       {
+        VL_MSG_API_UNPOISON((void *)msg);
 	u16 id = ntohs(*((u16 *)msg));
 	switch (id) {
 	case VL_API_RX_THREAD_EXIT:
@@ -236,7 +226,7 @@ vac_timeout_thread_fn (void *arg)
 {
   vl_api_memclnt_read_timeout_t *ep;
   vac_main_t *pm = &vac_main;
-  api_main_t *am = &api_main;
+  api_main_t *am = vlibapi_get_main();
   struct timespec ts;
   struct timeval tv;
   int rv;
@@ -271,7 +261,7 @@ vac_timeout_thread_fn (void *arg)
 void
 vac_rx_suspend (void)
 {
-  api_main_t *am = &api_main;
+  api_main_t *am = vlibapi_get_main();
   vac_main_t *pm = &vac_main;
   vl_api_memclnt_rx_thread_suspend_t *ep;
 
@@ -305,14 +295,14 @@ vac_rx_resume (void)
 static uword *
 vac_msg_table_get_hash (void)
 {
-  api_main_t *am = &api_main;
+  api_main_t *am = vlibapi_get_main();
   return (am->msg_index_by_name_and_crc);
 }
 
 int
 vac_msg_table_size(void)
 {
-  api_main_t *am = &api_main;
+  api_main_t *am = vlibapi_get_main();
   return hash_elts(am->msg_index_by_name_and_crc);
 }
 
@@ -389,7 +379,7 @@ unset_timeout (void)
 int
 vac_disconnect (void)
 {
-  api_main_t *am = &api_main;
+  api_main_t *am = vlibapi_get_main();
   vac_main_t *pm = &vac_main;
   uword junk;
   int rv = 0;
@@ -441,7 +431,7 @@ int
 vac_read (char **p, int *l, u16 timeout)
 {
   svm_queue_t *q;
-  api_main_t *am = &api_main;
+  api_main_t *am = vlibapi_get_main();
   vac_main_t *pm = &vac_main;
   vl_api_memclnt_keepalive_t *mp;
   vl_api_memclnt_keepalive_reply_t *rmp;
@@ -468,6 +458,7 @@ vac_read (char **p, int *l, u16 timeout)
   rv = svm_queue_sub(q, (u8 *)&msg, SVM_Q_WAIT, 0);
 
   if (rv == 0) {
+    VL_MSG_API_UNPOISON((void *)msg);
     u16 msg_id = ntohs(*((u16 *)msg));
     switch (msg_id) {
     case VL_API_RX_THREAD_EXIT:
@@ -487,7 +478,7 @@ vac_read (char **p, int *l, u16 timeout)
       shmem_hdr = am->shmem_hdr;
       vl_msg_api_send_shmem(shmem_hdr->vl_input_queue, (u8 *)&rmp);
       vl_msg_api_free((void *) msg);
-      /* 
+      /*
        * Python code is blissfully unaware of these pings, so
        * act as if it never happened...
        */
@@ -533,14 +524,14 @@ typedef VL_API_PACKED(struct _vl_api_header {
 static u32
 vac_client_index (void)
 {
-  return (api_main.my_client_index);
+  return (vlibapi_get_main()->my_client_index);
 }
 
 int
 vac_write (char *p, int l)
 {
   int rv = -1;
-  api_main_t *am = &api_main;
+  api_main_t *am = vlibapi_get_main();
   vl_api_header_t *mp = vl_msg_api_alloc(l);
   svm_queue_t *q;
   vac_main_t *pm = &vac_main;

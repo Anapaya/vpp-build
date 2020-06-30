@@ -111,11 +111,11 @@ mac_address_is_zero (const mac_address_t * mac)
 static_always_inline u64
 mac_address_as_u64 (const mac_address_t * mac)
 {
-  u64 *as_u64;
+  volatile u64 as_u64 = 0;
 
-  as_u64 = (u64 *) mac->bytes;
+  clib_memcpy ((void *) &as_u64, mac->bytes, 6);
 
-  return (*as_u64);
+  return as_u64;
 }
 
 static_always_inline void
@@ -149,6 +149,13 @@ mac_address_set_zero (mac_address_t * mac)
   mac->u.last_2 = 0;
 }
 
+static_always_inline int
+mac_address_n_bits_set (const mac_address_t * a)
+{
+  return (count_set_bits (mac_address_as_u64 (a)));
+}
+
+extern void mac_address_increment (mac_address_t * mac);
 extern uword unformat_mac_address_t (unformat_input_t * input,
 				     va_list * args);
 extern u8 *format_mac_address_t (u8 * s, va_list * args);

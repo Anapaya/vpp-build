@@ -1,5 +1,5 @@
 /*
- * VLIB API definitions 2020-06-13 06:00:57
+ * VLIB API definitions 2020-06-30 12:49:12
  * Input file: lldp.api
  * Automatically generated: please edit the input file NOT this file!
  */
@@ -16,6 +16,11 @@
 #endif
 
 #define VL_API_PACKED(x) x __attribute__ ((packed))
+/* Imported API files */
+#ifndef vl_api_version
+#include <vnet/interface_types.api.h>
+#include <vnet/ip/ip_types.api.h>
+#endif
 
 /****** Message ID / handler enum ******/
 
@@ -37,68 +42,28 @@ vl_msg_name(vl_api_sw_interface_set_lldp_reply_t, 1)
 
 #ifdef vl_msg_name_crc_list
 #define foreach_vl_msg_name_crc_lldp \
-_(VL_API_LLDP_CONFIG, lldp_config, 2410286f) \
+_(VL_API_LLDP_CONFIG, lldp_config, c14445df) \
 _(VL_API_LLDP_CONFIG_REPLY, lldp_config_reply, e8d4e804) \
-_(VL_API_SW_INTERFACE_SET_LLDP, sw_interface_set_lldp, 2d85d156) \
+_(VL_API_SW_INTERFACE_SET_LLDP, sw_interface_set_lldp, d646ae0f) \
 _(VL_API_SW_INTERFACE_SET_LLDP_REPLY, sw_interface_set_lldp_reply, e8d4e804) 
 #endif
-
 /****** Typedefs ******/
 
 #ifdef vl_typedefs
-#ifndef included_lldp_api
-#define included_lldp_api
-#ifndef _vl_api_defined_lldp_config
-#define _vl_api_defined_lldp_config
-typedef VL_API_PACKED(struct _vl_api_lldp_config {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u8 system_name[256];
-    u32 tx_hold;
-    u32 tx_interval;
-}) vl_api_lldp_config_t;
+#include "lldp.api_types.h"
 #endif
-
-#ifndef _vl_api_defined_lldp_config_reply
-#define _vl_api_defined_lldp_config_reply
-typedef VL_API_PACKED(struct _vl_api_lldp_config_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_lldp_config_reply_t;
-#endif
-
-#ifndef _vl_api_defined_sw_interface_set_lldp
-#define _vl_api_defined_sw_interface_set_lldp
-typedef VL_API_PACKED(struct _vl_api_sw_interface_set_lldp {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u32 sw_if_index;
-    u8 port_desc[256];
-    u8 mgmt_ip4[4];
-    u8 mgmt_ip6[16];
-    u8 mgmt_oid[128];
-    u8 enable;
-}) vl_api_sw_interface_set_lldp_t;
-#endif
-
-#ifndef _vl_api_defined_sw_interface_set_lldp_reply
-#define _vl_api_defined_sw_interface_set_lldp_reply
-typedef VL_API_PACKED(struct _vl_api_sw_interface_set_lldp_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_sw_interface_set_lldp_reply_t;
-#endif
-
-
-#endif
-#endif
-
 /****** Print functions *****/
 #ifdef vl_printfun
+#ifndef included_lldp_printfun_types
+#define included_lldp_printfun_types
+
+
+#endif
+#endif /* vl_printfun_types */
+/****** Print functions *****/
+#ifdef vl_printfun
+#ifndef included_lldp_printfun
+#define included_lldp_printfun
 
 #ifdef LP64
 #define _uword_fmt "%lld"
@@ -108,67 +73,85 @@ typedef VL_API_PACKED(struct _vl_api_sw_interface_set_lldp_reply {
 #define _uword_cast long
 #endif
 
-#ifndef _vl_api_defined_lldp_config_t_print
-#define _vl_api_defined_lldp_config_t_print
-static inline void *vl_api_lldp_config_t_print (vl_api_lldp_config_t *a,void *handle)
+static inline void *vl_api_lldp_config_t_print (vl_api_lldp_config_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_lldp_config_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "tx_hold: %u\n", a->tx_hold);
-    vl_print(handle, "tx_interval: %u\n", a->tx_interval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_lldp_config_t: */
+    s = format(s, "vl_api_lldp_config_t:");
+    s = format(s, "\n%Utx_hold: %u", format_white_space, indent, a->tx_hold);
+    s = format(s, "\n%Utx_interval: %u", format_white_space, indent, a->tx_interval);
+    if (vl_api_string_len(&a->system_name) > 0) {
+        s = format(s, "\n%Usystem_name: %U", format_white_space, indent, vl_api_format_string, (&a->system_name));
+    } else {
+        s = format(s, "\n%Usystem_name:", format_white_space, indent);
+    }
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_lldp_config_reply_t_print
-#define _vl_api_defined_lldp_config_reply_t_print
-static inline void *vl_api_lldp_config_reply_t_print (vl_api_lldp_config_reply_t *a,void *handle)
+static inline void *vl_api_lldp_config_reply_t_print (vl_api_lldp_config_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_lldp_config_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_lldp_config_reply_t: */
+    s = format(s, "vl_api_lldp_config_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_sw_interface_set_lldp_t_print
-#define _vl_api_defined_sw_interface_set_lldp_t_print
-static inline void *vl_api_sw_interface_set_lldp_t_print (vl_api_sw_interface_set_lldp_t *a,void *handle)
+static inline void *vl_api_sw_interface_set_lldp_t_print (vl_api_sw_interface_set_lldp_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_sw_interface_set_lldp_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "sw_if_index: %u\n", a->sw_if_index);
-    vl_print(handle, "enable: %u\n", a->enable);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_sw_interface_set_lldp_t: */
+    s = format(s, "vl_api_sw_interface_set_lldp_t:");
+    s = format(s, "\n%Usw_if_index: %U", format_white_space, indent, format_vl_api_interface_index_t, &a->sw_if_index, indent);
+    s = format(s, "\n%Umgmt_ip4: %U", format_white_space, indent, format_vl_api_ip4_address_t, &a->mgmt_ip4, indent);
+    s = format(s, "\n%Umgmt_ip6: %U", format_white_space, indent, format_vl_api_ip6_address_t, &a->mgmt_ip6, indent);
+    s = format(s, "\n%Umgmt_oid: %U", format_white_space, indent, format_hex_bytes, a, 128);
+    s = format(s, "\n%Uenable: %u", format_white_space, indent, a->enable);
+    if (vl_api_string_len(&a->port_desc) > 0) {
+        s = format(s, "\n%Uport_desc: %U", format_white_space, indent, vl_api_format_string, (&a->port_desc));
+    } else {
+        s = format(s, "\n%Uport_desc:", format_white_space, indent);
+    }
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_sw_interface_set_lldp_reply_t_print
-#define _vl_api_defined_sw_interface_set_lldp_reply_t_print
-static inline void *vl_api_sw_interface_set_lldp_reply_t_print (vl_api_sw_interface_set_lldp_reply_t *a,void *handle)
+static inline void *vl_api_sw_interface_set_lldp_reply_t_print (vl_api_sw_interface_set_lldp_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_sw_interface_set_lldp_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_sw_interface_set_lldp_reply_t: */
+    s = format(s, "vl_api_sw_interface_set_lldp_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
+
 #endif
-
-
 #endif /* vl_printfun */
 
 /****** Endian swap functions *****/
 #ifdef vl_endianfun
+#ifndef included_lldp_endianfun
+#define included_lldp_endianfun
 
 #undef clib_net_to_host_uword
 #ifdef LP64
@@ -177,69 +160,63 @@ static inline void *vl_api_sw_interface_set_lldp_reply_t_print (vl_api_sw_interf
 #define clib_net_to_host_uword clib_net_to_host_u32
 #endif
 
-#ifndef _vl_api_defined_lldp_config_t_endian
-#define _vl_api_defined_lldp_config_t_endian
 static inline void vl_api_lldp_config_t_endian (vl_api_lldp_config_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
     a->tx_hold = clib_net_to_host_u32(a->tx_hold);
     a->tx_interval = clib_net_to_host_u32(a->tx_interval);
+    /* a->system_name = a->system_name (no-op) */
 }
 
-#endif
-
-#ifndef _vl_api_defined_lldp_config_reply_t_endian
-#define _vl_api_defined_lldp_config_reply_t_endian
 static inline void vl_api_lldp_config_reply_t_endian (vl_api_lldp_config_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
-#endif
-
-#ifndef _vl_api_defined_sw_interface_set_lldp_t_endian
-#define _vl_api_defined_sw_interface_set_lldp_t_endian
 static inline void vl_api_sw_interface_set_lldp_t_endian (vl_api_sw_interface_set_lldp_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
-    a->sw_if_index = clib_net_to_host_u32(a->sw_if_index);
+    vl_api_interface_index_t_endian(&a->sw_if_index);
+    vl_api_ip4_address_t_endian(&a->mgmt_ip4);
+    vl_api_ip6_address_t_endian(&a->mgmt_ip6);
+    /* a->mgmt_oid = a->mgmt_oid (no-op) */
     /* a->enable = a->enable (no-op) */
+    /* a->port_desc = a->port_desc (no-op) */
 }
 
-#endif
-
-#ifndef _vl_api_defined_sw_interface_set_lldp_reply_t_endian
-#define _vl_api_defined_sw_interface_set_lldp_reply_t_endian
 static inline void vl_api_sw_interface_set_lldp_reply_t_endian (vl_api_sw_interface_set_lldp_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
+
 #endif
-
-
 #endif /* vl_endianfun */
 
 /****** Version tuple *****/
 
 #ifdef vl_api_version_tuple
 
-vl_api_version_tuple(lldp.api, 1, 0, 0)
+vl_api_version_tuple(lldp.api, 2, 0, 0)
 
 #endif /* vl_api_version_tuple */
 
 /****** API CRC (whole file) *****/
 
 #ifdef vl_api_version
-vl_api_version(lldp.api, 0xd9188ec)
+vl_api_version(lldp.api, 0x4f6d24e8)
 
 #endif
 

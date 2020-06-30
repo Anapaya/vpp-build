@@ -53,7 +53,7 @@ adj_get_rewrite_node (vnet_link_t linkt)
     case VNET_LINK_MPLS:
 	return (mpls_output_node.index);
     case VNET_LINK_ETHERNET:
-	return (adj_l2_rewrite_node.index);
+        return (adj_l2_rewrite_node.index);
     case VNET_LINK_NSH:
         return (adj_nsh_rewrite_node.index);
     case VNET_LINK_ARP:
@@ -98,7 +98,7 @@ adj_proto_to_46 (fib_protocol_t proto)
  * Get a pointer to an adjacency object from its index
  */
 static inline adj_index_t
-adj_get_index (ip_adjacency_t *adj)
+adj_get_index (const ip_adjacency_t *adj)
 {
     return (adj - adj_pool);
 }
@@ -124,6 +124,7 @@ extern void adj_glean_remove(fib_protocol_t proto,
 			     u32 sw_if_index);
 extern void adj_mcast_remove(fib_protocol_t proto,
 			     u32 sw_if_index);
+extern void adj_midchain_teardown(ip_adjacency_t *adj);
 
 extern u32 adj_dpo_get_urpf(const dpo_id_t *dpo);
 
@@ -136,6 +137,8 @@ extern int adj_bfd_is_up (adj_index_t ai);
  * Adj delegates
  */ 
 extern void adj_delegate_adj_deleted(ip_adjacency_t *adj);
+extern void adj_delegate_adj_created(ip_adjacency_t *adj);
+extern void adj_delegate_adj_modified(ip_adjacency_t *adj);
 extern u8* adj_delegate_format(u8* s, ip_adjacency_t *adj);
 
 #endif

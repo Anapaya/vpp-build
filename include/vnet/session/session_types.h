@@ -21,7 +21,7 @@
 
 #define SESSION_INVALID_INDEX ((u32)~0)
 #define SESSION_INVALID_HANDLE ((u64)~0)
-#define SESSION_CTRL_MSG_MAX_SIZE 84
+#define SESSION_CTRL_MSG_MAX_SIZE 86
 
 #define foreach_session_endpoint_fields				\
   foreach_transport_endpoint_cfg_fields				\
@@ -45,6 +45,9 @@ typedef struct _session_endpoint_cfg
   u8 original_tp;
   u8 *hostname;
   u64 parent_handle;
+  u32 ckpair_index;
+  u8 crypto_engine;
+  u8 flags;
 } session_endpoint_cfg_t;
 
 #define SESSION_IP46_ZERO			\
@@ -84,7 +87,8 @@ typedef struct _session_endpoint_cfg
   .app_wrk_index = ENDPOINT_INVALID_INDEX,	\
   .opaque = ENDPOINT_INVALID_INDEX,		\
   .hostname = 0,				\
-  .parent_handle = SESSION_INVALID_HANDLE	\
+  .parent_handle = SESSION_INVALID_HANDLE,	\
+  .ckpair_index = 0				\
 }
 
 #define session_endpoint_to_transport(_sep) ((transport_endpoint_t *)_sep)
@@ -119,6 +123,13 @@ typedef enum
   SESSION_CLEANUP_SESSION,
 } session_cleanup_ntf_t;
 
+typedef enum session_ft_action_
+{
+  SESSION_FT_ACTION_ENQUEUED,
+  SESSION_FT_ACTION_DEQUEUED,
+  SESSION_FT_ACTION_N_ACTIONS
+} session_ft_action_t;
+
 /*
  * Session states
  */
@@ -144,11 +155,27 @@ typedef enum
     SESSION_N_STATES,
 } session_state_t;
 
+#define foreach_session_flag				\
+  _(RX_EVT, "rx-event")					\
+  _(PROXY, "proxy")					\
+  _(CUSTOM_TX, "custom-tx")				\
+  _(IS_MIGRATING, "migrating")				\
+  _(UNIDIRECTIONAL, "unidirectional")			\
+  _(CUSTOM_FIFO_TUNING, "custom-fifo-tuning")		\
+
+typedef enum session_flags_bits_
+{
+#define _(sym, str) SESSION_F_BIT_ ## sym,
+  foreach_session_flag
+#undef _
+  SESSION_N_FLAGS
+} session_flag_bits_t;
+
 typedef enum session_flags_
 {
-  SESSION_F_RX_EVT = 1,
-  SESSION_F_PROXY = (1 << 1),
-  SESSION_F_CUSTOM_TX = (1 << 2),
+#define _(sym, str) SESSION_F_ ## sym = 1 << SESSION_F_BIT_ ## sym,
+  foreach_session_flag
+#undef _
 } session_flags_t;
 
 typedef struct session_
@@ -282,9 +309,21 @@ session_parse_handle (session_handle_t handle, u32 * index,
 }
 
 static inline session_handle_t
-session_make_handle (u32 session_index, u32 thread_index)
+session_make_handle (u32 session_index, u32 data)
 {
-  return (((u64) thread_index << 32) | (u64) session_index);
+  return (((u64) data << 32) | (u64) session_index);
+}
+
+always_inline u32
+session_handle_index (session_handle_t ho_handle)
+{
+  return (ho_handle & 0xffffffff);
+}
+
+always_inline u32
+session_handle_data (session_handle_t ho_handle)
+{
+  return (ho_handle >> 32);
 }
 
 typedef enum
@@ -315,6 +354,10 @@ typedef enum
   SESSION_CTRL_EVT_LISTEN_URI,
   SESSION_CTRL_EVT_UNLISTEN,
   SESSION_CTRL_EVT_APP_DETACH,
+  SESSION_CTRL_EVT_APP_ADD_SEGMENT,
+  SESSION_CTRL_EVT_APP_DEL_SEGMENT,
+  SESSION_CTRL_EVT_MIGRATED,
+  SESSION_CTRL_EVT_CLEANUP,
 } session_evt_type_t;
 
 #define foreach_session_ctrl_evt				\
@@ -336,7 +379,10 @@ typedef enum
   _(WORKER_UPDATE, worker_update)				\
   _(WORKER_UPDATE_REPLY, worker_update_reply)			\
   _(APP_DETACH, app_detach)					\
-
+  _(APP_ADD_SEGMENT, app_add_segment)				\
+  _(APP_DEL_SEGMENT, app_del_segment)				\
+  _(MIGRATED, migrated)						\
+  _(CLEANUP, cleanup)						\
 
 /* Deprecated and will be removed. Use types above */
 #define FIFO_EVENT_APP_RX SESSION_IO_EVT_RX
@@ -399,6 +445,59 @@ typedef struct session_dgram_header_
 
 STATIC_ASSERT (sizeof (session_dgram_hdr_t) == (SESSION_CONN_ID_LEN + 8),
 	       "session conn id wrong length");
+
+#define foreach_session_error						\
+  _(NONE, "no error")							\
+  _(UNKNOWN, "generic/unknown error")					\
+  _(REFUSED, "refused")							\
+  _(TIMEDOUT, "timedout")						\
+  _(ALLOC, "obj/memory allocation error")				\
+  _(OWNER, "object not owned by application")				\
+  _(NOROUTE, "no route")						\
+  _(NOINTF, "no resolving interface")					\
+  _(NOIP, "no ip for lcl interface")					\
+  _(NOPORT, "no lcl port")						\
+  _(NOSUPPORT, "not supported")						\
+  _(NOLISTEN, "not listening")						\
+  _(NOSESSION, "session does not exist")				\
+  _(NOAPP, "app not attached")						\
+  _(PORTINUSE, "lcl port in use")					\
+  _(IPINUSE, "ip in use")						\
+  _(ALREADY_LISTENING, "ip port pair already listened on")		\
+  _(INVALID_RMT_IP, "invalid remote ip")				\
+  _(INVALID_APPWRK, "invalid app worker")				\
+  _(INVALID_NS, "invalid namespace")					\
+  _(SEG_NO_SPACE, "Couldn't allocate a fifo pair")			\
+  _(SEG_NO_SPACE2, "Created segment, couldn't allocate a fifo pair") 	\
+  _(SEG_CREATE, "Couldn't create a new segment")			\
+  _(FILTERED, "session filtered")					\
+  _(SCOPE, "scope not supported")					\
+  _(BAPI_NO_FD, "bapi doesn't have a socket fd")			\
+  _(BAPI_SEND_FD, "couldn't send fd over bapi socket fd")		\
+  _(BAPI_NO_REG, "app bapi registration not found")			\
+  _(MQ_MSG_ALLOC, "failed to alloc mq msg")				\
+  _(TLS_HANDSHAKE, "failed tls handshake")				\
+
+typedef enum session_error_p_
+{
+#define _(sym, str) SESSION_EP_##sym,
+  foreach_session_error
+#undef _
+  SESSION_N_ERRORS
+} session_error_p_t;
+
+typedef enum session_error_
+{
+#define _(sym, str) SESSION_E_##sym = -SESSION_EP_##sym,
+  foreach_session_error
+#undef _
+} session_error_t;
+
+/* Maintained for compatibility. Will be deprecated */
+#define SESSION_ERROR_SEG_CREATE SESSION_E_SEG_CREATE
+#define SESSION_ERROR_NO_SPACE SESSION_E_SEG_NO_SPACE
+#define SESSION_ERROR_NEW_SEG_NO_SPACE SESSION_E_SEG_NO_SPACE2
+
 #endif /* SRC_VNET_SESSION_SESSION_TYPES_H_ */
 
 /*

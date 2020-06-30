@@ -21,20 +21,28 @@
 #include <vnet/tls/tls_test.h>
 #include <svm/fifo_segment.h>
 
-typedef struct _stream_session_cb_vft
+typedef struct certificate_
+{
+  u32 *app_interests;		/* vec of application index asking for deletion cb */
+  u32 cert_key_index;		/* index in cert & key pool */
+  u8 *key;
+  u8 *cert;
+} app_cert_key_pair_t;
+
+typedef struct session_cb_vft_
 {
   /** Notify server of new segment */
-  int (*add_segment_callback) (u32 api_client_index, u64 segment_handle);
+  int (*add_segment_callback) (u32 app_wrk_index, u64 segment_handle);
 
   /** Notify server of new segment */
-  int (*del_segment_callback) (u32 api_client_index, u64 segment_handle);
+  int (*del_segment_callback) (u32 app_wrk_index, u64 segment_handle);
 
   /** Notify server of newly accepted session */
   int (*session_accept_callback) (session_t * new_session);
 
   /** Connection request callback */
   int (*session_connected_callback) (u32 app_wrk_index, u32 opaque,
-				     session_t * s, u8 code);
+				     session_t * s, session_error_t code);
 
   /** Notify app that session is closing */
   void (*session_disconnect_callback) (session_t * s);
@@ -56,6 +64,13 @@ typedef struct _stream_session_cb_vft
 
   /** Direct TX callback for built-in application */
   int (*builtin_app_tx_callback) (session_t * session);
+
+  /** Cert and key pair delete notification */
+  int (*app_cert_key_pair_delete_callback) (app_cert_key_pair_t * ckpair);
+
+  /** Delegate fifo-tuning-logic to application */
+  int (*fifo_tuning_callback) (session_t * s, svm_fifo_t * f,
+			       session_ft_action_t act, u32 bytes);
 
 } session_cb_vft_t;
 
@@ -148,13 +163,31 @@ typedef struct _vnet_application_add_tls_key_args_t
   u8 *key;
 } vnet_app_add_tls_key_args_t;
 
-typedef enum tls_engine_type_
+typedef enum crypto_engine_type_
 {
-  TLS_ENGINE_NONE,
-  TLS_ENGINE_MBEDTLS,
-  TLS_ENGINE_OPENSSL,
-  TLS_N_ENGINES
-} tls_engine_type_t;
+  CRYPTO_ENGINE_NONE,
+  CRYPTO_ENGINE_OPENSSL,
+  CRYPTO_ENGINE_MBEDTLS,
+  CRYPTO_ENGINE_VPP,
+  CRYPTO_ENGINE_PICOTLS,
+  CRYPTO_ENGINE_LAST = CRYPTO_ENGINE_PICOTLS,
+} crypto_engine_type_t;
+
+typedef struct _vnet_app_add_cert_key_pair_args_
+{
+  u8 *cert;
+  u8 *key;
+  u32 index;
+} vnet_app_add_cert_key_pair_args_t;
+
+typedef struct crypto_ctx_
+{
+  u32 ctx_index;		/**< index in crypto context pool */
+  u32 n_subscribers;		/**< refcount of sessions using said context */
+  u32 ckpair_index;		/**< certificate & key */
+  u8 crypto_engine;
+  void *data;			/**< protocol specific data */
+} crypto_context_t;
 
 /* Application attach options */
 typedef enum
@@ -167,11 +200,16 @@ typedef enum
   APP_OPTIONS_RX_FIFO_SIZE,
   APP_OPTIONS_TX_FIFO_SIZE,
   APP_OPTIONS_PREALLOC_FIFO_PAIRS,
+  APP_OPTIONS_PREALLOC_FIFO_HDRS,
   APP_OPTIONS_NAMESPACE,
   APP_OPTIONS_NAMESPACE_SECRET,
   APP_OPTIONS_PROXY_TRANSPORT,
   APP_OPTIONS_ACCEPT_COOKIE,
   APP_OPTIONS_TLS_ENGINE,
+  APP_OPTIONS_MAX_FIFO_SIZE,
+  APP_OPTIONS_HIGH_WATERMARK,
+  APP_OPTIONS_LOW_WATERMARK,
+  APP_OPTIONS_PCT_FIRST_ALLOC,
   APP_OPTIONS_N_OPTIONS
 } app_attach_options_index_t;
 
@@ -234,6 +272,10 @@ int vnet_disconnect_session (vnet_disconnect_args_t * a);
 
 clib_error_t *vnet_app_add_tls_cert (vnet_app_add_tls_cert_args_t * a);
 clib_error_t *vnet_app_add_tls_key (vnet_app_add_tls_key_args_t * a);
+int vnet_app_add_cert_key_pair (vnet_app_add_cert_key_pair_args_t * a);
+int vnet_app_del_cert_key_pair (u32 index);
+/** Ask for app cb on pair deletion */
+int vnet_app_add_cert_key_interest (u32 index, u32 app_index);
 
 typedef struct app_session_transport_
 {
@@ -271,6 +313,8 @@ typedef struct session_listen_msg_
   u8 proto;
   u8 is_ip4;
   ip46_address_t ip;
+  u32 ckpair_index;
+  u8 crypto_engine;
 } __clib_packed session_listen_msg_t;
 
 STATIC_ASSERT (sizeof (session_listen_msg_t) <= SESSION_CTRL_MSG_MAX_SIZE,
@@ -327,6 +371,7 @@ typedef struct session_accepted_msg_
   u64 segment_handle;
   uword vpp_event_queue_address;
   transport_endpoint_t rmt;
+  u8 flags;
 } __clib_packed session_accepted_msg_t;
 
 typedef struct session_accepted_reply_msg_
@@ -343,6 +388,7 @@ typedef struct session_connect_msg_
   u32 wrk_index;
   u32 vrf;
   u16 port;
+  u16 lcl_port;
   u8 proto;
   u8 is_ip4;
   ip46_address_t ip;
@@ -350,6 +396,9 @@ typedef struct session_connect_msg_
   u8 hostname_len;
   u8 hostname[16];
   u64 parent_handle;
+  u32 ckpair_index;
+  u8 crypto_engine;
+  u8 flags;
 } __clib_packed session_connect_msg_t;
 
 STATIC_ASSERT (sizeof (session_connect_msg_t) <= SESSION_CTRL_MSG_MAX_SIZE,
@@ -446,6 +495,37 @@ typedef struct session_app_detach_msg_
   u32 context;
 } session_app_detach_msg_t;
 
+typedef struct app_map_another_segment_msg_
+{
+  u32 client_index;
+  u32 context;
+  u8 fd_flags;
+  u32 segment_size;
+  u8 segment_name[128];
+  u64 segment_handle;
+} session_app_add_segment_msg_t;
+
+typedef struct app_unmap_segment_msg_
+{
+  u32 client_index;
+  u32 context;
+  u64 segment_handle;
+} session_app_del_segment_msg_t;
+
+typedef struct session_migrate_msg_
+{
+  uword vpp_evt_q;
+  session_handle_t handle;
+  session_handle_t new_handle;
+  u32 vpp_thread_index;
+} __clib_packed session_migrated_msg_t;
+
+typedef struct session_cleanup_msg_
+{
+  session_handle_t handle;
+  u8 type;
+} __clib_packed session_cleanup_msg_t;
+
 typedef struct app_session_event_
 {
   svm_msg_q_msg_t msg;
@@ -530,7 +610,7 @@ app_send_dgram_raw (svm_fifo_t * f, app_session_transport_t * at,
   int rv;
 
   max_enqueue = svm_fifo_max_enqueue_prod (f);
-  if (max_enqueue <= sizeof (session_dgram_hdr_t))
+  if (max_enqueue < (sizeof (session_dgram_hdr_t) + len))
     return 0;
 
   max_enqueue -= sizeof (session_dgram_hdr_t);
@@ -604,7 +684,7 @@ app_recv_dgram_raw (svm_fifo_t * f, u8 * buf, u32 len,
   int rv;
 
   max_deq = svm_fifo_max_dequeue_cons (f);
-  if (max_deq < sizeof (session_dgram_hdr_t))
+  if (max_deq <= sizeof (session_dgram_hdr_t))
     {
       if (clear_evt)
 	svm_fifo_unset_event (f);
@@ -616,17 +696,21 @@ app_recv_dgram_raw (svm_fifo_t * f, u8 * buf, u32 len,
 
   svm_fifo_peek (f, 0, sizeof (ph), (u8 *) & ph);
   ASSERT (ph.data_length >= ph.data_offset);
-  if (!ph.data_offset)
-    svm_fifo_peek (f, sizeof (ph), sizeof (*at), (u8 *) at);
+
+  /* Check if we have the full dgram */
+  if (max_deq < (ph.data_length + SESSION_CONN_HDR_LEN)
+      && len >= ph.data_length)
+    return 0;
+
+  svm_fifo_peek (f, sizeof (ph), sizeof (*at), (u8 *) at);
   len = clib_min (len, ph.data_length - ph.data_offset);
   rv = svm_fifo_peek (f, ph.data_offset + SESSION_CONN_HDR_LEN, len, buf);
   if (peek)
     return rv;
-  ph.data_offset += rv;
-  if (ph.data_offset == ph.data_length)
-    svm_fifo_dequeue_drop (f, ph.data_length + SESSION_CONN_HDR_LEN);
-  else
-    svm_fifo_overwrite_head (f, (u8 *) & ph, sizeof (ph));
+
+  /* Discards data that did not fit in buffer */
+  svm_fifo_dequeue_drop (f, ph.data_length + SESSION_CONN_HDR_LEN);
+
   return rv;
 }
 
@@ -662,6 +746,24 @@ app_recv (app_session_t * s, u8 * data, u32 len)
   return app_recv_stream (s, data, len);
 }
 
+/* *INDENT-OFF* */
+static char *session_error_str[] = {
+#define _(sym, str) str,
+    foreach_session_error
+#undef _
+};
+/* *INDENT-ON* */
+
+static inline u8 *
+format_session_error (u8 * s, va_list * args)
+{
+  session_error_t error = va_arg (*args, session_error_t);
+  if (-error >= 0 && -error < SESSION_N_ERRORS)
+    s = format (s, "%s", session_error_str[-error]);
+  else
+    s = format (s, "invalid session err %u", -error);
+  return s;
+}
 #endif /* __included_uri_h__ */
 
 /*

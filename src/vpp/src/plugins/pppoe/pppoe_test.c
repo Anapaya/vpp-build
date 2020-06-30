@@ -19,6 +19,9 @@
 
 #include <vppinfra/error.h>
 #include <pppoe/pppoe.h>
+#include <vnet/format_fns.h>
+
+#include <vnet/ip/ip_types_api.h>
 
 #define __plugin_msg_base pppoe_test_main.msg_id_base
 #include <vlibapi/vat_helper_macros.h>
@@ -61,35 +64,8 @@ uword unformat_ip46_prefix (unformat_input_t * input, va_list * args)
 }
 /////////////////////////
 
-#define vl_msg_id(n,h) n,
-typedef enum {
-#include <pppoe/pppoe.api.h>
-    /* We'll want to know how many messages IDs we need... */
-    VL_MSG_FIRST_AVAILABLE,
-} vl_msg_id_t;
-#undef vl_msg_id
-
-/* define message structures */
-#define vl_typedefs
-#include <pppoe/pppoe.api.h>
-#undef vl_typedefs
-
-/* declare message handlers for each api */
-
-#define vl_endianfun             /* define message structures */
-#include <pppoe/pppoe.api.h>
-#undef vl_endianfun
-
-/* instantiate all the print functions we know about */
-#define vl_print(handle, ...)
-#define vl_printfun
-#include <pppoe/pppoe.api.h>
-#undef vl_printfun
-
-/* Get the API version number. */
-#define vl_api_version(n,v) static u32 api_version=(v);
-#include <pppoe/pppoe.api.h>
-#undef vl_api_version
+#include <pppoe/pppoe.api_enum.h>
+#include <pppoe/pppoe.api_types.h>
 
 typedef struct {
     /* API message ID base */
@@ -115,16 +91,6 @@ static void vl_api_pppoe_add_del_session_reply_t_handler
       vam->result_ready = 1;
     }
 }
-
-
-/*
- * Table of message reply handlers, must include boilerplate handlers
- * we just generated
- */
-#define foreach_vpe_api_reply_msg                               \
-  _(PPPOE_ADD_DEL_SESSION_REPLY, pppoe_add_del_session_reply)               \
-  _(PPPOE_SESSION_DETAILS, pppoe_session_details)
-
 
 static int
 api_pppoe_add_del_session (vat_main_t * vam)
@@ -195,19 +161,19 @@ api_pppoe_add_del_session (vat_main_t * vam)
 
   M (PPPOE_ADD_DEL_SESSION, mp);
 
+
   if (ipv6_set)
     {
-      clib_memcpy (mp->client_ip, &client_ip.ip6, sizeof (client_ip.ip6));
+      ip_address_encode(&client_ip, IP46_TYPE_IP6, &mp->client_ip);
     }
   else
     {
-      clib_memcpy (mp->client_ip, &client_ip.ip4, sizeof (client_ip.ip4));
+      ip_address_encode(&client_ip, IP46_TYPE_IP4, &mp->client_ip);
     }
 
   mp->decap_vrf_id = ntohl (decap_vrf_id);
   mp->session_id = ntohl (session_id);
   mp->is_add = is_add;
-  mp->is_ipv6 = ipv6_set;
   memcpy (mp->client_mac, client_mac, 6);
 
   S (mp);
@@ -219,8 +185,8 @@ static void vl_api_pppoe_session_details_t_handler
   (vl_api_pppoe_session_details_t * mp)
 {
   vat_main_t *vam = &vat_main;
-  ip46_address_t client_ip = to_ip46 (mp->is_ipv6, mp->client_ip);
-
+  ip46_address_t client_ip;
+  ip_address_decode(&mp->client_ip, &client_ip);
   print (vam->ofp, "%11d%14d%24U%14d%14d%30U%30U",
        ntohl (mp->sw_if_index), ntohl (mp->session_id),
        format_ip46_address, &client_ip, IP46_TYPE_ANY,
@@ -271,42 +237,4 @@ api_pppoe_session_dump (vat_main_t * vam)
   return ret;
 }
 
-/*
- * List of messages that the api test plugin sends,
- * and that the data plane plugin processes
- */
-#define foreach_vpe_api_msg                                            \
-_(pppoe_add_del_session,                                                 \
-  " client-addr <client-addr> session-id <nn>"                            \
-  " [encap-if-index <nn>] [decap-next [ip4|ip6|node <name>]]"             \
-  " local-mac <local-mac> client-mac <client-mac> [del]") \
-_(pppoe_session_dump, "[<intfc> | sw_if_index <nn>]")                    \
-
-static void
-pppoe_api_hookup (vat_main_t *vam)
-{
-  pppoe_test_main_t * pem = &pppoe_test_main;
-  /* Hook up handlers for replies from the data plane plug-in */
-#define _(N,n)                                                  \
-  vl_msg_api_set_handlers((VL_API_##N + pem->msg_id_base),       \
-                          #n,                                   \
-                          vl_api_##n##_t_handler,               \
-                          vl_noop_handler,                      \
-                          vl_api_##n##_t_endian,                \
-                          vl_api_##n##_t_print,                 \
-                          sizeof(vl_api_##n##_t), 1);
-  foreach_vpe_api_reply_msg;
-#undef _
-
-  /* API messages we can send */
-#define _(n,h) hash_set_mem (vam->function_by_name, #n, api_##n);
-  foreach_vpe_api_msg;
-#undef _
-
-  /* Help strings */
-#define _(n,h) hash_set_mem (vam->help_by_name, #n, h);
-  foreach_vpe_api_msg;
-#undef _
-}
-
-VAT_PLUGIN_REGISTER(pppoe);
+#include <pppoe/pppoe.api_test.c>

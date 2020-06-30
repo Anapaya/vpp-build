@@ -185,6 +185,8 @@ typedef struct
   u32 fq_index;
   u32 fq_feature_index;
 
+  // reference count for enabling/disabling feature - per interface
+  u32 *feature_use_refcount_per_intf;
 } ip4_full_reass_main_t;
 
 extern ip4_full_reass_main_t ip4_full_reass_main;
@@ -233,6 +235,8 @@ typedef struct
   u32 fragment_first;
   u32 fragment_last;
   u32 total_data_len;
+  bool is_after_handoff;
+  ip4_header_t ip4_header;
 } ip4_full_reass_trace_t;
 
 extern vlib_node_registration_t ip4_full_reass_node;
@@ -272,7 +276,16 @@ format_ip4_full_reass_trace (u8 * s, va_list * args)
   u32 indent = 0;
   if (~0 != t->reass_id)
     {
-      s = format (s, "reass id: %u, op id: %u, ", t->reass_id, t->op_id);
+      if (t->is_after_handoff)
+	{
+	  s =
+	    format (s, "%U\n", format_ip4_header, &t->ip4_header,
+		    sizeof (t->ip4_header));
+	  indent = 2;
+	}
+      s =
+	format (s, "%Ureass id: %u, op id: %u, ", format_white_space, indent,
+		t->reass_id, t->op_id);
       indent = format_get_indent (s);
       s =
 	format (s,
@@ -320,7 +333,18 @@ ip4_full_reass_add_trace (vlib_main_t * vm, vlib_node_runtime_t * node,
 {
   vlib_buffer_t *b = vlib_get_buffer (vm, bi);
   vnet_buffer_opaque_t *vnb = vnet_buffer (b);
+  bool is_after_handoff = false;
+  if (vlib_buffer_get_trace_thread (b) != vm->thread_index)
+    {
+      is_after_handoff = true;
+    }
   ip4_full_reass_trace_t *t = vlib_add_trace (vm, node, b, sizeof (t[0]));
+  t->is_after_handoff = is_after_handoff;
+  if (t->is_after_handoff)
+    {
+      clib_memcpy (&t->ip4_header, vlib_buffer_get_current (b),
+		   clib_min (sizeof (t->ip4_header), b->current_length));
+    }
   if (reass)
     {
       t->reass_id = reass->id;
@@ -456,18 +480,17 @@ again:
 
   reass = NULL;
   now = vlib_time_now (vm);
-  if (!clib_bihash_search_16_8
-      (&rm->hash, (clib_bihash_kv_16_8_t *) kv, (clib_bihash_kv_16_8_t *) kv))
+  if (!clib_bihash_search_16_8 (&rm->hash, &kv->kv, &kv->kv))
     {
+      if (vm->thread_index != kv->v.memory_owner_thread_index)
+	{
+	  *do_handoff = 1;
+	  return NULL;
+	}
       reass =
 	pool_elt_at_index (rm->per_thread_data
 			   [kv->v.memory_owner_thread_index].pool,
 			   kv->v.reass_index);
-      if (vm->thread_index != reass->memory_owner_thread_index)
-	{
-	  *do_handoff = 1;
-	  return reass;
-	}
 
       if (now > reass->last_heard + rm->timeout)
 	{
@@ -499,14 +522,13 @@ again:
       ++rt->reass_n;
     }
 
-  reass->key.as_u64[0] = ((clib_bihash_kv_16_8_t *) kv)->key[0];
-  reass->key.as_u64[1] = ((clib_bihash_kv_16_8_t *) kv)->key[1];
+  reass->key.as_u64[0] = kv->kv.key[0];
+  reass->key.as_u64[1] = kv->kv.key[1];
   kv->v.reass_index = (reass - rt->pool);
   kv->v.memory_owner_thread_index = vm->thread_index;
   reass->last_heard = now;
 
-  int rv =
-    clib_bihash_add_del_16_8 (&rm->hash, (clib_bihash_kv_16_8_t *) kv, 2);
+  int rv = clib_bihash_add_del_16_8 (&rm->hash, &kv->kv, 2);
   if (rv)
     {
       ip4_full_reass_free_ctx (rt, reass);
@@ -1147,12 +1169,8 @@ ip4_full_reass_inline (vlib_main_t * vm, vlib_node_runtime_t * node,
 	  if (PREDICT_FALSE (do_handoff))
 	    {
 	      next0 = IP4_FULL_REASS_NEXT_HANDOFF;
-	      if (is_feature)
-		vnet_buffer (b0)->ip.reass.owner_feature_thread_index =
-		  kv.v.memory_owner_thread_index;
-	      else
-		vnet_buffer (b0)->ip.reass.owner_thread_index =
-		  kv.v.memory_owner_thread_index;
+	      vnet_buffer (b0)->ip.reass.owner_thread_index =
+		kv.v.memory_owner_thread_index;
 	    }
 	  else if (reass)
 	    {
@@ -1167,12 +1185,8 @@ ip4_full_reass_inline (vlib_main_t * vm, vlib_node_runtime_t * node,
 		case IP4_REASS_RC_HANDOFF:
 		  next0 = IP4_FULL_REASS_NEXT_HANDOFF;
 		  b0 = vlib_get_buffer (vm, bi0);
-		  if (is_feature)
-		    vnet_buffer (b0)->ip.reass.owner_feature_thread_index =
-		      handoff_thread_idx;
-		  else
-		    vnet_buffer (b0)->ip.reass.owner_thread_index =
-		      handoff_thread_idx;
+		  vnet_buffer (b0)->ip.reass.owner_thread_index =
+		    handoff_thread_idx;
 		  break;
 		case IP4_REASS_RC_TOO_MANY_FRAGMENTS:
 		  vlib_node_increment_counter (vm, node->node_index,
@@ -1217,22 +1231,19 @@ ip4_full_reass_inline (vlib_main_t * vm, vlib_node_runtime_t * node,
 
 	      /* bi0 might have been updated by reass_finalize, reload */
 	      b0 = vlib_get_buffer (vm, bi0);
-	      b0->error = node->errors[error0];
+	      if (IP4_ERROR_NONE != error0)
+		{
+		  b0->error = node->errors[error0];
+		}
 
 	      if (next0 == IP4_FULL_REASS_NEXT_HANDOFF)
 		{
 		  if (PREDICT_FALSE (b0->flags & VLIB_BUFFER_IS_TRACED))
 		    {
-		      if (is_feature)
-			ip4_full_reass_add_trace (vm, node, rm, NULL,
-						  bi0, HANDOFF, 0,
-						  vnet_buffer (b0)->ip.
-						  reass.owner_feature_thread_index);
-		      else
-			ip4_full_reass_add_trace (vm, node, rm, NULL,
-						  bi0, HANDOFF, 0,
-						  vnet_buffer (b0)->ip.
-						  reass.owner_thread_index);
+		      ip4_full_reass_add_trace (vm, node, rm, NULL, bi0,
+						HANDOFF, 0,
+						vnet_buffer (b0)->ip.
+						reass.owner_thread_index);
 		    }
 		}
 	      else if (is_feature && IP4_ERROR_NONE == error0)
@@ -1355,7 +1366,7 @@ typedef struct
 } ip4_rehash_cb_ctx;
 
 #ifndef CLIB_MARCH_VARIANT
-static void
+static int
 ip4_rehash_cb (clib_bihash_kv_16_8_t * kv, void *_ctx)
 {
   ip4_rehash_cb_ctx *ctx = _ctx;
@@ -1363,6 +1374,7 @@ ip4_rehash_cb (clib_bihash_kv_16_8_t * kv, void *_ctx)
     {
       ctx->failure = 1;
     }
+  return (BIHASH_WALK_CONTINUE);
 }
 
 static void
@@ -1465,6 +1477,7 @@ ip4_full_reass_init_function (vlib_main_t * vm)
   rm->fq_feature_index =
     vlib_frame_queue_main_init (ip4_full_reass_node_feature.index, 0);
 
+  rm->feature_use_refcount_per_intf = NULL;
   return error;
 }
 
@@ -1642,11 +1655,17 @@ show_ip4_reass (vlib_main_t * vm,
       clib_spinlock_unlock (&rt->lock);
     }
   vlib_cli_output (vm, "---------------------");
-  vlib_cli_output (vm, "Current IP4 reassemblies count: %lu\n",
+  vlib_cli_output (vm, "Current full IP4 reassemblies count: %lu\n",
 		   (long unsigned) sum_reass_n);
   vlib_cli_output (vm,
-		   "Maximum configured concurrent IP4 reassemblies per worker-thread: %lu\n",
+		   "Maximum configured concurrent full IP4 reassemblies per worker-thread: %lu\n",
 		   (long unsigned) rm->max_reass_n);
+  vlib_cli_output (vm,
+		   "Maximum configured full IP4 reassembly timeout: %lums\n",
+		   (long unsigned) rm->timeout_ms);
+  vlib_cli_output (vm,
+		   "Maximum configured full IP4 reassembly expire walk interval: %lums\n",
+		   (long unsigned) rm->expire_walk_interval_ms);
   return 0;
 }
 
@@ -1730,10 +1749,7 @@ ip4_full_reass_handoff_node_inline (vlib_main_t * vm,
 
   while (n_left_from > 0)
     {
-      ti[0] =
-	(is_feature) ? vnet_buffer (b[0])->ip.
-	reass.owner_feature_thread_index : vnet_buffer (b[0])->ip.
-	reass.owner_thread_index;
+      ti[0] = vnet_buffer (b[0])->ip.reass.owner_thread_index;
 
       if (PREDICT_FALSE
 	  ((node->flags & VLIB_NODE_FLAG_TRACE)
@@ -1812,6 +1828,35 @@ VLIB_REGISTER_NODE (ip4_full_reass_feature_handoff_node) = {
   },
 };
 /* *INDENT-ON* */
+
+#ifndef CLIB_MARCH_VARIANT
+int
+ip4_full_reass_enable_disable_with_refcnt (u32 sw_if_index, int is_enable)
+{
+  ip4_full_reass_main_t *rm = &ip4_full_reass_main;
+  vec_validate (rm->feature_use_refcount_per_intf, sw_if_index);
+  if (is_enable)
+    {
+      if (!rm->feature_use_refcount_per_intf[sw_if_index])
+	{
+	  ++rm->feature_use_refcount_per_intf[sw_if_index];
+	  return vnet_feature_enable_disable ("ip4-unicast",
+					      "ip4-full-reassembly-feature",
+					      sw_if_index, 1, 0, 0);
+	}
+      ++rm->feature_use_refcount_per_intf[sw_if_index];
+    }
+  else
+    {
+      --rm->feature_use_refcount_per_intf[sw_if_index];
+      if (!rm->feature_use_refcount_per_intf[sw_if_index])
+	return vnet_feature_enable_disable ("ip4-unicast",
+					    "ip4-full-reassembly-feature",
+					    sw_if_index, 0, 0, 0);
+    }
+  return -1;
+}
+#endif
 
 /*
  * fd.io coding-style-patch-verification: ON

@@ -84,6 +84,7 @@ enum ibv_node_type {
 	IBV_NODE_RNIC,
 	IBV_NODE_USNIC,
 	IBV_NODE_USNIC_UDP,
+	IBV_NODE_UNSPECIFIED,
 };
 
 enum ibv_transport_type {
@@ -92,6 +93,7 @@ enum ibv_transport_type {
 	IBV_TRANSPORT_IWARP,
 	IBV_TRANSPORT_USNIC,
 	IBV_TRANSPORT_USNIC_UDP,
+	IBV_TRANSPORT_UNSPECIFIED,
 };
 
 enum ibv_device_cap_flags {
@@ -578,6 +580,8 @@ enum ibv_access_flags {
 	IBV_ACCESS_MW_BIND		= (1<<4),
 	IBV_ACCESS_ZERO_BASED		= (1<<5),
 	IBV_ACCESS_ON_DEMAND		= (1<<6),
+	IBV_ACCESS_HUGETLB		= (1<<7),
+	IBV_ACCESS_RELAXED_ORDERING	= IBV_ACCESS_OPTIONAL_FIRST,
 };
 
 struct ibv_mw_bind_info {
@@ -1974,10 +1978,22 @@ struct ibv_cq_init_attr_ex {
 	uint32_t		flags;
 };
 
+enum ibv_parent_domain_init_attr_mask {
+	IBV_PARENT_DOMAIN_INIT_ATTR_ALLOCATORS = 1 << 0,
+	IBV_PARENT_DOMAIN_INIT_ATTR_PD_CONTEXT = 1 << 1,
+};
+
+#define IBV_ALLOCATOR_USE_DEFAULT ((void *)-1)
+
 struct ibv_parent_domain_init_attr {
 	struct ibv_pd *pd; /* referance to a protection domain object, can't be NULL */
 	struct ibv_td *td; /* referance to a thread domain object, or NULL */
 	uint32_t comp_mask;
+	void *(*alloc)(struct ibv_pd *pd, void *pd_context, size_t size,
+		       size_t alignment, uint64_t resource_type);
+	void (*free)(struct ibv_pd *pd, void *pd_context, void *ptr,
+		     uint64_t resource_type);
+	void *pd_context;
 };
 
 struct ibv_counters_init_attr {
@@ -2142,7 +2158,6 @@ struct ibv_device **ibv_get_device_list(int *num_devices);
 
 struct verbs_devices_ops;
 extern const struct verbs_device_ops verbs_provider_bnxt_re;
-extern const struct verbs_device_ops verbs_provider_cxgb3;
 extern const struct verbs_device_ops verbs_provider_cxgb4;
 extern const struct verbs_device_ops verbs_provider_efa;
 extern const struct verbs_device_ops verbs_provider_hfi1verbs;
@@ -2152,7 +2167,6 @@ extern const struct verbs_device_ops verbs_provider_ipathverbs;
 extern const struct verbs_device_ops verbs_provider_mlx4;
 extern const struct verbs_device_ops verbs_provider_mlx5;
 extern const struct verbs_device_ops verbs_provider_mthca;
-extern const struct verbs_device_ops verbs_provider_nes;
 extern const struct verbs_device_ops verbs_provider_ocrdma;
 extern const struct verbs_device_ops verbs_provider_qedr;
 extern const struct verbs_device_ops verbs_provider_rxe;
@@ -2292,7 +2306,7 @@ static inline struct ibv_flow *ibv_create_flow(struct ibv_qp *qp,
 	struct verbs_context *vctx = verbs_get_ctx_op(qp->context,
 						      ibv_create_flow);
 	if (!vctx) {
-		errno = ENOSYS;
+		errno = EOPNOTSUPP;
 		return NULL;
 	}
 
@@ -2304,7 +2318,7 @@ static inline int ibv_destroy_flow(struct ibv_flow *flow_id)
 	struct verbs_context *vctx = verbs_get_ctx_op(flow_id->context,
 						      ibv_destroy_flow);
 	if (!vctx)
-		return -ENOSYS;
+		return -EOPNOTSUPP;
 	return vctx->ibv_destroy_flow(flow_id);
 }
 
@@ -2316,7 +2330,7 @@ ibv_create_flow_action_esp(struct ibv_context *ctx,
 						      create_flow_action_esp);
 
 	if (!vctx) {
-		errno = ENOSYS;
+		errno = EOPNOTSUPP;
 		return NULL;
 	}
 
@@ -2331,7 +2345,7 @@ ibv_modify_flow_action_esp(struct ibv_flow_action *action,
 						      modify_flow_action_esp);
 
 	if (!vctx)
-		return ENOSYS;
+		return EOPNOTSUPP;
 
 	return vctx->modify_flow_action_esp(action, esp);
 }
@@ -2342,7 +2356,7 @@ static inline int ibv_destroy_flow_action(struct ibv_flow_action *action)
 						      destroy_flow_action);
 
 	if (!vctx)
-		return ENOSYS;
+		return EOPNOTSUPP;
 
 	return vctx->destroy_flow_action(action);
 }
@@ -2355,7 +2369,7 @@ ibv_open_xrcd(struct ibv_context *context, struct ibv_xrcd_init_attr *xrcd_init_
 {
 	struct verbs_context *vctx = verbs_get_ctx_op(context, open_xrcd);
 	if (!vctx) {
-		errno = ENOSYS;
+		errno = EOPNOTSUPP;
 		return NULL;
 	}
 	return vctx->open_xrcd(context, xrcd_init_attr);
@@ -2371,10 +2385,37 @@ static inline int ibv_close_xrcd(struct ibv_xrcd *xrcd)
 }
 
 /**
+ * ibv_reg_mr_iova2 - Register memory region with a virtual offset address
+ *
+ * This version will be called if ibv_reg_mr or ibv_reg_mr_iova were called
+ * with at least one potential access flag from the IBV_OPTIONAL_ACCESS_RANGE
+ * flags range The optional access flags will be masked if running over kernel
+ * that does not support passing them.
+ */
+struct ibv_mr *ibv_reg_mr_iova2(struct ibv_pd *pd, void *addr, size_t length,
+				uint64_t iova, unsigned int access);
+
+/**
  * ibv_reg_mr - Register a memory region
  */
-struct ibv_mr *ibv_reg_mr(struct ibv_pd *pd, void *addr,
-			  size_t length, int access);
+struct ibv_mr *ibv_reg_mr(struct ibv_pd *pd, void *addr, size_t length,
+			  int access);
+/* use new ibv_reg_mr version only if access flags that require it are used */
+__attribute__((__always_inline__)) static inline struct ibv_mr *
+__ibv_reg_mr(struct ibv_pd *pd, void *addr, size_t length, unsigned int access,
+	     int is_access_const)
+{
+	if (is_access_const && (access & IBV_ACCESS_OPTIONAL_RANGE) == 0)
+		return ibv_reg_mr(pd, addr, length, access);
+	else
+		return ibv_reg_mr_iova2(pd, addr, length, (uintptr_t)addr,
+					access);
+}
+
+#define ibv_reg_mr(pd, addr, length, access)                                   \
+	__ibv_reg_mr(pd, addr, length, access,                                 \
+		     __builtin_constant_p(				       \
+			     ((access) & IBV_ACCESS_OPTIONAL_RANGE) == 0))
 
 /**
  * ibv_reg_mr_iova - Register a memory region with a virtual offset
@@ -2382,7 +2423,21 @@ struct ibv_mr *ibv_reg_mr(struct ibv_pd *pd, void *addr,
  */
 struct ibv_mr *ibv_reg_mr_iova(struct ibv_pd *pd, void *addr, size_t length,
 			       uint64_t iova, int access);
+/* use new ibv_reg_mr version only if access flags that require it are used */
+__attribute__((__always_inline__)) static inline struct ibv_mr *
+__ibv_reg_mr_iova(struct ibv_pd *pd, void *addr, size_t length, uint64_t iova,
+		  unsigned int access, int is_access_const)
+{
+	if (is_access_const && (access & IBV_ACCESS_OPTIONAL_RANGE) == 0)
+		return ibv_reg_mr_iova(pd, addr, length, iova, access);
+	else
+		return ibv_reg_mr_iova2(pd, addr, length, iova, access);
+}
 
+#define ibv_reg_mr_iova(pd, addr, length, iova, access)                        \
+	__ibv_reg_mr_iova(pd, addr, length, iova, access,                      \
+			  __builtin_constant_p(                                \
+				  ((access) & IBV_ACCESS_OPTIONAL_RANGE) == 0))
 
 enum ibv_rereg_mr_err_code {
 	/* Old MR is valid, invalid input */
@@ -2417,7 +2472,7 @@ static inline struct ibv_mw *ibv_alloc_mw(struct ibv_pd *pd,
 	struct ibv_mw *mw;
 
 	if (!pd->context->ops.alloc_mw) {
-		errno = ENOSYS;
+		errno = EOPNOTSUPP;
 		return NULL;
 	}
 
@@ -2484,7 +2539,7 @@ static inline int ibv_advise_mr(struct ibv_pd *pd,
 
 	vctx = verbs_get_ctx_op(pd->context, advise_mr);
 	if (!vctx)
-		return ENOSYS;
+		return EOPNOTSUPP;
 
 	return vctx->advise_mr(pd, advice, flags, sg_list, num_sge);
 }
@@ -2501,7 +2556,7 @@ struct ibv_dm *ibv_alloc_dm(struct ibv_context *context,
 	struct verbs_context *vctx = verbs_get_ctx_op(context, alloc_dm);
 
 	if (!vctx) {
-		errno = ENOSYS;
+		errno = EOPNOTSUPP;
 		return NULL;
 	}
 
@@ -2518,7 +2573,7 @@ int ibv_free_dm(struct ibv_dm *dm)
 	struct verbs_context *vctx = verbs_get_ctx_op(dm->context, free_dm);
 
 	if (!vctx)
-		return ENOSYS;
+		return EOPNOTSUPP;
 
 	return vctx->free_dm(dm);
 }
@@ -2555,7 +2610,7 @@ struct ibv_mr *ibv_alloc_null_mr(struct ibv_pd *pd)
 
 	vctx = verbs_get_ctx_op(pd->context, alloc_null_mr);
 	if (!vctx) {
-		errno = ENOSYS;
+		errno = EOPNOTSUPP;
 		return NULL;
 	}
 
@@ -2578,7 +2633,7 @@ struct ibv_mr *ibv_reg_dm_mr(struct ibv_pd *pd, struct ibv_dm *dm,
 	struct verbs_context *vctx = verbs_get_ctx_op(pd->context, reg_dm_mr);
 
 	if (!vctx) {
-		errno = ENOSYS;
+		errno = EOPNOTSUPP;
 		return NULL;
 	}
 
@@ -2612,7 +2667,7 @@ struct ibv_cq_ex *ibv_create_cq_ex(struct ibv_context *context,
 	struct verbs_context *vctx = verbs_get_ctx_op(context, create_cq_ex);
 
 	if (!vctx) {
-		errno = ENOSYS;
+		errno = EOPNOTSUPP;
 		return NULL;
 	}
 
@@ -2697,7 +2752,7 @@ static inline int ibv_modify_cq(struct ibv_cq *cq, struct ibv_modify_cq_attr *at
 	struct verbs_context *vctx = verbs_get_ctx_op(cq->context, modify_cq);
 
 	if (!vctx)
-		return ENOSYS;
+		return EOPNOTSUPP;
 
 	return vctx->modify_cq(cq, attr);
 }
@@ -2731,7 +2786,7 @@ ibv_create_srq_ex(struct ibv_context *context,
 
 	vctx = verbs_get_ctx_op(context, create_srq_ex);
 	if (!vctx) {
-		errno = ENOSYS;
+		errno = EOPNOTSUPP;
 		return NULL;
 	}
 	return vctx->create_srq_ex(context, srq_init_attr_ex);
@@ -2766,7 +2821,7 @@ static inline int ibv_get_srq_num(struct ibv_srq *srq, uint32_t *srq_num)
 	struct verbs_context *vctx = verbs_get_ctx_op(srq->context, get_srq_num);
 
 	if (!vctx)
-		return ENOSYS;
+		return EOPNOTSUPP;
 
 	return vctx->get_srq_num(srq, srq_num);
 }
@@ -2800,7 +2855,7 @@ static inline int ibv_post_srq_ops(struct ibv_srq *srq,
 	vctx = verbs_get_ctx_op(srq->context, post_srq_ops);
 	if (!vctx) {
 		*bad_op = op;
-		return ENOSYS;
+		return EOPNOTSUPP;
 	}
 	return vctx->post_srq_ops(srq, op, bad_op);
 }
@@ -2823,7 +2878,7 @@ ibv_create_qp_ex(struct ibv_context *context, struct ibv_qp_init_attr_ex *qp_ini
 
 	vctx = verbs_get_ctx_op(context, create_qp_ex);
 	if (!vctx) {
-		errno = ENOSYS;
+		errno = EOPNOTSUPP;
 		return NULL;
 	}
 	return vctx->create_qp_ex(context, qp_init_attr_ex);
@@ -2839,7 +2894,7 @@ static inline struct ibv_td *ibv_alloc_td(struct ibv_context *context,
 
 	vctx = verbs_get_ctx_op(context, alloc_td);
 	if (!vctx) {
-		errno = ENOSYS;
+		errno = EOPNOTSUPP;
 		return NULL;
 	}
 
@@ -2855,7 +2910,7 @@ static inline int ibv_dealloc_td(struct ibv_td *td)
 
 	vctx = verbs_get_ctx_op(td->context, dealloc_td);
 	if (!vctx)
-		return ENOSYS;
+		return EOPNOTSUPP;
 
 	return vctx->dealloc_td(td);
 }
@@ -2871,7 +2926,7 @@ ibv_alloc_parent_domain(struct ibv_context *context,
 
 	vctx = verbs_get_ctx_op(context, alloc_parent_domain);
 	if (!vctx) {
-		errno = ENOSYS;
+		errno = EOPNOTSUPP;
 		return NULL;
 	}
 
@@ -2891,7 +2946,7 @@ ibv_query_rt_values_ex(struct ibv_context *context,
 
 	vctx = verbs_get_ctx_op(context, query_rt_values);
 	if (!vctx)
-		return ENOSYS;
+		return EOPNOTSUPP;
 
 	return vctx->query_rt_values(context, values);
 }
@@ -2912,7 +2967,7 @@ ibv_query_device_ex(struct ibv_context *context,
 		goto legacy;
 
 	ret = vctx->query_device_ex(context, input, attr, sizeof(*attr));
-	if (ret == ENOSYS)
+	if (ret == EOPNOTSUPP)
 		goto legacy;
 
 	return ret;
@@ -2932,7 +2987,7 @@ ibv_open_qp(struct ibv_context *context, struct ibv_qp_open_attr *qp_open_attr)
 {
 	struct verbs_context *vctx = verbs_get_ctx_op(context, open_qp);
 	if (!vctx) {
-		errno = ENOSYS;
+		errno = EOPNOTSUPP;
 		return NULL;
 	}
 	return vctx->open_qp(context, qp_open_attr);
@@ -2957,7 +3012,7 @@ ibv_modify_qp_rate_limit(struct ibv_qp *qp,
 
 	vctx = verbs_get_ctx_op(qp->context, modify_qp_rate_limit);
 	if (!vctx)
-		return ENOSYS;
+		return EOPNOTSUPP;
 
 	return vctx->modify_qp_rate_limit(qp, attr);
 }
@@ -3007,7 +3062,7 @@ static inline struct ibv_wq *ibv_create_wq(struct ibv_context *context,
 	struct ibv_wq *wq;
 
 	if (!vctx) {
-		errno = ENOSYS;
+		errno = EOPNOTSUPP;
 		return NULL;
 	}
 
@@ -3039,7 +3094,7 @@ static inline int ibv_modify_wq(struct ibv_wq *wq, struct ibv_wq_attr *wq_attr)
 	struct verbs_context *vctx = verbs_get_ctx_op(wq->context, modify_wq);
 
 	if (!vctx)
-		return ENOSYS;
+		return EOPNOTSUPP;
 
 	return vctx->modify_wq(wq, wq_attr);
 }
@@ -3057,7 +3112,7 @@ static inline int ibv_destroy_wq(struct ibv_wq *wq)
 
 	vctx = verbs_get_ctx_op(wq->context, destroy_wq);
 	if (!vctx)
-		return ENOSYS;
+		return EOPNOTSUPP;
 
 	return vctx->destroy_wq(wq);
 }
@@ -3077,7 +3132,7 @@ static inline struct ibv_rwq_ind_table *ibv_create_rwq_ind_table(struct ibv_cont
 
 	vctx = verbs_get_ctx_op(context, create_rwq_ind_table);
 	if (!vctx) {
-		errno = ENOSYS;
+		errno = EOPNOTSUPP;
 		return NULL;
 	}
 
@@ -3097,7 +3152,7 @@ static inline int ibv_destroy_rwq_ind_table(struct ibv_rwq_ind_table *rwq_ind_ta
 
 	vctx = verbs_get_ctx_op(rwq_ind_table->context, destroy_rwq_ind_table);
 	if (!vctx)
-		return ENOSYS;
+		return EOPNOTSUPP;
 
 	return vctx->destroy_rwq_ind_table(rwq_ind_table);
 }
@@ -3225,7 +3280,7 @@ static inline struct ibv_counters *ibv_create_counters(struct ibv_context *conte
 
 	vctx = verbs_get_ctx_op(context, create_counters);
 	if (!vctx) {
-		errno = ENOSYS;
+		errno = EOPNOTSUPP;
 		return NULL;
 	}
 
@@ -3238,7 +3293,7 @@ static inline int ibv_destroy_counters(struct ibv_counters *counters)
 
 	vctx = verbs_get_ctx_op(counters->context, destroy_counters);
 	if (!vctx)
-		return ENOSYS;
+		return EOPNOTSUPP;
 
 	return vctx->destroy_counters(counters);
 }
@@ -3251,7 +3306,7 @@ static inline int ibv_attach_counters_point_flow(struct ibv_counters *counters,
 
 	vctx = verbs_get_ctx_op(counters->context, attach_counters_point_flow);
 	if (!vctx)
-		return ENOSYS;
+		return EOPNOTSUPP;
 
 	return vctx->attach_counters_point_flow(counters, attr, flow);
 }
@@ -3265,7 +3320,7 @@ static inline int ibv_read_counters(struct ibv_counters *counters,
 
 	vctx = verbs_get_ctx_op(counters->context, read_counters);
 	if (!vctx)
-		return ENOSYS;
+		return EOPNOTSUPP;
 
 	return vctx->read_counters(counters, counters_value, ncounters, flags);
 }

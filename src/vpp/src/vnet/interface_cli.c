@@ -52,6 +52,7 @@
 #include <vnet/fib/ip6_fib.h>
 #include <vnet/l2/l2_output.h>
 #include <vnet/l2/l2_input.h>
+#include <vnet/classify/vnet_classify.h>
 
 static int
 compare_interface_names (void *a1, void *a2)
@@ -277,6 +278,7 @@ show_sw_interfaces (vlib_main_t * vm,
   u8 show_addresses = 0;
   u8 show_features = 0;
   u8 show_tag = 0;
+  u8 show_vtr = 0;
   int verbose = 0;
 
   /*
@@ -300,6 +302,8 @@ show_sw_interfaces (vlib_main_t * vm,
 	    show_features = 1;
 	  else if (unformat (linput, "tag"))
 	    show_tag = 1;
+	  else if (unformat (linput, "vtr"))
+	    show_vtr = 1;
 	  else if (unformat (linput, "verbose"))
 	    verbose = 1;
 	  else
@@ -312,7 +316,7 @@ show_sw_interfaces (vlib_main_t * vm,
 	}
       unformat_free (linput);
     }
-  if (show_features || show_tag)
+  if (show_features || show_tag || show_vtr)
     {
       if (sw_if_index == ~(u32) 0)
 	{
@@ -350,6 +354,27 @@ show_sw_interfaces (vlib_main_t * vm,
 		       format_vnet_sw_if_index_name, vnm, sw_if_index,
 		       tag ? (char *) tag : "(none)");
       vec_free (sorted_sis);
+      return 0;
+    }
+
+  /*
+   * Show vlan tag rewrite data for one interface.
+   */
+  if (show_vtr)
+    {
+      u32 vtr_op = L2_VTR_DISABLED;
+      u32 push_dot1q = 0, tag1 = 0, tag2 = 0;
+
+      if (l2vtr_get (vm, vnm, sw_if_index,
+		     &vtr_op, &push_dot1q, &tag1, &tag2) != 0)
+	{
+	  vlib_cli_output (vm, "%U: Problem getting vlan tag-rewrite data",
+			   format_vnet_sw_if_index_name, vnm, sw_if_index);
+	  return 0;
+	}
+      vlib_cli_output (vm, "%U:  VTR %0U",
+		       format_vnet_sw_if_index_name, vnm, sw_if_index,
+		       format_vtr, vtr_op, push_dot1q, tag1, tag2);
       return 0;
     }
 
@@ -474,7 +499,7 @@ done:
 /* *INDENT-OFF* */
 VLIB_CLI_COMMAND (show_sw_interfaces_command, static) = {
   .path = "show interface",
-  .short_help = "show interface [address|addr|features|feat] [<interface> [<interface> [..]]] [verbose]",
+  .short_help = "show interface [address|addr|features|feat|vtr] [<interface> [<interface> [..]]] [verbose]",
   .function = show_sw_interfaces,
   .is_mp_safe = 1,
 };
@@ -757,9 +782,6 @@ create_sub_interfaces (vlib_main_t * vm,
 	  continue;
 	}
 
-      kp = clib_mem_alloc (sizeof (*kp));
-      *kp = sup_and_sub_key;
-
       template.type = VNET_SW_INTERFACE_TYPE_SUB;
       template.flood_class = VNET_FLOOD_CLASS_NORMAL;
       template.sup_sw_if_index = hi->sw_if_index;
@@ -770,6 +792,9 @@ create_sub_interfaces (vlib_main_t * vm,
       error = vnet_create_sw_interface (vnm, &template, &sw_if_index);
       if (error)
 	goto done;
+
+      kp = clib_mem_alloc (sizeof (*kp));
+      *kp = sup_and_sub_key;
 
       hash_set (hi->sub_interface_sw_if_index_by_id, id, sw_if_index);
       hash_set_mem (im->sw_if_index_by_sup_and_sub, kp, sw_if_index);
@@ -1161,6 +1186,158 @@ VLIB_CLI_COMMAND (set_interface_mtu_cmd, static) = {
   .path = "set interface mtu",
   .short_help = "set interface mtu [packet|ip4|ip6|mpls] <value> <interface>",
   .function = mtu_cmd,
+};
+/* *INDENT-ON* */
+
+static clib_error_t *
+show_interface_sec_mac_addr_fn (vlib_main_t * vm, unformat_input_t * input,
+				vlib_cli_command_t * cmd)
+{
+  vnet_main_t *vnm = vnet_get_main ();
+  vnet_interface_main_t *im = &vnm->interface_main;
+  ethernet_main_t *em = &ethernet_main;
+  u32 sw_if_index = ~0;
+  vnet_sw_interface_t *si, *sorted_sis = 0;
+
+  if (unformat (input, "%U", unformat_vnet_sw_interface, vnm, &sw_if_index))
+    {
+      si = pool_elt_at_index (im->sw_interfaces, sw_if_index);
+      vec_add1 (sorted_sis, si[0]);
+    }
+
+  /* if an interface name was not passed, get all interfaces */
+  if (vec_len (sorted_sis) == 0)
+    {
+      sorted_sis =
+	vec_new (vnet_sw_interface_t, pool_elts (im->sw_interfaces));
+      _vec_len (sorted_sis) = 0;
+      /* *INDENT-OFF* */
+      pool_foreach (si, im->sw_interfaces,
+      ({
+        int visible = vnet_swif_is_api_visible (si);
+        if (visible)
+          vec_add1 (sorted_sis, si[0]);}
+        ));
+      /* *INDENT-ON* */
+      /* Sort by name. */
+      vec_sort_with_function (sorted_sis, sw_interface_name_compare);
+    }
+
+  vec_foreach (si, sorted_sis)
+  {
+    vnet_sw_interface_t *sup_si;
+    ethernet_interface_t *ei;
+
+    sup_si = vnet_get_sup_sw_interface (vnm, si->sw_if_index);
+    ei = ethernet_get_interface (em, sup_si->hw_if_index);
+
+    vlib_cli_output (vm, "%U (%s):",
+		     format_vnet_sw_if_index_name, vnm, si->sw_if_index,
+		     (si->flags & VNET_SW_INTERFACE_FLAG_ADMIN_UP) ?
+		     "up" : "dn");
+
+    if (ei && ei->secondary_addrs)
+      {
+	mac_address_t *sec_addr;
+
+	vec_foreach (sec_addr, ei->secondary_addrs)
+	{
+	  vlib_cli_output (vm, "  %U", format_mac_address_t, sec_addr);
+	}
+      }
+  }
+
+  vec_free (sorted_sis);
+  return 0;
+}
+
+/*?
+ * This command is used to display interface secondary mac addresses.
+ *
+ * @cliexpar
+ * Example of how to display interface secondary mac addresses:
+ * @cliexstart{show interface secondary-mac-address}
+ * @cliexend
+?*/
+/* *INDENT-OFF* */
+VLIB_CLI_COMMAND (show_interface_sec_mac_addr, static) = {
+  .path = "show interface secondary-mac-address",
+  .short_help = "show interface secondary-mac-address [<interface>]",
+  .function = show_interface_sec_mac_addr_fn,
+};
+/* *INDENT-ON* */
+
+static clib_error_t *
+interface_add_del_mac_address (vlib_main_t * vm, unformat_input_t * input,
+			       vlib_cli_command_t * cmd)
+{
+  vnet_main_t *vnm = vnet_get_main ();
+  vnet_sw_interface_t *si = NULL;
+  clib_error_t *error = 0;
+  u32 sw_if_index = ~0;
+  u8 mac[6] = { 0 };
+  u8 is_add, is_del;
+
+  is_add = is_del = 0;
+
+  if (!unformat_user (input, unformat_vnet_sw_interface, vnm, &sw_if_index))
+    {
+      error = clib_error_return (0, "unknown interface `%U'",
+				 format_unformat_error, input);
+      goto done;
+    }
+  if (!unformat_user (input, unformat_ethernet_address, mac))
+    {
+      error = clib_error_return (0, "expected mac address `%U'",
+				 format_unformat_error, input);
+      goto done;
+    }
+
+  while (unformat_check_input (input) != UNFORMAT_END_OF_INPUT)
+    {
+      if (unformat (input, "add"))
+	is_add = 1;
+      else if (unformat (input, "del"))
+	is_del = 1;
+      else
+	break;
+    }
+
+  if (is_add == is_del)
+    {
+      error = clib_error_return (0, "must choose one of add or del");
+      goto done;
+    }
+
+  si = vnet_get_sw_interface (vnm, sw_if_index);
+  error =
+    vnet_hw_interface_add_del_mac_address (vnm, si->hw_if_index, mac, is_add);
+
+done:
+  return error;
+}
+
+/*?
+ * The '<em>set interface secondary-mac-address </em>' command allows adding
+ * or deleting extra MAC addresses on a given interface without changing the
+ * default MAC address. This could allow packets sent to these MAC addresses
+ * to be received without setting the interface to promiscuous mode.
+ * Not all interfaces support this operation. The ones that do are mostly
+ * hardware NICs, though virtio does also.
+ *
+ * @cliexpar
+ * @parblock
+ * Example of how to add a secondary MAC Address on an interface:
+ * @cliexcmd{set interface secondary-mac-address GigabitEthernet0/8/0 aa:bb:cc:dd:ee:01 add}
+ * Example of how to delete a secondary MAC address from an interface:
+ * @cliexcmd{set interface secondary-mac-address GigabitEthernet0/8/0 aa:bb:cc:dd:ee:01 del}
+ * @endparblock
+?*/
+/* *INDENT-OFF* */
+VLIB_CLI_COMMAND (interface_add_del_mac_address_cmd, static) = {
+  .path = "set interface secondary-mac-address",
+  .short_help = "set interface secondary-mac-address <interface> <mac-address> [(add|del)]",
+  .function = interface_add_del_mac_address,
 };
 /* *INDENT-ON* */
 
@@ -1777,7 +1954,7 @@ vnet_pcap_dispatch_trace_configure (vnet_pcap_dispatch_trace_args_t * a)
 
   /* Classify filter specified, but no classify filter configured */
   if ((a->rx_enable + a->tx_enable + a->drop_enable) && a->filter &&
-      (set->table_indices[0] == ~0))
+      (set->table_indices == 0 || set->table_indices[0] == ~0))
     return VNET_API_ERROR_NO_SUCH_LABEL;
 
   if (a->rx_enable + a->tx_enable + a->drop_enable)

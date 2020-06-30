@@ -21,12 +21,32 @@
 #include <vnet/l3_types.h>
 #include <vnet/ip/ip4_packet.h>
 #include <vnet/ip/ip6_packet.h>
+#include <vnet/ethernet/packet.h>
 
 #define foreach_flow_type \
+  /* l2 flow*/ \
+  _(ETHERNET, ethernet, "ethernet") \
+  /* l4 flow*/ \
   _(IP4_N_TUPLE, ip4_n_tuple, "ipv4-n-tuple") \
   _(IP6_N_TUPLE, ip6_n_tuple, "ipv6-n-tuple") \
+  _(IP4_N_TUPLE_TAGGED, ip4_n_tuple_tagged, "ipv4-n-tuple-tagged") \
+  _(IP6_N_TUPLE_TAGGED, ip6_n_tuple_tagged, "ipv6-n-tuple-tagged") \
+  /* IP tunnel flow */ \
+  _(IP4_L2TPV3OIP, ip4_l2tpv3oip, "ipv4-l2tpv3oip") \
+  /* L4 tunnel flow*/ \
   _(IP4_VXLAN, ip4_vxlan, "ipv4-vxlan") \
-  _(IP6_VXLAN, ip6_vxlan, "ipv6-vxlan")
+  _(IP6_VXLAN, ip6_vxlan, "ipv6-vxlan") \
+  _(IP4_GTPC, ip4_gtpc, "ipv4-gtpc") \
+  _(IP4_GTPU, ip4_gtpu, "ipv4-gtpu") \
+  _(IP4_GTPU_IP4, ip4_gtpu_ip4, "ipv4-gtpu-ipv4") \
+  _(IP4_GTPU_IP6, ip4_gtpu_ip6, "ipv4-gtpu-ipv6") \
+  _(IP6_GTPC, ip6_gtpc, "ipv6-gtpc") \
+  _(IP6_GTPU, ip6_gtpu, "ipv6-gtpu") \
+  _(IP6_GTPU_IP4, ip6_gtpu_ip4, "ipv6-gtpu-ipv4") \
+  _(IP6_GTPU_IP6, ip6_gtpu_ip6, "ipv6-gtpu-ipv6")
+
+#define foreach_flow_entry_ethernet \
+  _fe(ethernet_header_t, eth_hdr)
 
 #define foreach_flow_entry_ip4_n_tuple \
   _fe(ip4_address_and_mask_t, src_addr) \
@@ -42,6 +62,26 @@
   _fe(ip_port_and_mask_t, dst_port) \
   _fe(ip_protocol_t, protocol)
 
+#define foreach_flow_entry_ip4_n_tuple_tagged \
+  _fe(ip4_address_and_mask_t, src_addr) \
+  _fe(ip4_address_and_mask_t, dst_addr) \
+  _fe(ip_port_and_mask_t, src_port) \
+  _fe(ip_port_and_mask_t, dst_port) \
+  _fe(ip_protocol_t, protocol)
+
+#define foreach_flow_entry_ip6_n_tuple_tagged \
+  _fe(ip6_address_and_mask_t, src_addr) \
+  _fe(ip6_address_and_mask_t, dst_addr) \
+  _fe(ip_port_and_mask_t, src_port) \
+  _fe(ip_port_and_mask_t, dst_port) \
+  _fe(ip_protocol_t, protocol)
+
+#define foreach_flow_entry_ip4_l2tpv3oip \
+  _fe(ip4_address_and_mask_t, src_addr) \
+  _fe(ip4_address_and_mask_t, dst_addr) \
+  _fe(ip_protocol_t, protocol)          \
+  _fe(u32, session_id)
+
 #define foreach_flow_entry_ip4_vxlan \
   _fe(ip4_address_t, src_addr) \
   _fe(ip4_address_t, dst_addr) \
@@ -54,13 +94,50 @@
   _fe(u16, dst_port) \
   _fe(u16, vni)
 
+#define foreach_flow_entry_ip4_gtpc \
+  foreach_flow_entry_ip4_n_tuple \
+  _fe(u32, teid)
+
+#define foreach_flow_entry_ip4_gtpu \
+  foreach_flow_entry_ip4_n_tuple \
+  _fe(u32, teid)
+
+#define foreach_flow_entry_ip4_gtpu_ip4 \
+  foreach_flow_entry_ip4_gtpu \
+  _fe(ip4_address_and_mask_t, inner_src_addr) \
+  _fe(ip4_address_and_mask_t, inner_dst_addr)
+
+#define foreach_flow_entry_ip4_gtpu_ip6 \
+  foreach_flow_entry_ip4_gtpu \
+  _fe(ip6_address_and_mask_t, inner_src_addr) \
+  _fe(ip6_address_and_mask_t, inner_dst_addr)
+
+#define foreach_flow_entry_ip6_gtpc \
+  foreach_flow_entry_ip6_n_tuple \
+  _fe(u32, teid)
+
+#define foreach_flow_entry_ip6_gtpu \
+  foreach_flow_entry_ip6_n_tuple \
+  _fe(u32, teid)
+
+#define foreach_flow_entry_ip6_gtpu_ip4 \
+  foreach_flow_entry_ip6_gtpu \
+  _fe(ip4_address_and_mask_t, inner_src_addr) \
+  _fe(ip4_address_and_mask_t, inner_dst_addr)
+
+#define foreach_flow_entry_ip6_gtpu_ip6 \
+  foreach_flow_entry_ip6_gtpu \
+  _fe(ip6_address_and_mask_t, inner_src_addr) \
+  _fe(ip6_address_and_mask_t, inner_dst_addr)
+
 #define foreach_flow_action \
   _(0, COUNT, "count") \
   _(1, MARK, "mark") \
   _(2, BUFFER_ADVANCE, "buffer-advance") \
   _(3, REDIRECT_TO_NODE, "redirect-to-node") \
   _(4, REDIRECT_TO_QUEUE, "redirect-to-queue") \
-  _(5, DROP, "drop")
+  _(5, RSS, "rss") \
+  _(6, DROP, "drop")
 
 typedef enum
 {
@@ -77,6 +154,39 @@ typedef enum
   _( -4, NO_SUCH_ENTRY, "no such entry")			\
   _( -5, NO_SUCH_INTERFACE, "no such interface")		\
   _( -6, INTERNAL, "internal error")
+
+#define foreach_flow_rss_types                    \
+  _(0, FRAG_IPV4,          "ipv4-frag")   \
+  _(1, IPV4_TCP,           "ipv4-tcp")    \
+  _(2, IPV4_UDP,           "ipv4-udp")    \
+  _(3, IPV4_SCTP,          "ipv4-sctp")   \
+  _(4, IPV4_OTHER,         "ipv4-other")  \
+  _(5, IPV4,               "ipv4")        \
+  _(6, IPV6_TCP_EX,        "ipv6-tcp-ex") \
+  _(7, IPV6_UDP_EX,        "ipv6-udp-ex") \
+  _(8, FRAG_IPV6,          "ipv6-frag")   \
+  _(9, IPV6_TCP,           "ipv6-tcp")    \
+  _(10, IPV6_UDP,          "ipv6-udp")    \
+  _(11, IPV6_SCTP,         "ipv6-sctp")   \
+  _(12, IPV6_OTHER,        "ipv6-other")  \
+  _(13, IPV6_EX,           "ipv6-ex")     \
+  _(14, IPV6,              "ipv6")        \
+  _(15, L2_PAYLOAD,        "l2-payload")  \
+  _(16, PORT,              "port")        \
+  _(17, VXLAN,             "vxlan")       \
+  _(18, GENEVE,            "geneve")      \
+  _(19, NVGRE,             "nvgre")       \
+  _(20, GTPU,              "gtpu")        \
+  _(60, L4_DST_ONLY,       "l4-dst-only") \
+  _(61, L4_SRC_ONLY,       "l4-src-only") \
+  _(62, L3_DST_ONLY,       "l3-dst-only") \
+  _(63, L3_SRC_ONLY,       "l3-src-only")
+
+#define foreach_rss_function           \
+  _(DEFAULT, "default")                \
+  _(TOEPLITZ, "toeplitz")              \
+  _(SIMPLE_XOR, "simple_xor")          \
+  _(SYMMETRIC_TOEPLITZ, "symmetric_toeplitz")
 
 typedef enum
 {
@@ -100,6 +210,13 @@ typedef enum
     VNET_FLOW_N_TYPES,
 } vnet_flow_type_t;
 
+typedef enum
+{
+#define _(a,b) VNET_RSS_FUNC_##a,
+  foreach_rss_function
+#undef _
+    VNET_RSS_N_TYPES,
+} vnet_rss_function_t;
 
 /*
  * Create typedef struct vnet_flow_XXX_t
@@ -138,6 +255,12 @@ typedef struct
 
   /* buffer offset for VNET_FLOW_ACTION_BUFFER_ADVANCE */
   i32 buffer_advance;
+
+  /* RSS types, including IPv4/IPv6/TCP/UDP... */
+  u64 rss_types;
+
+  /* RSS functions, including IPv4/IPv6/TCP/UDP... */
+  vnet_rss_function_t rss_fun;
 
   union
   {

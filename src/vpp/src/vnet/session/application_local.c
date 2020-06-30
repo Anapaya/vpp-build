@@ -96,7 +96,7 @@ ct_session_connect_notify (session_t * ss)
   segment_manager_t *sm;
   fifo_segment_t *seg;
   u64 segment_handle;
-  int is_fail = 0;
+  int err = 0;
   session_t *cs;
   u32 ss_index;
 
@@ -108,13 +108,12 @@ ct_session_connect_notify (session_t * ss)
   seg = segment_manager_get_segment_w_lock (sm, ss->rx_fifo->segment_index);
   segment_handle = segment_manager_segment_handle (sm, seg);
 
-  if (app_worker_add_segment_notify (client_wrk, segment_handle))
+  if ((err = app_worker_add_segment_notify (client_wrk, segment_handle)))
     {
       clib_warning ("failed to notify client %u of new segment",
 		    sct->client_wrk);
       segment_manager_segment_reader_unlock (sm);
       session_close (ss);
-      is_fail = 1;
     }
   else
     {
@@ -149,8 +148,7 @@ ct_session_connect_notify (session_t * ss)
       return -1;
     }
 
-  if (app_worker_connect_notify (client_wrk, is_fail ? 0 : cs,
-				 sct->client_opaque))
+  if (app_worker_connect_notify (client_wrk, cs, err, sct->client_opaque))
     {
       session_close (ss);
       return -1;
@@ -180,7 +178,11 @@ ct_init_local_session (app_worker_t * client_wrk, app_worker_t * server_wrk,
   props = application_segment_manager_properties (server);
   round_rx_fifo_sz = 1 << max_log2 (props->rx_fifo_size);
   round_tx_fifo_sz = 1 << max_log2 (props->tx_fifo_size);
-  seg_size = round_rx_fifo_sz + round_tx_fifo_sz + margin;
+  /* Increase size because of inefficient chunk allocations. Depending on
+   * how data is consumed, it may happen that more chunks than needed are
+   * allocated.
+   * TODO should remove once allocations are done more efficiently */
+  seg_size = 4 * (round_rx_fifo_sz + round_tx_fifo_sz + margin);
 
   sm = app_worker_get_listen_segment_manager (server_wrk, ll);
   seg_index = segment_manager_add_segment (sm, seg_size);
@@ -191,7 +193,8 @@ ct_init_local_session (app_worker_t * client_wrk, app_worker_t * server_wrk,
     }
   seg = segment_manager_get_segment_w_lock (sm, seg_index);
 
-  rv = segment_manager_try_alloc_fifos (seg, props->rx_fifo_size,
+  rv = segment_manager_try_alloc_fifos (seg, ls->thread_index,
+					props->rx_fifo_size,
 					props->tx_fifo_size, &ls->rx_fifo,
 					&ls->tx_fifo);
   if (rv)
@@ -291,7 +294,6 @@ ct_connect (app_worker_t * client_wrk, session_t * ll,
 
   if (ct_init_local_session (client_wrk, server_wrk, sct, ss, ll))
     {
-      clib_warning ("failed");
       ct_connection_free (sct);
       session_free (ss);
       return -1;
@@ -300,9 +302,9 @@ ct_connect (app_worker_t * client_wrk, session_t * ll,
   ss->session_state = SESSION_STATE_ACCEPTING;
   if (app_worker_accept_notify (server_wrk, ss))
     {
-      clib_warning ("failed");
       ct_connection_free (sct);
-      session_free_w_fifos (ss);
+      segment_manager_dealloc_fifos (ss->rx_fifo, ss->tx_fifo);
+      session_free (ss);
       return -1;
     }
 
@@ -366,7 +368,7 @@ ct_session_connect (transport_endpoint_cfg_t * tep)
   table_index = application_local_session_table (app);
   lh = session_lookup_local_endpoint (table_index, sep);
   if (lh == SESSION_DROP_HANDLE)
-    return VNET_API_ERROR_APP_CONNECT_FILTERED;
+    return SESSION_E_FILTERED;
 
   if (lh == SESSION_INVALID_HANDLE)
     goto global_scope;
@@ -391,13 +393,13 @@ ct_session_connect (transport_endpoint_cfg_t * tep)
 
 global_scope:
   if (session_endpoint_is_local (sep))
-    return VNET_API_ERROR_SESSION_CONNECT;
+    return SESSION_E_NOROUTE;
 
   if (!application_has_global_scope (app))
-    return VNET_API_ERROR_APP_CONNECT_SCOPE;
+    return SESSION_E_SCOPE;
 
   fib_proto = session_endpoint_fib_proto (sep);
-  table_index = application_session_table (app, fib_proto);
+  table_index = session_lookup_get_index_for_fib (fib_proto, sep->fib_index);
   ll = session_lookup_listener_wildcard (table_index, sep);
 
   if (ll)
@@ -467,7 +469,7 @@ format_ct_connection_id (u8 * s, va_list * args)
 }
 
 static int
-ct_custom_tx (void *session, u32 max_burst_size)
+ct_custom_tx (void *session, transport_send_params_t * sp)
 {
   session_t *s = (session_t *) session;
   if (session_has_transport (s))
@@ -553,6 +555,8 @@ static const transport_proto_vft_t cut_thru_proto = {
   .format_listener = format_ct_listener,
   .format_connection = format_ct_session,
   .transport_options = {
+    .name = "ct",
+    .short_name = "C",
     .tx_type = TRANSPORT_TX_INTERNAL,
     .service_type = TRANSPORT_SERVICE_APP,
   },

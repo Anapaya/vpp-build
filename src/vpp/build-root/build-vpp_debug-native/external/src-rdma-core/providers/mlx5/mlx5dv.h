@@ -59,6 +59,12 @@ extern "C" {
 #define MLX5DV_ALWAYS_INLINE inline
 #endif
 
+
+#define MLX5DV_RES_TYPE_QP ((uint64_t)RDMA_DRIVER_MLX5 << 32 | 1)
+#define MLX5DV_RES_TYPE_RWQ ((uint64_t)RDMA_DRIVER_MLX5 << 32 | 2)
+#define MLX5DV_RES_TYPE_DBR ((uint64_t)RDMA_DRIVER_MLX5 << 32 | 3)
+#define MLX5DV_RES_TYPE_SRQ ((uint64_t)RDMA_DRIVER_MLX5 << 32 | 4)
+
 enum {
 	MLX5_RCV_DBR	= 0,
 	MLX5_SND_DBR	= 1,
@@ -72,6 +78,8 @@ enum mlx5dv_context_comp_mask {
 	MLX5DV_CONTEXT_MASK_DYN_BFREGS		= 1 << 4,
 	MLX5DV_CONTEXT_MASK_CLOCK_INFO_UPDATE	= 1 << 5,
 	MLX5DV_CONTEXT_MASK_FLOW_ACTION_FLAGS	= 1 << 6,
+	MLX5DV_CONTEXT_MASK_DC_ODP_CAPS		= 1 << 7,
+	MLX5DV_CONTEXT_MASK_HCA_CORE_CLOCK	= 1 << 8,
 };
 
 struct mlx5dv_cqe_comp_caps {
@@ -122,6 +130,8 @@ struct mlx5dv_context {
 	uint32_t	max_dynamic_bfregs;
 	uint64_t	max_clock_info_update_nsec;
 	uint32_t        flow_action_flags; /* use enum mlx5dv_flow_action_cap_flags */
+	uint32_t	dc_odp_caps; /* use enum ibv_odp_transport_cap_bits */
+	void		*hca_core_clock;
 };
 
 enum mlx5dv_context_flags {
@@ -1271,6 +1281,19 @@ struct mlx5dv_devx_uar {
 struct mlx5dv_devx_uar *mlx5dv_devx_alloc_uar(struct ibv_context *context,
 					      uint32_t flags);
 void mlx5dv_devx_free_uar(struct mlx5dv_devx_uar *devx_uar);
+
+
+struct mlx5dv_var {
+	uint32_t page_id;
+	uint32_t length;
+	off_t mmap_off;
+	uint64_t comp_mask;
+};
+
+struct mlx5dv_var *
+mlx5dv_alloc_var(struct ibv_context *context, uint32_t flags);
+void mlx5dv_free_var(struct mlx5dv_var *dv_var);
+
 int mlx5dv_devx_query_eqn(struct ibv_context *context, uint32_t vector,
 			  uint32_t *eqn);
 
@@ -1416,6 +1439,14 @@ enum mlx5dv_dr_domain_sync_flags {
 	MLX5DV_DR_DOMAIN_SYNC_FLAGS_HW		= 1 << 1,
 };
 
+struct mlx5dv_dr_flow_meter_attr {
+	struct mlx5dv_dr_table  *next_table;
+	uint8_t                 active;
+	uint8_t                 reg_c_index;
+	size_t			flow_meter_parameter_sz;
+	void			*flow_meter_parameter;
+};
+
 struct mlx5dv_dr_domain *
 mlx5dv_dr_domain_create(struct ibv_context *ctx,
 			enum mlx5dv_dr_domain_type type);
@@ -1465,7 +1496,7 @@ struct mlx5dv_dr_action *mlx5dv_dr_action_create_tag(uint32_t tag_value);
 
 struct mlx5dv_dr_action *
 mlx5dv_dr_action_create_flow_counter(struct mlx5dv_devx_obj *devx_obj,
-				     uint32_t offeset);
+				     uint32_t offset);
 
 struct mlx5dv_dr_action *
 mlx5dv_dr_action_create_packet_reformat(struct mlx5dv_dr_domain *domain,
@@ -1479,7 +1510,20 @@ mlx5dv_dr_action_create_modify_header(struct mlx5dv_dr_domain *domain,
 				      size_t actions_sz,
 				      __be64 actions[]);
 
+struct mlx5dv_dr_action *
+mlx5dv_dr_action_create_flow_meter(struct mlx5dv_dr_flow_meter_attr *attr);
+
+int mlx5dv_dr_action_modify_flow_meter(struct mlx5dv_dr_action *action,
+				       struct mlx5dv_dr_flow_meter_attr *attr,
+				       __be64 modify_field_select);
+
 int mlx5dv_dr_action_destroy(struct mlx5dv_dr_action *action);
+
+int mlx5dv_dump_dr_domain(FILE *fout, struct mlx5dv_dr_domain *domain);
+int mlx5dv_dump_dr_table(FILE *fout, struct mlx5dv_dr_table *table);
+int mlx5dv_dump_dr_matcher(FILE *fout, struct mlx5dv_dr_matcher *matcher);
+int mlx5dv_dump_dr_rule(FILE *fout, struct mlx5dv_dr_rule *rule);
+
 #ifdef __cplusplus
 }
 #endif

@@ -115,7 +115,7 @@ avf_aq_desc_enq (vlib_main_t * vm, avf_device_t * ad, avf_aq_desc_t * dt,
 {
   clib_error_t *err = 0;
   avf_aq_desc_t *d, dc;
-  f64 t0, wait_time, suspend_time = AVF_AQ_ENQ_SUSPEND_TIME;
+  f64 t0, suspend_time = AVF_AQ_ENQ_SUSPEND_TIME;
 
   d = &ad->atq[ad->atq_next_slot];
   clib_memcpy_fast (d, dt, sizeof (avf_aq_desc_t));
@@ -144,12 +144,13 @@ avf_aq_desc_enq (vlib_main_t * vm, avf_device_t * ad, avf_aq_desc_t * dt,
   t0 = vlib_time_now (vm);
 retry:
   vlib_process_suspend (vm, suspend_time);
-  wait_time = vlib_time_now (vm) - t0;
 
   if (((d->flags & AVF_AQ_F_DD) == 0) || ((d->flags & AVF_AQ_F_CMP) == 0))
     {
-      if (wait_time > AVF_AQ_ENQ_MAX_WAIT_TIME)
+      f64 t = vlib_time_now (vm) - t0;
+      if (t > AVF_AQ_ENQ_MAX_WAIT_TIME)
 	{
+	  avf_log_err (ad, "aq_desc_enq failed (timeout %.3fs)", t);
 	  err = clib_error_return (0, "adminq enqueue timeout [opcode 0x%x]",
 				   d->opcode);
 	  goto done;
@@ -387,8 +388,7 @@ avf_send_to_pf (vlib_main_t * vm, avf_device_t * ad, virtchnl_ops_t op,
   clib_error_t *err;
   avf_aq_desc_t *d, dt = {.opcode = 0x801,.v_opcode = op };
   u32 head;
-  int n_retry = 5;
-
+  f64 t0, suspend_time = AVF_SEND_TO_PF_SUSPEND_TIME;
 
   /* suppress interrupt in the next adminq receive slot
      as we are going to wait for response
@@ -399,14 +399,20 @@ avf_send_to_pf (vlib_main_t * vm, avf_device_t * ad, virtchnl_ops_t op,
   if ((err = avf_aq_desc_enq (vm, ad, &dt, in, in_len)))
     return err;
 
+  t0 = vlib_time_now (vm);
 retry:
   head = avf_get_u32 (ad->bar0, AVF_ARQH);
 
   if (ad->arq_next_slot == head)
     {
-      if (--n_retry == 0)
-	return clib_error_return (0, "timeout");
-      vlib_process_suspend (vm, 10e-3);
+      f64 t = vlib_time_now (vm) - t0;
+      if (t > AVF_SEND_TO_PF_MAX_WAIT_TIME)
+	{
+	  avf_log_err (ad, "send_to_pf failed (timeout %.3fs)", t);
+	  return clib_error_return (0, "timeout");
+	}
+      vlib_process_suspend (vm, suspend_time);
+      suspend_time *= 2;
       goto retry;
     }
 
@@ -425,7 +431,9 @@ retry:
       clib_memcpy_fast (e, buf, sizeof (virtchnl_pf_event_t));
       avf_arq_slot_init (ad, ad->arq_next_slot);
       ad->arq_next_slot++;
-      n_retry = 5;
+      /* reset timer */
+      t0 = vlib_time_now (vm);
+      suspend_time = AVF_SEND_TO_PF_SUSPEND_TIME;
       goto retry;
     }
 
@@ -606,12 +614,14 @@ avf_op_disable_vlan_stripping (vlib_main_t * vm, avf_device_t * ad)
 }
 
 clib_error_t *
-avf_config_promisc_mode (vlib_main_t * vm, avf_device_t * ad)
+avf_config_promisc_mode (vlib_main_t * vm, avf_device_t * ad, int is_enable)
 {
   virtchnl_promisc_info_t pi = { 0 };
 
   pi.vsi_id = ad->vsi_id;
-  pi.flags = FLAG_VF_UNICAST_PROMISC | FLAG_VF_MULTICAST_PROMISC;
+
+  if (is_enable)
+    pi.flags = FLAG_VF_UNICAST_PROMISC | FLAG_VF_MULTICAST_PROMISC;
 
   avf_log_debug (ad, "config_promisc_mode: unicast %s multicast %s",
 		 pi.flags & FLAG_VF_UNICAST_PROMISC ? "on" : "off",
@@ -778,7 +788,7 @@ avf_device_reset (vlib_main_t * vm, avf_device_t * ad)
   avf_aq_desc_t d = { 0 };
   clib_error_t *error;
   u32 rstat;
-  int n_retry = 20;
+  f64 t0, t = 0, suspend_time = AVF_RESET_SUSPEND_TIME;
 
   avf_log_debug (ad, "reset");
 
@@ -787,19 +797,26 @@ avf_device_reset (vlib_main_t * vm, avf_device_t * ad)
   if ((error = avf_aq_desc_enq (vm, ad, &d, 0, 0)))
     return error;
 
+  t0 = vlib_time_now (vm);
 retry:
-  vlib_process_suspend (vm, 10e-3);
+  vlib_process_suspend (vm, suspend_time);
+
   rstat = avf_get_u32 (ad->bar0, AVFGEN_RSTAT);
 
   if (rstat == 2 || rstat == 3)
-    return 0;
-
-  if (--n_retry == 0)
     {
-      avf_log_err (ad, "reset failed");
+      avf_log_debug (ad, "reset completed in %.3fs", t);
+      return 0;
+    }
+
+  t = vlib_time_now (vm) - t0;
+  if (t > AVF_RESET_MAX_WAIT_TIME)
+    {
+      avf_log_err (ad, "reset failed (timeout %.3fs)", t);
       return clib_error_return (0, "reset failed (timeout)");
     }
 
+  suspend_time *= 2;
   goto retry;
 }
 
@@ -809,7 +826,7 @@ avf_request_queues (vlib_main_t * vm, avf_device_t * ad, u16 num_queue_pairs)
   virtchnl_vf_res_request_t res_req = { 0 };
   clib_error_t *error;
   u32 rstat;
-  int n_retry = 20;
+  f64 t0, t, suspend_time = AVF_RESET_SUSPEND_TIME;
 
   res_req.num_queue_pairs = num_queue_pairs;
 
@@ -829,16 +846,23 @@ avf_request_queues (vlib_main_t * vm, avf_device_t * ad, u16 num_queue_pairs)
 				res_req.num_queue_pairs);
     }
 
+  t0 = vlib_time_now (vm);
 retry:
-  vlib_process_suspend (vm, 10e-3);
+  vlib_process_suspend (vm, suspend_time);
+  t = vlib_time_now (vm) - t0;
+
   rstat = avf_get_u32 (ad->bar0, AVFGEN_RSTAT);
 
   if ((rstat == VIRTCHNL_VFR_COMPLETED) || (rstat == VIRTCHNL_VFR_VFACTIVE))
     goto done;
 
-  if (--n_retry == 0)
-    return clib_error_return (0, "reset failed (timeout)");
+  if (t > AVF_RESET_MAX_WAIT_TIME)
+    {
+      avf_log_err (ad, "request queues failed (timeout %.3f seconds)", t);
+      return clib_error_return (0, "request queues failed (timeout)");
+    }
 
+  suspend_time *= 2;
   goto retry;
 
 done:
@@ -903,9 +927,6 @@ avf_device_init (vlib_main_t * vm, avf_main_t * am, avf_device_t * ad,
    * Disable VLAN stripping
    */
   if ((error = avf_op_disable_vlan_stripping (vm, ad)))
-    return error;
-
-  if ((error = avf_config_promisc_mode (vm, ad)))
     return error;
 
   /*
@@ -1101,8 +1122,28 @@ error:
 static u32
 avf_flag_change (vnet_main_t * vnm, vnet_hw_interface_t * hw, u32 flags)
 {
+  vlib_main_t *vm = vlib_get_main ();
   avf_main_t *am = &avf_main;
-  vlib_log_warn (am->log_class, "TODO");
+  avf_device_t *ad = vec_elt_at_index (am->devices, hw->dev_instance);
+  if (ETHERNET_INTERFACE_FLAG_CONFIG_PROMISC (flags))
+    {
+      clib_error_t *error;
+      int promisc_enabled = (flags & ETHERNET_INTERFACE_FLAG_ACCEPT_ALL) != 0;
+      u32 new_flags = promisc_enabled ?
+	ad->flags | AVF_DEVICE_F_PROMISC : ad->flags & ~AVF_DEVICE_F_PROMISC;
+
+      if (new_flags == ad->flags)
+	return flags;
+
+      if ((error = avf_config_promisc_mode (vm, ad, promisc_enabled)))
+	{
+	  avf_log_err (ad, "%s: %U", format_clib_error, error);
+	  clib_error_free (error);
+	  return 0;
+	}
+
+      ad->flags = new_flags;
+    }
   return 0;
 }
 

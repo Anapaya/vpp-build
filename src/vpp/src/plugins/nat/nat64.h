@@ -91,9 +91,9 @@ typedef struct
 
   /** config parameters */
   u32 bib_buckets;
-  u32 bib_memory_size;
+  uword bib_memory_size;
   u32 st_buckets;
-  u32 st_memory_size;
+  uword st_memory_size;
 
   /** values of various timeouts */
   u32 udp_timeout;
@@ -115,10 +115,8 @@ typedef struct
 
   u32 in2out_node_index;
   u32 in2out_slowpath_node_index;
-  u32 in2out_reass_node_index;
 
   u32 out2in_node_index;
-  u32 out2in_reass_node_index;
 
   ip4_main_t *ip4_main;
   snat_main_t *sm;
@@ -228,7 +226,7 @@ int nat64_add_del_static_bib_entry (ip6_address_t * in_addr,
  *
  * @returns 0 on success, non-zero value otherwise.
  */
-int nat64_alloc_out_addr_and_port (u32 fib_index, snat_protocol_t proto,
+int nat64_alloc_out_addr_and_port (u32 fib_index, nat_protocol_t proto,
 				   ip4_address_t * addr, u16 * port,
 				   u32 thread_index);
 
@@ -361,8 +359,8 @@ void nat64_extract_ip4 (ip6_address_t * ip6, ip4_address_t * ip4,
  * @param st_buckets Number of session table hash buckets.
  * @param st_memory_size Memory size of session table hash.
  */
-void nat64_set_hash (u32 bib_buckets, u32 bib_memory_size, u32 st_buckets,
-		     u32 st_memory_size);
+void nat64_set_hash (u32 bib_buckets, uword bib_memory_size, u32 st_buckets,
+		     uword st_memory_size);
 
 /**
  * @brief Get worker thread index for NAT64 in2out.
@@ -380,7 +378,7 @@ u32 nat64_get_worker_in2out (ip6_address_t * addr);
  *
  * @returns worker thread index.
  */
-u32 nat64_get_worker_out2in (ip4_header_t * ip);
+u32 nat64_get_worker_out2in (vlib_buffer_t * b, ip4_header_t * ip);
 
 #endif /* __included_nat64_h__ */
 

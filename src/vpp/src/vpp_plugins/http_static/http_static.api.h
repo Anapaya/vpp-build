@@ -1,5 +1,5 @@
 /*
- * VLIB API definitions 2020-06-13 06:01:49
+ * VLIB API definitions 2020-06-30 12:50:20
  * Input file: http_static.api
  * Automatically generated: please edit the input file NOT this file!
  */
@@ -16,6 +16,9 @@
 #endif
 
 #define VL_API_PACKED(x) x __attribute__ ((packed))
+/* Imported API files */
+#ifndef vl_api_version
+#endif
 
 /****** Message ID / handler enum ******/
 
@@ -36,42 +39,23 @@ vl_msg_name(vl_api_http_static_enable_reply_t, 1)
 _(VL_API_HTTP_STATIC_ENABLE, http_static_enable, 075f8292) \
 _(VL_API_HTTP_STATIC_ENABLE_REPLY, http_static_enable_reply, e8d4e804) 
 #endif
-
 /****** Typedefs ******/
 
 #ifdef vl_typedefs
-#ifndef included_http_static_api
-#define included_http_static_api
-#ifndef _vl_api_defined_http_static_enable
-#define _vl_api_defined_http_static_enable
-typedef VL_API_PACKED(struct _vl_api_http_static_enable {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u32 fifo_size;
-    u32 cache_size_limit;
-    u32 prealloc_fifos;
-    u32 private_segment_size;
-    u8 www_root[256];
-    u8 uri[256];
-}) vl_api_http_static_enable_t;
+#include "http_static.api_types.h"
 #endif
-
-#ifndef _vl_api_defined_http_static_enable_reply
-#define _vl_api_defined_http_static_enable_reply
-typedef VL_API_PACKED(struct _vl_api_http_static_enable_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_http_static_enable_reply_t;
-#endif
-
-
-#endif
-#endif
-
 /****** Print functions *****/
 #ifdef vl_printfun
+#ifndef included_http_static_printfun_types
+#define included_http_static_printfun_types
+
+
+#endif
+#endif /* vl_printfun_types */
+/****** Print functions *****/
+#ifdef vl_printfun
+#ifndef included_http_static_printfun
+#define included_http_static_printfun
 
 #ifdef LP64
 #define _uword_fmt "%lld"
@@ -81,41 +65,47 @@ typedef VL_API_PACKED(struct _vl_api_http_static_enable_reply {
 #define _uword_cast long
 #endif
 
-#ifndef _vl_api_defined_http_static_enable_t_print
-#define _vl_api_defined_http_static_enable_t_print
-static inline void *vl_api_http_static_enable_t_print (vl_api_http_static_enable_t *a,void *handle)
+static inline void *vl_api_http_static_enable_t_print (vl_api_http_static_enable_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_http_static_enable_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "fifo_size: %u\n", a->fifo_size);
-    vl_print(handle, "cache_size_limit: %u\n", a->cache_size_limit);
-    vl_print(handle, "prealloc_fifos: %u\n", a->prealloc_fifos);
-    vl_print(handle, "private_segment_size: %u\n", a->private_segment_size);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_http_static_enable_t: */
+    s = format(s, "vl_api_http_static_enable_t:");
+    s = format(s, "\n%Ufifo_size: %u", format_white_space, indent, a->fifo_size);
+    s = format(s, "\n%Ucache_size_limit: %u", format_white_space, indent, a->cache_size_limit);
+    s = format(s, "\n%Uprealloc_fifos: %u", format_white_space, indent, a->prealloc_fifos);
+    s = format(s, "\n%Uprivate_segment_size: %u", format_white_space, indent, a->private_segment_size);
+    s = format(s, "\n%Uwww_root: %s", format_white_space, indent, a->www_root);
+    s = format(s, "\n%Uuri: %s", format_white_space, indent, a->uri);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_http_static_enable_reply_t_print
-#define _vl_api_defined_http_static_enable_reply_t_print
-static inline void *vl_api_http_static_enable_reply_t_print (vl_api_http_static_enable_reply_t *a,void *handle)
+static inline void *vl_api_http_static_enable_reply_t_print (vl_api_http_static_enable_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_http_static_enable_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_http_static_enable_reply_t: */
+    s = format(s, "vl_api_http_static_enable_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
+
 #endif
-
-
 #endif /* vl_printfun */
 
 /****** Endian swap functions *****/
 #ifdef vl_endianfun
+#ifndef included_http_static_endianfun
+#define included_http_static_endianfun
 
 #undef clib_net_to_host_uword
 #ifdef LP64
@@ -124,10 +114,9 @@ static inline void *vl_api_http_static_enable_reply_t_print (vl_api_http_static_
 #define clib_net_to_host_uword clib_net_to_host_u32
 #endif
 
-#ifndef _vl_api_defined_http_static_enable_t_endian
-#define _vl_api_defined_http_static_enable_t_endian
 static inline void vl_api_http_static_enable_t_endian (vl_api_http_static_enable_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
@@ -135,22 +124,20 @@ static inline void vl_api_http_static_enable_t_endian (vl_api_http_static_enable
     a->cache_size_limit = clib_net_to_host_u32(a->cache_size_limit);
     a->prealloc_fifos = clib_net_to_host_u32(a->prealloc_fifos);
     a->private_segment_size = clib_net_to_host_u32(a->private_segment_size);
+    /* a->www_root = a->www_root (no-op) */
+    /* a->uri = a->uri (no-op) */
 }
 
-#endif
-
-#ifndef _vl_api_defined_http_static_enable_reply_t_endian
-#define _vl_api_defined_http_static_enable_reply_t_endian
 static inline void vl_api_http_static_enable_reply_t_endian (vl_api_http_static_enable_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
+
 #endif
-
-
 #endif /* vl_endianfun */
 
 /****** Version tuple *****/
@@ -164,7 +151,7 @@ vl_api_version_tuple(http_static.api, 2, 1, 0)
 /****** API CRC (whole file) *****/
 
 #ifdef vl_api_version
-vl_api_version(http_static.api, 0x8ce15783)
+vl_api_version(http_static.api, 0xd29e72e9)
 
 #endif
 

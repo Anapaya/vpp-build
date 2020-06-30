@@ -1,5 +1,5 @@
 Name: rdma-core
-Version: 25.0
+Version: 28.0
 Release: 1%{?dist}
 Summary: RDMA core userspace libraries and daemons
 
@@ -13,6 +13,9 @@ Source: rdma-core-%{version}.tgz
 # Do not build static libs by default.
 %define with_static %{?_with_static: 1} %{?!_with_static: 0}
 
+# 32-bit arm is missing required arch-specific memory barriers,
+ExcludeArch: %{arm}
+
 BuildRequires: binutils
 BuildRequires: cmake >= 2.8.11
 BuildRequires: gcc
@@ -24,18 +27,33 @@ BuildRequires: /usr/bin/rst2man
 BuildRequires: valgrind-devel
 BuildRequires: systemd
 BuildRequires: systemd-devel
+%if 0%{?fedora} >= 32
+%define with_pyverbs %{?_with_pyverbs: 0} %{?!_with_pyverbs: 1}
+%else
 %define with_pyverbs %{?_with_pyverbs: 1} %{?!_with_pyverbs: 0}
+%endif
 %if %{with_pyverbs}
 BuildRequires: python3-devel
 BuildRequires: python3-Cython
 %else
+%if 0%{?rhel} >= 8 || 0%{?fedora} >= 30
+BuildRequires: python3
+%else
 BuildRequires: python
 %endif
-%if 0%{?fedora} >= 21
+%endif
+
+%if 0%{?rhel} >= 8 || 0%{?fedora} >= 30 || %{with_pyverbs}
+BuildRequires: python3-docutils
+%else
+BuildRequires: python-docutils
+%endif
+
+%if 0%{?fedora} >= 21 || 0%{?rhel} >= 8
 BuildRequires: perl-generators
 %endif
 
-Requires: dracut, kmod, systemd
+Requires: dracut, kmod, systemd, pciutils
 # Red Hat/Fedora previously shipped redhat/ as a stand-alone
 # package called 'rdma', which we're supplanting here.
 Provides: rdma = %{version}-%{release}
@@ -44,7 +62,7 @@ Conflicts: infiniband-diags <= 1.6.7
 
 # Since we recommend developers use Ninja, so should packagers, for consistency.
 %define CMAKE_FLAGS %{nil}
-%if 0%{?fedora} >= 23
+%if 0%{?fedora} >= 23 || 0%{?rhel} >= 8
 # Ninja was introduced in FC23
 BuildRequires: ninja-build
 %define CMAKE_FLAGS -GNinja
@@ -53,12 +71,12 @@ BuildRequires: ninja-build
 %else
 # Fallback to make otherwise
 BuildRequires: make
-%define make_jobs make -v %{?_smp_mflags}
+%define make_jobs make VERBOSE=1 %{?_smp_mflags}
 %define cmake_install DESTDIR=%{buildroot} make install
 %endif
 
-%if 0%{?fedora} >= 25
-# pandoc was introduced in FC25
+%if 0%{?fedora} >= 25 || 0%{?rhel} >= 8
+# pandoc was introduced in FC25, Centos8
 BuildRequires: pandoc
 %endif
 
@@ -70,19 +88,19 @@ scripts, dracut rules, and the rdma-ndd utility.
 %package devel
 Summary: RDMA core development libraries and headers
 Requires: %{name}%{?_isa} = %{version}-%{release}
-Requires: libibverbs = %{version}-%{release}
+Requires: libibverbs%{?_isa} = %{version}-%{release}
 Provides: libibverbs-devel = %{version}-%{release}
 Obsoletes: libibverbs-devel < %{version}-%{release}
-Requires: libibumad = %{version}-%{release}
+Requires: libibumad%{?_isa} = %{version}-%{release}
 Provides: libibumad-devel = %{version}-%{release}
 Obsoletes: libibumad-devel < %{version}-%{release}
-Requires: librdmacm = %{version}-%{release}
+Requires: librdmacm%{?_isa} = %{version}-%{release}
 Provides: librdmacm-devel = %{version}-%{release}
 Obsoletes: librdmacm-devel < %{version}-%{release}
-Requires: ibacm = %{version}-%{release}
+Requires: ibacm%{?_isa} = %{version}-%{release}
 Provides: ibacm-devel = %{version}-%{release}
 Obsoletes: ibacm-devel < %{version}-%{release}
-Requires: infiniband-diags = %{version}-%{release}
+Requires: infiniband-diags%{?_isa} = %{version}-%{release}
 Provides: infiniband-diags-devel = %{version}-%{release}
 Obsoletes: infiniband-diags-devel < %{version}-%{release}
 Provides: libibmad-devel = %{version}-%{release}
@@ -124,8 +142,6 @@ Summary: A library and drivers for direct userspace use of RDMA (InfiniBand/iWAR
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 Requires: %{name}%{?_isa} = %{version}-%{release}
-Provides: libcxgb3 = %{version}-%{release}
-Obsoletes: libcxgb3 < %{version}-%{release}
 Provides: libcxgb4 = %{version}-%{release}
 Obsoletes: libcxgb4 < %{version}-%{release}
 Provides: libefa = %{version}-%{release}
@@ -142,8 +158,6 @@ Provides: libmlx5 = %{version}-%{release}
 Obsoletes: libmlx5 < %{version}-%{release}
 Provides: libmthca = %{version}-%{release}
 Obsoletes: libmthca < %{version}-%{release}
-Provides: libnes = %{version}-%{release}
-Obsoletes: libnes < %{version}-%{release}
 Provides: libocrdma = %{version}-%{release}
 Obsoletes: libocrdma < %{version}-%{release}
 Provides: librxe = %{version}-%{release}
@@ -158,7 +172,6 @@ fast path operations.
 
 Device-specific plug-in ibverbs userspace drivers are included:
 
-- libcxgb3: Chelsio T3 iWARP HCA
 - libcxgb4: Chelsio T4 iWARP HCA
 - libefa: Amazon Elastic Fabric Adapter
 - libhfi1: Intel Omni-Path HFI
@@ -168,7 +181,6 @@ Device-specific plug-in ibverbs userspace drivers are included:
 - libmlx4: Mellanox ConnectX-3 InfiniBand HCA
 - libmlx5: Mellanox Connect-IB/X-4+ InfiniBand HCA
 - libmthca: Mellanox InfiniBand HCA
-- libnes: NetEffect RNIC
 - libocrdma: Emulex OneConnect RDMA/RoCE Device
 - libqedr: QLogic QL4xxx RoCE HCA
 - librxe: A software implementation of the RoCE protocol
@@ -338,23 +350,24 @@ install -D -m0644 ibacm_opts.cfg %{buildroot}%{_sysconfdir}/rdma/
 rm -rf %{buildroot}/%{_initrddir}/
 rm -rf %{buildroot}/%{_sbindir}/srp_daemon.sh
 
-# infiniband-diags
+%post -n rdma-core
+# we ship udev rules, so trigger an update.
+/sbin/udevadm trigger --subsystem-match=infiniband --action=change || true
+/sbin/udevadm trigger --subsystem-match=net --action=change || true
+/sbin/udevadm trigger --subsystem-match=infiniband_mad --action=change || true
+
 %post -n infiniband-diags -p /sbin/ldconfig
 %postun -n infiniband-diags -p /sbin/ldconfig
 
-# libibverbs
 %post -n libibverbs -p /sbin/ldconfig
 %postun -n libibverbs -p /sbin/ldconfig
 
-# libibumad
 %post -n libibumad -p /sbin/ldconfig
 %postun -n libibumad -p /sbin/ldconfig
 
-# librdmacm
 %post -n librdmacm -p /sbin/ldconfig
 %postun -n librdmacm -p /sbin/ldconfig
 
-# ibacm
 %post -n ibacm
 %systemd_post ibacm.service
 %preun -n ibacm
@@ -362,7 +375,6 @@ rm -rf %{buildroot}/%{_sbindir}/srp_daemon.sh
 %postun -n ibacm
 %systemd_postun_with_restart ibacm.service
 
-# srp_daemon
 %post -n srp_daemon
 %systemd_post srp_daemon.service
 %preun -n srp_daemon
@@ -370,7 +382,6 @@ rm -rf %{buildroot}/%{_sbindir}/srp_daemon.sh
 %postun -n srp_daemon
 %systemd_postun_with_restart srp_daemon.service
 
-# iwpmd
 %post -n iwpmd
 %systemd_post iwpmd.service
 %preun -n iwpmd
@@ -414,12 +425,10 @@ rm -rf %{buildroot}/%{_sbindir}/srp_daemon.sh
 %{_libexecdir}/rdma-set-sriov-vf
 %{_libexecdir}/mlx4-setup.sh
 %{_libexecdir}/truescale-serdes.cmds
-%{_bindir}/rxe_cfg
 %{_sbindir}/rdma-ndd
 %{_unitdir}/rdma-ndd.service
 %{_mandir}/man7/rxe*
 %{_mandir}/man8/rdma-ndd.*
-%{_mandir}/man8/rxe*
 %license COPYING.*
 
 %files devel
@@ -642,12 +651,13 @@ rm -rf %{buildroot}/%{_sbindir}/srp_daemon.sh
 %{_sbindir}/run_srp_daemon
 %{_udevrulesdir}/60-srp_daemon.rules
 %{_mandir}/man1/ibsrpdm.1*
-%{_mandir}/man1/srp_daemon.1*
 %{_mandir}/man5/srp_daemon.service.5*
 %{_mandir}/man5/srp_daemon_port@.service.5*
+%{_mandir}/man8/srp_daemon.8*
 %doc %{_docdir}/%{name}-%{version}/ibsrpdm.md
 
 %if %{with_pyverbs}
 %files -n python3-pyverbs
 %{python3_sitearch}/pyverbs
+%{_docdir}/%{name}-%{version}/tests/*.py
 %endif

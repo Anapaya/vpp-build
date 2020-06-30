@@ -19,7 +19,7 @@
  *       Do not access it directly -- use vcm which will point to
  *       the heap allocated copy after init.
  */
-static vppcom_main_t _vppcom_main = {
+vppcom_main_t _vppcom_main = {
   .debug = VPPCOM_DEBUG_INIT,
   .is_init = 0,
   .app_index = ~0,
@@ -228,7 +228,7 @@ vppcom_cfg_read_file (char *conf_fname)
   int fd;
   unformat_input_t _input, *input = &_input;
   unformat_input_t _line_input, *line_input = &_line_input;
-  u8 vc_cfg_input = 0, *chroot_path;
+  u8 vc_cfg_input = 0;
   struct stat s;
   u32 uid, gid, q_len;
 
@@ -282,19 +282,12 @@ vppcom_cfg_read_file (char *conf_fname)
 	      VCFG_DBG (0, "VCL<%d>: configured max-workers %u", getpid (),
 			vcl_cfg->max_workers);
 	    }
-	  else if (unformat (line_input, "api-prefix %s", &chroot_path))
+	  else if (unformat (line_input, "api-prefix %s",
+			     &vcl_cfg->vpp_api_chroot))
 	    {
-	      vec_terminate_c_string (chroot_path);
-	      if (vcl_cfg->vpp_api_filename)
-		vec_free (vcl_cfg->vpp_api_filename);
-	      vcl_cfg->vpp_api_filename = format (0, "/%s-vpe-api%c",
-						  chroot_path, 0);
-	      vl_set_memory_root_path ((char *) chroot_path);
-
-	      VCFG_DBG (0, "VCL<%d>: configured api-prefix (%s) and api "
-			"filename (%s)", getpid (), chroot_path,
-			vcl_cfg->vpp_api_filename);
-	      chroot_path = 0;	/* Don't vec_free() it! */
+	      vec_terminate_c_string (vcl_cfg->vpp_api_chroot);
+	      VCFG_DBG (0, "VCL<%d>: configured api-prefix (%s) ", getpid (),
+			vcl_cfg->vpp_api_chroot);
 	    }
 	  else if (unformat (line_input, "api-socket-name %s",
 			     &vcl_cfg->vpp_api_socket_name))
@@ -330,37 +323,37 @@ vppcom_cfg_read_file (char *conf_fname)
 	      vl_set_memory_gid (gid);
 	      VCFG_DBG (0, "VCL<%d>: configured gid %d", getpid (), gid);
 	    }
-	  else if (unformat (line_input, "segment-baseva 0x%x",
+	  else if (unformat (line_input, "segment-baseva 0x%lx",
 			     &vcl_cfg->segment_baseva))
 	    {
 	      VCFG_DBG (0, "VCL<%d>: configured segment_baseva 0x%lx",
 			getpid (), (unsigned long) vcl_cfg->segment_baseva);
 	    }
-	  else if (unformat (line_input, "segment-size 0x%x",
+	  else if (unformat (line_input, "segment-size 0x%lx",
 			     &vcl_cfg->segment_size))
 	    {
-	      VCFG_DBG (0, "VCL<%d>: configured segment_size 0x%x (%d)",
+	      VCFG_DBG (0, "VCL<%d>: configured segment_size 0x%lx (%lu)",
 			getpid (), vcl_cfg->segment_size,
 			vcl_cfg->segment_size);
 	    }
-	  else if (unformat (line_input, "segment-size %u",
+	  else if (unformat (line_input, "segment-size %lu",
 			     &vcl_cfg->segment_size))
 	    {
-	      VCFG_DBG (0, "VCL<%d>: configured segment_size %u (0x%x)",
+	      VCFG_DBG (0, "VCL<%d>: configured segment_size %lu (0x%lx)",
 			getpid (), vcl_cfg->segment_size,
 			vcl_cfg->segment_size);
 	    }
-	  else if (unformat (line_input, "add-segment-size 0x%x",
+	  else if (unformat (line_input, "add-segment-size 0x%lx",
 			     &vcl_cfg->add_segment_size))
 	    {
-	      VCFG_DBG (0, "VCL<%d>: configured add_segment_size 0x%x (%u)",
+	      VCFG_DBG (0, "VCL<%d>: configured add_segment_size 0x%lx (%lu)",
 			getpid (), vcl_cfg->add_segment_size,
 			vcl_cfg->add_segment_size);
 	    }
-	  else if (unformat (line_input, "add-segment-size %u",
+	  else if (unformat (line_input, "add-segment-size %lu",
 			     &vcl_cfg->add_segment_size))
 	    {
-	      VCFG_DBG (0, "VCL<%d>: configured add_segment_size %u (0x%x)",
+	      VCFG_DBG (0, "VCL<%d>: configured add_segment_size %lu (0x%lx)",
 			getpid (), vcl_cfg->add_segment_size,
 			vcl_cfg->add_segment_size);
 	    }
@@ -499,6 +492,12 @@ vppcom_cfg_read_file (char *conf_fname)
 	      VCFG_DBG (0, "VCL<%d>: configured with mq with eventfd",
 			getpid ());
 	    }
+	  else if (unformat (line_input, "tls-engine %u",
+			     &vcl_cfg->tls_engine))
+	    {
+	      VCFG_DBG (0, "VCL<%d>: configured tls-engine %u (0x%x)",
+			getpid (), vcl_cfg->tls_engine, vcl_cfg->tls_engine);
+	    }
 	  else if (unformat (line_input, "}"))
 	    {
 	      vc_cfg_input = 0;
@@ -557,17 +556,15 @@ vppcom_cfg (vppcom_cfg_t * vcl_cfg)
   vppcom_cfg_heapsize (conf_fname);
   vppcom_cfg_read_file (conf_fname);
 
+  /* Regrab cfg after heap initialization */
+  vcl_cfg = &vcm->cfg;
   env_var_str = getenv (VPPCOM_ENV_API_PREFIX);
   if (env_var_str)
     {
-      if (vcl_cfg->vpp_api_filename)
-	vec_free (vcl_cfg->vpp_api_filename);
-      vcl_cfg->vpp_api_filename = format (0, "/%s-vpe-api%c", env_var_str, 0);
-      vl_set_memory_root_path ((char *) env_var_str);
-
-      VCFG_DBG (0, "VCL<%d>: configured api prefix (%s) and filename (%s) "
-		"from " VPPCOM_ENV_API_PREFIX "!", getpid (), env_var_str,
-		vcl_cfg->vpp_api_filename);
+      vcl_cfg->vpp_api_chroot = format (0, "%s", env_var_str);
+      vec_terminate_c_string (vcl_cfg->vpp_api_chroot);
+      VCFG_DBG (0, "VCL<%d>: configured api prefix (%s) from "
+		VPPCOM_ENV_API_PREFIX "!", getpid (), env_var_str);
     }
   env_var_str = getenv (VPPCOM_ENV_APP_NAMESPACE_ID);
   if (env_var_str)

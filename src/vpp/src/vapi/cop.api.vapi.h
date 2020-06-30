@@ -13,87 +13,92 @@ extern "C" {
 #endif
 #include <vapi/vpe.api.vapi.h>
 
-extern vapi_msg_id_t vapi_msg_id_cop_whitelist_enable_disable_reply;
-extern vapi_msg_id_t vapi_msg_id_cop_interface_enable_disable_reply;
 extern vapi_msg_id_t vapi_msg_id_cop_interface_enable_disable;
+extern vapi_msg_id_t vapi_msg_id_cop_interface_enable_disable_reply;
 extern vapi_msg_id_t vapi_msg_id_cop_whitelist_enable_disable;
+extern vapi_msg_id_t vapi_msg_id_cop_whitelist_enable_disable_reply;
 
 #define DEFINE_VAPI_MSG_IDS_COP_API_JSON\
-  vapi_msg_id_t vapi_msg_id_cop_whitelist_enable_disable_reply;\
-  vapi_msg_id_t vapi_msg_id_cop_interface_enable_disable_reply;\
   vapi_msg_id_t vapi_msg_id_cop_interface_enable_disable;\
-  vapi_msg_id_t vapi_msg_id_cop_whitelist_enable_disable;
+  vapi_msg_id_t vapi_msg_id_cop_interface_enable_disable_reply;\
+  vapi_msg_id_t vapi_msg_id_cop_whitelist_enable_disable;\
+  vapi_msg_id_t vapi_msg_id_cop_whitelist_enable_disable_reply;
 
 
-#ifndef defined_vapi_msg_cop_whitelist_enable_disable_reply
-#define defined_vapi_msg_cop_whitelist_enable_disable_reply
-typedef struct __attribute__ ((__packed__)) {
-  i32 retval; 
-} vapi_payload_cop_whitelist_enable_disable_reply;
+#ifndef defined_vapi_enum_if_status_flags
+#define defined_vapi_enum_if_status_flags
+typedef enum {
+  IF_STATUS_API_FLAG_ADMIN_UP = 1,
+  IF_STATUS_API_FLAG_LINK_UP = 2,
+}  vapi_enum_if_status_flags;
 
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header1_t header;
-  vapi_payload_cop_whitelist_enable_disable_reply payload;
-} vapi_msg_cop_whitelist_enable_disable_reply;
+#endif
 
-static inline void vapi_msg_cop_whitelist_enable_disable_reply_payload_hton(vapi_payload_cop_whitelist_enable_disable_reply *payload)
-{
-  payload->retval = htobe32(payload->retval);
-}
+#ifndef defined_vapi_enum_mtu_proto
+#define defined_vapi_enum_mtu_proto
+typedef enum {
+  MTU_PROTO_API_L3 = 0,
+  MTU_PROTO_API_IP4 = 1,
+  MTU_PROTO_API_IP6 = 2,
+  MTU_PROTO_API_MPLS = 3,
+}  vapi_enum_mtu_proto;
 
-static inline void vapi_msg_cop_whitelist_enable_disable_reply_payload_ntoh(vapi_payload_cop_whitelist_enable_disable_reply *payload)
-{
-  payload->retval = be32toh(payload->retval);
-}
+#endif
 
-static inline void vapi_msg_cop_whitelist_enable_disable_reply_hton(vapi_msg_cop_whitelist_enable_disable_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_cop_whitelist_enable_disable_reply'@%p to big endian", msg);
-  vapi_type_msg_header1_t_hton(&msg->header);
-  vapi_msg_cop_whitelist_enable_disable_reply_payload_hton(&msg->payload);
-}
+#ifndef defined_vapi_enum_link_duplex
+#define defined_vapi_enum_link_duplex
+typedef enum {
+  LINK_DUPLEX_API_UNKNOWN = 0,
+  LINK_DUPLEX_API_HALF = 1,
+  LINK_DUPLEX_API_FULL = 2,
+}  vapi_enum_link_duplex;
 
-static inline void vapi_msg_cop_whitelist_enable_disable_reply_ntoh(vapi_msg_cop_whitelist_enable_disable_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_cop_whitelist_enable_disable_reply'@%p to host byte order", msg);
-  vapi_type_msg_header1_t_ntoh(&msg->header);
-  vapi_msg_cop_whitelist_enable_disable_reply_payload_ntoh(&msg->payload);
-}
+#endif
 
-static inline uword vapi_calc_cop_whitelist_enable_disable_reply_msg_size(vapi_msg_cop_whitelist_enable_disable_reply *msg)
-{
-  return sizeof(*msg);
-}
+#ifndef defined_vapi_enum_sub_if_flags
+#define defined_vapi_enum_sub_if_flags
+typedef enum {
+  SUB_IF_API_FLAG_NO_TAGS = 1,
+  SUB_IF_API_FLAG_ONE_TAG = 2,
+  SUB_IF_API_FLAG_TWO_TAGS = 4,
+  SUB_IF_API_FLAG_DOT1AD = 8,
+  SUB_IF_API_FLAG_EXACT_MATCH = 16,
+  SUB_IF_API_FLAG_DEFAULT = 32,
+  SUB_IF_API_FLAG_OUTER_VLAN_ID_ANY = 64,
+  SUB_IF_API_FLAG_INNER_VLAN_ID_ANY = 128,
+  SUB_IF_API_FLAG_MASK_VNET = 254,
+  SUB_IF_API_FLAG_DOT1AH = 256,
+}  vapi_enum_sub_if_flags;
 
-static void __attribute__((constructor)) __vapi_constructor_cop_whitelist_enable_disable_reply()
-{
-  static const char name[] = "cop_whitelist_enable_disable_reply";
-  static const char name_with_crc[] = "cop_whitelist_enable_disable_reply_e8d4e804";
-  static vapi_message_desc_t __vapi_metadata_cop_whitelist_enable_disable_reply = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header1_t, context),
-    offsetof(vapi_msg_cop_whitelist_enable_disable_reply, payload),
-    sizeof(vapi_msg_cop_whitelist_enable_disable_reply),
-    (generic_swap_fn_t)vapi_msg_cop_whitelist_enable_disable_reply_hton,
-    (generic_swap_fn_t)vapi_msg_cop_whitelist_enable_disable_reply_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
+#endif
 
-  vapi_msg_id_cop_whitelist_enable_disable_reply = vapi_register_msg(&__vapi_metadata_cop_whitelist_enable_disable_reply);
-  VAPI_DBG("Assigned msg id %d to cop_whitelist_enable_disable_reply", vapi_msg_id_cop_whitelist_enable_disable_reply);
-}
+#ifndef defined_vapi_enum_rx_mode
+#define defined_vapi_enum_rx_mode
+typedef enum {
+  RX_MODE_API_UNKNOWN = 0,
+  RX_MODE_API_POLLING = 1,
+  RX_MODE_API_INTERRUPT = 2,
+  RX_MODE_API_ADAPTIVE = 3,
+  RX_MODE_API_DEFAULT = 4,
+}  vapi_enum_rx_mode;
 
-static inline void vapi_set_vapi_msg_cop_whitelist_enable_disable_reply_event_cb (
-  struct vapi_ctx_s *ctx, 
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_cop_whitelist_enable_disable_reply *payload),
-  void *callback_ctx)
-{
-  vapi_set_event_cb(ctx, vapi_msg_id_cop_whitelist_enable_disable_reply, (vapi_event_cb)callback, callback_ctx);
-};
+#endif
+
+#ifndef defined_vapi_enum_if_type
+#define defined_vapi_enum_if_type
+typedef enum {
+  IF_API_TYPE_HARDWARE = 0,
+  IF_API_TYPE_SUB = 1,
+  IF_API_TYPE_P2P = 2,
+  IF_API_TYPE_PIPE = 3,
+}  vapi_enum_if_type;
+
+#endif
+
+#ifndef defined_vapi_type_interface_index
+#define defined_vapi_type_interface_index
+typedef u32 vapi_type_interface_index;
+
 #endif
 
 #ifndef defined_vapi_msg_cop_interface_enable_disable_reply
@@ -170,8 +175,8 @@ static inline void vapi_set_vapi_msg_cop_interface_enable_disable_reply_event_cb
 #ifndef defined_vapi_msg_cop_interface_enable_disable
 #define defined_vapi_msg_cop_interface_enable_disable
 typedef struct __attribute__ ((__packed__)) {
-  u32 sw_if_index;
-  u8 enable_disable; 
+  vapi_type_interface_index sw_if_index;
+  bool enable_disable; 
 } vapi_payload_cop_interface_enable_disable;
 
 typedef struct __attribute__ ((__packed__)) {
@@ -269,7 +274,7 @@ static inline vapi_error_e vapi_cop_interface_enable_disable(struct vapi_ctx_s *
 static void __attribute__((constructor)) __vapi_constructor_cop_interface_enable_disable()
 {
   static const char name[] = "cop_interface_enable_disable";
-  static const char name_with_crc[] = "cop_interface_enable_disable_69d24598";
+  static const char name_with_crc[] = "cop_interface_enable_disable_5501adee";
   static vapi_message_desc_t __vapi_metadata_cop_interface_enable_disable = {
     name,
     sizeof(name) - 1,
@@ -289,14 +294,85 @@ static void __attribute__((constructor)) __vapi_constructor_cop_interface_enable
 }
 #endif
 
+#ifndef defined_vapi_msg_cop_whitelist_enable_disable_reply
+#define defined_vapi_msg_cop_whitelist_enable_disable_reply
+typedef struct __attribute__ ((__packed__)) {
+  i32 retval; 
+} vapi_payload_cop_whitelist_enable_disable_reply;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header1_t header;
+  vapi_payload_cop_whitelist_enable_disable_reply payload;
+} vapi_msg_cop_whitelist_enable_disable_reply;
+
+static inline void vapi_msg_cop_whitelist_enable_disable_reply_payload_hton(vapi_payload_cop_whitelist_enable_disable_reply *payload)
+{
+  payload->retval = htobe32(payload->retval);
+}
+
+static inline void vapi_msg_cop_whitelist_enable_disable_reply_payload_ntoh(vapi_payload_cop_whitelist_enable_disable_reply *payload)
+{
+  payload->retval = be32toh(payload->retval);
+}
+
+static inline void vapi_msg_cop_whitelist_enable_disable_reply_hton(vapi_msg_cop_whitelist_enable_disable_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_cop_whitelist_enable_disable_reply'@%p to big endian", msg);
+  vapi_type_msg_header1_t_hton(&msg->header);
+  vapi_msg_cop_whitelist_enable_disable_reply_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_cop_whitelist_enable_disable_reply_ntoh(vapi_msg_cop_whitelist_enable_disable_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_cop_whitelist_enable_disable_reply'@%p to host byte order", msg);
+  vapi_type_msg_header1_t_ntoh(&msg->header);
+  vapi_msg_cop_whitelist_enable_disable_reply_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_cop_whitelist_enable_disable_reply_msg_size(vapi_msg_cop_whitelist_enable_disable_reply *msg)
+{
+  return sizeof(*msg);
+}
+
+static void __attribute__((constructor)) __vapi_constructor_cop_whitelist_enable_disable_reply()
+{
+  static const char name[] = "cop_whitelist_enable_disable_reply";
+  static const char name_with_crc[] = "cop_whitelist_enable_disable_reply_e8d4e804";
+  static vapi_message_desc_t __vapi_metadata_cop_whitelist_enable_disable_reply = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header1_t, context),
+    offsetof(vapi_msg_cop_whitelist_enable_disable_reply, payload),
+    sizeof(vapi_msg_cop_whitelist_enable_disable_reply),
+    (generic_swap_fn_t)vapi_msg_cop_whitelist_enable_disable_reply_hton,
+    (generic_swap_fn_t)vapi_msg_cop_whitelist_enable_disable_reply_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_cop_whitelist_enable_disable_reply = vapi_register_msg(&__vapi_metadata_cop_whitelist_enable_disable_reply);
+  VAPI_DBG("Assigned msg id %d to cop_whitelist_enable_disable_reply", vapi_msg_id_cop_whitelist_enable_disable_reply);
+}
+
+static inline void vapi_set_vapi_msg_cop_whitelist_enable_disable_reply_event_cb (
+  struct vapi_ctx_s *ctx, 
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_cop_whitelist_enable_disable_reply *payload),
+  void *callback_ctx)
+{
+  vapi_set_event_cb(ctx, vapi_msg_id_cop_whitelist_enable_disable_reply, (vapi_event_cb)callback, callback_ctx);
+};
+#endif
+
 #ifndef defined_vapi_msg_cop_whitelist_enable_disable
 #define defined_vapi_msg_cop_whitelist_enable_disable
 typedef struct __attribute__ ((__packed__)) {
-  u32 sw_if_index;
+  vapi_type_interface_index sw_if_index;
   u32 fib_id;
-  u8 ip4;
-  u8 ip6;
-  u8 default_cop; 
+  bool ip4;
+  bool ip6;
+  bool default_cop; 
 } vapi_payload_cop_whitelist_enable_disable;
 
 typedef struct __attribute__ ((__packed__)) {
@@ -396,7 +472,7 @@ static inline vapi_error_e vapi_cop_whitelist_enable_disable(struct vapi_ctx_s *
 static void __attribute__((constructor)) __vapi_constructor_cop_whitelist_enable_disable()
 {
   static const char name[] = "cop_whitelist_enable_disable";
-  static const char name_with_crc[] = "cop_whitelist_enable_disable_8bb8f6dc";
+  static const char name_with_crc[] = "cop_whitelist_enable_disable_debe13ea";
   static vapi_message_desc_t __vapi_metadata_cop_whitelist_enable_disable = {
     name,
     sizeof(name) - 1,

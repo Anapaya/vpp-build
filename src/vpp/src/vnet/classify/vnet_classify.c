@@ -147,13 +147,9 @@ vnet_classify_new_table (vnet_classify_main_t * cm,
   t->skip_n_vectors = skip_n_vectors;
   t->entries_per_page = 2;
 
-#if USE_DLMALLOC == 0
-  t->mheap = mheap_alloc (0 /* use VM */ , memory_size);
-#else
   t->mheap = create_mspace (memory_size, 1 /* locked */ );
   /* classifier requires the memory to be contiguous, so can not expand. */
   mspace_disable_expand (t->mheap);
-#endif
 
   vec_validate_aligned (t->buckets, nbuckets - 1, CLIB_CACHE_LINE_BYTES);
   oldheap = clib_mem_set_heap (t->mheap);
@@ -180,12 +176,7 @@ vnet_classify_delete_table_index (vnet_classify_main_t * cm,
 
   vec_free (t->mask);
   vec_free (t->buckets);
-#if USE_DLMALLOC == 0
-  mheap_free (t->mheap);
-#else
   destroy_mspace (t->mheap);
-#endif
-
   pool_put (cm->tables, t);
 }
 
@@ -773,6 +764,9 @@ vnet_classify_add_del_table (vnet_classify_main_t * cm,
 	    return VNET_API_ERROR_INVALID_MEMORY_SIZE;
 
 	  if (nbuckets == 0)
+	    return VNET_API_ERROR_INVALID_VALUE;
+
+	  if (match < 1 || match > 5)
 	    return VNET_API_ERROR_INVALID_VALUE;
 
 	  t = vnet_classify_new_table (cm, mask, nbuckets, memory_size,
@@ -1740,6 +1734,10 @@ classify_filter_command_fn (vlib_main_t * vm,
 
   if (sw_if_index == ~0 && pkt_trace == 0 && pcap == 0)
     return clib_error_return (0, "Must specify trace, pcap or interface...");
+
+  if (pkt_trace && pcap)
+    return clib_error_return
+      (0, "Packet trace and pcap are mutually exclusive...");
 
   if (pkt_trace && sw_if_index != ~0)
     return clib_error_return (0, "Packet trace filter is per-system");
@@ -2945,13 +2943,11 @@ vnet_classify_init (vlib_main_t * vm)
   vnet_classify_register_unformat_acl_next_index_fn (unformat_acl_next_node);
 
   /* Filter set 0 is grounded... */
-  pool_get (cm->filter_sets, set);
+  pool_get_zero (cm->filter_sets, set);
   set->refcnt = 0x7FFFFFFF;
-  vec_validate (set->table_indices, 0);
-  set->table_indices[0] = ~0;
   /* Initialize the pcap filter set */
   vec_validate (cm->filter_set_by_sw_if_index, 0);
-  cm->filter_set_by_sw_if_index[0] = ~0;
+  cm->filter_set_by_sw_if_index[0] = 0;
   /* Initialize the packet tracer filter set */
   vlib_global_main.trace_filter.trace_filter_set_index = ~0;
 

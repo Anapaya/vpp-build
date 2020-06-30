@@ -321,6 +321,7 @@ clib_mem_vm_ext_alloc (clib_mem_vm_alloc_t * a)
   a->n_pages = n_pages;
   a->addr = addr;
   a->fd = fd;
+  CLIB_MEM_UNPOISON (addr, a->size);
   goto done;
 
 error:
@@ -341,6 +342,38 @@ clib_mem_vm_ext_free (clib_mem_vm_alloc_t * a)
       if (a->fd != -1)
 	close (a->fd);
     }
+}
+
+uword
+clib_mem_vm_reserve (uword start, uword size, u32 log2_page_sz)
+{
+  uword off, pagesize = 1ULL << log2_page_sz;
+  int mmap_flags = MAP_PRIVATE | MAP_ANONYMOUS;
+  u8 *p;
+
+  if (start)
+    mmap_flags |= MAP_FIXED;
+
+  size = round_pow2 (size, pagesize);
+
+  p = uword_to_pointer (start, void *);
+  p = mmap (p, size + pagesize, PROT_NONE, mmap_flags, -1, 0);
+
+  if (p == MAP_FAILED)
+    return ~0;
+
+  off = round_pow2 ((uword) p, pagesize) - (uword) p;
+
+  /* trim start and end of reservation to be page aligned */
+  if (off)
+    {
+      munmap (p, off);
+      p += off;
+    }
+
+  munmap (p + size, pagesize - off);
+
+  return (uword) p;
 }
 
 u64 *
@@ -385,11 +418,39 @@ done:
 clib_error_t *
 clib_mem_vm_ext_map (clib_mem_vm_map_t * a)
 {
+  long unsigned int old_mask[16] = { 0 };
   int mmap_flags = MAP_SHARED;
+  clib_error_t *err = 0;
+  int old_mpol = -1;
   void *addr;
+  int rv;
+
+  if (a->numa_node)
+    {
+      rv = get_mempolicy (&old_mpol, old_mask, sizeof (old_mask) * 8 + 1, 0,
+			  0);
+
+      if (rv == -1)
+	{
+	  err = clib_error_return_unix (0, "get_mempolicy");
+	  goto done;
+	}
+    }
 
   if (a->requested_va)
     mmap_flags |= MAP_FIXED;
+
+  if (old_mpol != -1)
+    {
+      long unsigned int mask[16] = { 0 };
+      mask[0] = 1 << a->numa_node;
+      rv = set_mempolicy (MPOL_BIND, mask, sizeof (mask) * 8 + 1);
+      if (rv == -1)
+	{
+	  err = clib_error_return_unix (0, "set_mempolicy");
+	  goto done;
+	}
+    }
 
   addr = (void *) mmap (uword_to_pointer (a->requested_va, void *), a->size,
 			PROT_READ | PROT_WRITE, mmap_flags, a->fd, 0);
@@ -397,8 +458,19 @@ clib_mem_vm_ext_map (clib_mem_vm_map_t * a)
   if (addr == MAP_FAILED)
     return clib_error_return_unix (0, "mmap");
 
+  /* re-apply old numa memory policy */
+  if (old_mpol != -1 &&
+      set_mempolicy (old_mpol, old_mask, sizeof (old_mask) * 8 + 1) == -1)
+    {
+      err = clib_error_return_unix (0, "set_mempolicy");
+      goto done;
+    }
+
   a->addr = addr;
-  return 0;
+  CLIB_MEM_UNPOISON (addr, a->size);
+
+done:
+  return err;
 }
 
 /*

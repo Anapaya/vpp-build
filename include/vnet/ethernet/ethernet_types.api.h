@@ -1,5 +1,5 @@
 /*
- * VLIB API definitions 2020-06-13 05:56:04
+ * VLIB API definitions 2020-06-30 12:39:04
  * Input file: ethernet_types.api
  * Automatically generated: please edit the input file NOT this file!
  */
@@ -16,6 +16,9 @@
 #endif
 
 #define VL_API_PACKED(x) x __attribute__ ((packed))
+/* Imported API files */
+#ifndef vl_api_version
+#endif
 
 /****** Message ID / handler enum ******/
 
@@ -30,23 +33,25 @@
 #ifdef vl_msg_name_crc_list
 #define foreach_vl_msg_name_crc_ethernet_types 
 #endif
-
 /****** Typedefs ******/
 
 #ifdef vl_typedefs
-#ifndef included_ethernet_types_api
-#define included_ethernet_types_api
-#ifndef _vl_api_defined_mac_address
-#define _vl_api_defined_mac_address
-typedef u8 vl_api_mac_address_t[6];
+#include "ethernet_types.api_types.h"
 #endif
-
-
-#endif
-#endif
-
 /****** Print functions *****/
 #ifdef vl_printfun
+#ifndef included_ethernet_types_printfun_types
+#define included_ethernet_types_printfun_types
+
+/***** manual: vl_api_mac_address_t_print  *****/
+
+
+#endif
+#endif /* vl_printfun_types */
+/****** Print functions *****/
+#ifdef vl_printfun
+#ifndef included_ethernet_types_printfun
+#define included_ethernet_types_printfun
 
 #ifdef LP64
 #define _uword_fmt "%lld"
@@ -56,13 +61,14 @@ typedef u8 vl_api_mac_address_t[6];
 #define _uword_cast long
 #endif
 
-/***** manual: vl_api_mac_address_t_print  *****/
 
-
+#endif
 #endif /* vl_printfun */
 
 /****** Endian swap functions *****/
 #ifdef vl_endianfun
+#ifndef included_ethernet_types_endianfun
+#define included_ethernet_types_endianfun
 
 #undef clib_net_to_host_uword
 #ifdef LP64
@@ -71,9 +77,14 @@ typedef u8 vl_api_mac_address_t[6];
 #define clib_net_to_host_uword clib_net_to_host_u32
 #endif
 
-/***** manual: vl_api_mac_address_t_endian  *****/
+static inline void vl_api_mac_address_t_endian (vl_api_mac_address_t *a)
+{
+    int i __attribute__((unused));
+    /* a->mac_address = a->mac_address (no-op) */
+}
 
 
+#endif
 #endif /* vl_endianfun */
 
 /****** Version tuple *****/

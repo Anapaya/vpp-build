@@ -6,62 +6,6 @@
 
 namespace vapi {
 
-template <> inline void vapi_swap_to_be<vapi_msg_cop_whitelist_enable_disable_reply>(vapi_msg_cop_whitelist_enable_disable_reply *msg)
-{
-  vapi_msg_cop_whitelist_enable_disable_reply_hton(msg);
-}
-
-template <> inline void vapi_swap_to_host<vapi_msg_cop_whitelist_enable_disable_reply>(vapi_msg_cop_whitelist_enable_disable_reply *msg)
-{
-  vapi_msg_cop_whitelist_enable_disable_reply_ntoh(msg);
-}
-
-template <> inline vapi_msg_id_t vapi_get_msg_id_t<vapi_msg_cop_whitelist_enable_disable_reply>()
-{
-  return ::vapi_msg_id_cop_whitelist_enable_disable_reply; 
-}
-
-template <> inline vapi_msg_id_t vapi_get_msg_id_t<Msg<vapi_msg_cop_whitelist_enable_disable_reply>>()
-{
-  return ::vapi_msg_id_cop_whitelist_enable_disable_reply; 
-}
-
-static void __attribute__((constructor)) __vapi_cpp_constructor_cop_whitelist_enable_disable_reply()
-{
-  vapi::vapi_msg_set_msg_id<vapi_msg_cop_whitelist_enable_disable_reply>(vapi_msg_id_cop_whitelist_enable_disable_reply);
-}
-
-template class Msg<vapi_msg_cop_whitelist_enable_disable_reply>;
-
-using Cop_whitelist_enable_disable_reply = Msg<vapi_msg_cop_whitelist_enable_disable_reply>;
-template <> inline void vapi_swap_to_be<vapi_msg_cop_interface_enable_disable_reply>(vapi_msg_cop_interface_enable_disable_reply *msg)
-{
-  vapi_msg_cop_interface_enable_disable_reply_hton(msg);
-}
-
-template <> inline void vapi_swap_to_host<vapi_msg_cop_interface_enable_disable_reply>(vapi_msg_cop_interface_enable_disable_reply *msg)
-{
-  vapi_msg_cop_interface_enable_disable_reply_ntoh(msg);
-}
-
-template <> inline vapi_msg_id_t vapi_get_msg_id_t<vapi_msg_cop_interface_enable_disable_reply>()
-{
-  return ::vapi_msg_id_cop_interface_enable_disable_reply; 
-}
-
-template <> inline vapi_msg_id_t vapi_get_msg_id_t<Msg<vapi_msg_cop_interface_enable_disable_reply>>()
-{
-  return ::vapi_msg_id_cop_interface_enable_disable_reply; 
-}
-
-static void __attribute__((constructor)) __vapi_cpp_constructor_cop_interface_enable_disable_reply()
-{
-  vapi::vapi_msg_set_msg_id<vapi_msg_cop_interface_enable_disable_reply>(vapi_msg_id_cop_interface_enable_disable_reply);
-}
-
-template class Msg<vapi_msg_cop_interface_enable_disable_reply>;
-
-using Cop_interface_enable_disable_reply = Msg<vapi_msg_cop_interface_enable_disable_reply>;
 template <> inline void vapi_swap_to_be<vapi_msg_cop_interface_enable_disable>(vapi_msg_cop_interface_enable_disable *msg)
 {
   vapi_msg_cop_interface_enable_disable_hton(msg);
@@ -102,6 +46,34 @@ template class Request<vapi_msg_cop_interface_enable_disable, vapi_msg_cop_inter
 
 using Cop_interface_enable_disable = Request<vapi_msg_cop_interface_enable_disable, vapi_msg_cop_interface_enable_disable_reply>;
 
+template <> inline void vapi_swap_to_be<vapi_msg_cop_interface_enable_disable_reply>(vapi_msg_cop_interface_enable_disable_reply *msg)
+{
+  vapi_msg_cop_interface_enable_disable_reply_hton(msg);
+}
+
+template <> inline void vapi_swap_to_host<vapi_msg_cop_interface_enable_disable_reply>(vapi_msg_cop_interface_enable_disable_reply *msg)
+{
+  vapi_msg_cop_interface_enable_disable_reply_ntoh(msg);
+}
+
+template <> inline vapi_msg_id_t vapi_get_msg_id_t<vapi_msg_cop_interface_enable_disable_reply>()
+{
+  return ::vapi_msg_id_cop_interface_enable_disable_reply; 
+}
+
+template <> inline vapi_msg_id_t vapi_get_msg_id_t<Msg<vapi_msg_cop_interface_enable_disable_reply>>()
+{
+  return ::vapi_msg_id_cop_interface_enable_disable_reply; 
+}
+
+static void __attribute__((constructor)) __vapi_cpp_constructor_cop_interface_enable_disable_reply()
+{
+  vapi::vapi_msg_set_msg_id<vapi_msg_cop_interface_enable_disable_reply>(vapi_msg_id_cop_interface_enable_disable_reply);
+}
+
+template class Msg<vapi_msg_cop_interface_enable_disable_reply>;
+
+using Cop_interface_enable_disable_reply = Msg<vapi_msg_cop_interface_enable_disable_reply>;
 template <> inline void vapi_swap_to_be<vapi_msg_cop_whitelist_enable_disable>(vapi_msg_cop_whitelist_enable_disable *msg)
 {
   vapi_msg_cop_whitelist_enable_disable_hton(msg);
@@ -142,5 +114,33 @@ template class Request<vapi_msg_cop_whitelist_enable_disable, vapi_msg_cop_white
 
 using Cop_whitelist_enable_disable = Request<vapi_msg_cop_whitelist_enable_disable, vapi_msg_cop_whitelist_enable_disable_reply>;
 
+template <> inline void vapi_swap_to_be<vapi_msg_cop_whitelist_enable_disable_reply>(vapi_msg_cop_whitelist_enable_disable_reply *msg)
+{
+  vapi_msg_cop_whitelist_enable_disable_reply_hton(msg);
+}
+
+template <> inline void vapi_swap_to_host<vapi_msg_cop_whitelist_enable_disable_reply>(vapi_msg_cop_whitelist_enable_disable_reply *msg)
+{
+  vapi_msg_cop_whitelist_enable_disable_reply_ntoh(msg);
+}
+
+template <> inline vapi_msg_id_t vapi_get_msg_id_t<vapi_msg_cop_whitelist_enable_disable_reply>()
+{
+  return ::vapi_msg_id_cop_whitelist_enable_disable_reply; 
+}
+
+template <> inline vapi_msg_id_t vapi_get_msg_id_t<Msg<vapi_msg_cop_whitelist_enable_disable_reply>>()
+{
+  return ::vapi_msg_id_cop_whitelist_enable_disable_reply; 
+}
+
+static void __attribute__((constructor)) __vapi_cpp_constructor_cop_whitelist_enable_disable_reply()
+{
+  vapi::vapi_msg_set_msg_id<vapi_msg_cop_whitelist_enable_disable_reply>(vapi_msg_id_cop_whitelist_enable_disable_reply);
+}
+
+template class Msg<vapi_msg_cop_whitelist_enable_disable_reply>;
+
+using Cop_whitelist_enable_disable_reply = Msg<vapi_msg_cop_whitelist_enable_disable_reply>;
 }
 #endif

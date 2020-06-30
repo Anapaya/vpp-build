@@ -50,140 +50,12 @@
 #include <vnet/dpo/receive_dpo.h>
 #include <vnet/dpo/ip_null_dpo.h>
 #include <vnet/dpo/l3_proxy_dpo.h>
-#include <vnet/ip/ip6_neighbor.h>
-#include <vnet/ethernet/arp.h>
 
 /**
  * @file
  * @brief IPv4 and IPv6 adjacency and lookup table management.
  *
  */
-
-clib_error_t *
-ip_interface_address_add_del (ip_lookup_main_t * lm,
-			      u32 sw_if_index,
-			      void *addr_fib,
-			      u32 address_length,
-			      u32 is_del, u32 * result_if_address_index)
-{
-  vnet_main_t *vnm = vnet_get_main ();
-  ip_interface_address_t *a, *prev, *next;
-  uword *p = mhash_get (&lm->address_to_if_address_index, addr_fib);
-
-  vec_validate_init_empty (lm->if_address_pool_index_by_sw_if_index,
-			   sw_if_index, ~0);
-  a = p ? pool_elt_at_index (lm->if_address_pool, p[0]) : 0;
-
-  /* Verify given length. */
-  if ((a && (address_length != a->address_length)) ||
-      (address_length == 0) ||
-      (lm->is_ip6 && address_length > 128) ||
-      (!lm->is_ip6 && address_length > 32))
-    {
-      vnm->api_errno = VNET_API_ERROR_ADDRESS_LENGTH_MISMATCH;
-      return clib_error_create
-	("%U wrong length (expected %d) for interface %U",
-	 lm->format_address_and_length, addr_fib,
-	 address_length, a ? a->address_length : -1,
-	 format_vnet_sw_if_index_name, vnm, sw_if_index);
-    }
-
-  if (is_del)
-    {
-      if (!a)
-	{
-	  vnet_sw_interface_t *si = vnet_get_sw_interface (vnm, sw_if_index);
-	  vnm->api_errno = VNET_API_ERROR_ADDRESS_NOT_FOUND_FOR_INTERFACE;
-	  return clib_error_create ("%U not found for interface %U",
-				    lm->format_address_and_length,
-				    addr_fib, address_length,
-				    format_vnet_sw_interface_name, vnm, si);
-	}
-
-      if (a->prev_this_sw_interface != ~0)
-	{
-	  prev =
-	    pool_elt_at_index (lm->if_address_pool,
-			       a->prev_this_sw_interface);
-	  prev->next_this_sw_interface = a->next_this_sw_interface;
-	}
-      if (a->next_this_sw_interface != ~0)
-	{
-	  next =
-	    pool_elt_at_index (lm->if_address_pool,
-			       a->next_this_sw_interface);
-	  next->prev_this_sw_interface = a->prev_this_sw_interface;
-
-	  if (a->prev_this_sw_interface == ~0)
-	    lm->if_address_pool_index_by_sw_if_index[sw_if_index] =
-	      a->next_this_sw_interface;
-	}
-
-      if ((a->next_this_sw_interface == ~0)
-	  && (a->prev_this_sw_interface == ~0))
-	lm->if_address_pool_index_by_sw_if_index[sw_if_index] = ~0;
-
-      mhash_unset (&lm->address_to_if_address_index, addr_fib,
-		   /* old_value */ 0);
-      pool_put (lm->if_address_pool, a);
-
-      if (result_if_address_index)
-	*result_if_address_index = ~0;
-    }
-
-  else if (!a)
-    {
-      u32 pi;			/* previous index */
-      u32 ai;
-      u32 hi;			/* head index */
-
-      pool_get (lm->if_address_pool, a);
-      clib_memset (a, ~0, sizeof (a[0]));
-      ai = a - lm->if_address_pool;
-
-      hi = pi = lm->if_address_pool_index_by_sw_if_index[sw_if_index];
-      prev = 0;
-      while (pi != (u32) ~ 0)
-	{
-	  prev = pool_elt_at_index (lm->if_address_pool, pi);
-	  pi = prev->next_this_sw_interface;
-	}
-      pi = prev ? prev - lm->if_address_pool : (u32) ~ 0;
-
-      a->address_key = mhash_set (&lm->address_to_if_address_index,
-				  addr_fib, ai, /* old_value */ 0);
-      a->address_length = address_length;
-      a->sw_if_index = sw_if_index;
-      a->flags = 0;
-      a->prev_this_sw_interface = pi;
-      a->next_this_sw_interface = ~0;
-      if (prev)
-	prev->next_this_sw_interface = ai;
-
-      lm->if_address_pool_index_by_sw_if_index[sw_if_index] =
-	(hi != ~0) ? hi : ai;
-      if (result_if_address_index)
-	*result_if_address_index = ai;
-    }
-  else
-    {
-      if (sw_if_index != a->sw_if_index)
-	{
-	  if (result_if_address_index)
-	    *result_if_address_index = ~0;
-	  vnm->api_errno = VNET_API_ERROR_DUPLICATE_IF_ADDRESS;
-	  return clib_error_create
-	    ("Prefix %U already found on interface %U",
-	     lm->format_address_and_length, addr_fib, address_length,
-	     format_vnet_sw_if_index_name, vnm, a->sw_if_index);
-	}
-
-      if (result_if_address_index)
-	*result_if_address_index = a - lm->if_address_pool;
-    }
-
-  return /* no error */ 0;
-}
 
 static clib_error_t *
 ip_sw_interface_add_del (vnet_main_t * vnm, u32 sw_if_index, u32 is_add)
@@ -258,27 +130,10 @@ format_ip_flow_hash_config (u8 * s, va_list * args)
 u8 *
 format_ip_adjacency_packet_data (u8 * s, va_list * args)
 {
-  u32 adj_index = va_arg (*args, u32);
   u8 *packet_data = va_arg (*args, u8 *);
   u32 n_packet_data_bytes = va_arg (*args, u32);
-  ip_adjacency_t *adj;
 
-  if (!adj_is_valid (adj_index))
-    return format (s, "<invalid adjacency>");
-
-  adj = adj_get (adj_index);
-
-  switch (adj->lookup_next_index)
-    {
-    case IP_LOOKUP_NEXT_REWRITE:
-    case IP_LOOKUP_NEXT_MCAST:
-      s =
-	format (s, "%U", format_hex_bytes, packet_data, n_packet_data_bytes);
-      break;
-
-    default:
-      break;
-    }
+  s = format (s, "%U", format_hex_bytes, packet_data, n_packet_data_bytes);
 
   return s;
 }
@@ -659,7 +514,6 @@ VLIB_CLI_COMMAND (ip4_table_command, static) = {
   .path = "ip table",
   .short_help = "ip table [add|del] <table-id>",
   .function = vnet_ip4_table_cmd,
-  .is_mp_safe = 1,
 };
 /* *INDENT-ON* */
 
@@ -675,7 +529,6 @@ VLIB_CLI_COMMAND (ip6_table_command, static) = {
   .path = "ip6 table",
   .short_help = "ip6 table [add|del] <table-id>",
   .function = vnet_ip6_table_cmd,
-  .is_mp_safe = 1,
 };
 
 static clib_error_t *
@@ -1042,210 +895,6 @@ VLIB_CLI_COMMAND (ip_mroute_command, static) =
   .path = "ip mroute",
   .short_help = "ip mroute [add|del] <dst-ip-addr>/<width> [table <table-id>] [rpf-id <ID>] [via <next-hop-ip-addr> [<interface>],",
   .function = vnet_ip_mroute_cmd,
-  .is_mp_safe = 1,
-};
-/* *INDENT-ON* */
-
-/*
- * The next two routines address a longstanding script hemorrhoid.
- * Probing a v4 or v6 neighbor needs to appear to be synchronous,
- * or dependent route-adds will simply fail.
- */
-static clib_error_t *
-ip6_probe_neighbor_wait (vlib_main_t * vm, ip6_address_t * a, u32 sw_if_index,
-			 int retry_count)
-{
-  vnet_main_t *vnm = vnet_get_main ();
-  clib_error_t *e;
-  int i;
-  int resolved = 0;
-  uword event_type;
-  uword *event_data = 0;
-
-  ASSERT (vlib_in_process_context (vm));
-
-  if (retry_count > 0)
-    vnet_register_ip6_neighbor_resolution_event
-      (vnm, a, vlib_get_current_process (vm)->node_runtime.node_index,
-       1 /* event */ , 0 /* data */ );
-
-  for (i = 0; i < retry_count; i++)
-    {
-      /* The interface may be down, etc. */
-      e = ip6_probe_neighbor (vm, a, sw_if_index, 0);
-
-      if (e)
-	return e;
-
-      vlib_process_wait_for_event_or_clock (vm, 1.0);
-      event_type = vlib_process_get_events (vm, &event_data);
-      switch (event_type)
-	{
-	case 1:		/* resolved... */
-	  vlib_cli_output (vm, "Resolved %U", format_ip6_address, a);
-	  resolved = 1;
-	  goto done;
-
-	case ~0:		/* timeout */
-	  break;
-
-	default:
-	  clib_warning ("unknown event_type %d", event_type);
-	}
-      vec_reset_length (event_data);
-    }
-
-done:
-
-  if (!resolved)
-    return clib_error_return (0, "Resolution failed for %U",
-			      format_ip6_address, a);
-  return 0;
-}
-
-static clib_error_t *
-ip4_probe_neighbor_wait (vlib_main_t * vm, ip4_address_t * a, u32 sw_if_index,
-			 int retry_count)
-{
-  vnet_main_t *vnm = vnet_get_main ();
-  clib_error_t *e;
-  int i;
-  int resolved = 0;
-  uword event_type;
-  uword *event_data = 0;
-
-  ASSERT (vlib_in_process_context (vm));
-
-  if (retry_count > 0)
-    vnet_register_ip4_arp_resolution_event
-      (vnm, a, vlib_get_current_process (vm)->node_runtime.node_index,
-       1 /* event */ , 0 /* data */ );
-
-  for (i = 0; i < retry_count; i++)
-    {
-      /* The interface may be down, etc. */
-      e = ip4_probe_neighbor (vm, a, sw_if_index, 0);
-
-      if (e)
-	return e;
-
-      vlib_process_wait_for_event_or_clock (vm, 1.0);
-      event_type = vlib_process_get_events (vm, &event_data);
-      switch (event_type)
-	{
-	case 1:		/* resolved... */
-	  vlib_cli_output (vm, "Resolved %U", format_ip4_address, a);
-	  resolved = 1;
-	  goto done;
-
-	case ~0:		/* timeout */
-	  break;
-
-	default:
-	  clib_warning ("unknown event_type %d", event_type);
-	}
-      vec_reset_length (event_data);
-    }
-
-done:
-
-  vec_reset_length (event_data);
-
-  if (!resolved)
-    return clib_error_return (0, "Resolution failed for %U",
-			      format_ip4_address, a);
-  return 0;
-}
-
-static clib_error_t *
-probe_neighbor_address (vlib_main_t * vm,
-			unformat_input_t * input, vlib_cli_command_t * cmd)
-{
-  vnet_main_t *vnm = vnet_get_main ();
-  unformat_input_t _line_input, *line_input = &_line_input;
-  ip4_address_t a4;
-  ip6_address_t a6;
-  clib_error_t *error = 0;
-  u32 sw_if_index = ~0;
-  int retry_count = 3;
-  int is_ip4 = 1;
-  int address_set = 0;
-
-  /* Get a line of input. */
-  if (!unformat_user (input, unformat_line_input, line_input))
-    return 0;
-
-  while (unformat_check_input (line_input) != UNFORMAT_END_OF_INPUT)
-    {
-      if (unformat_user (line_input, unformat_vnet_sw_interface, vnm,
-			 &sw_if_index))
-	;
-      else if (unformat (line_input, "retry %d", &retry_count))
-	;
-
-      else if (unformat (line_input, "%U", unformat_ip4_address, &a4))
-	address_set++;
-      else if (unformat (line_input, "%U", unformat_ip6_address, &a6))
-	{
-	  address_set++;
-	  is_ip4 = 0;
-	}
-      else
-	{
-	  error = clib_error_return (0, "unknown input '%U'",
-				     format_unformat_error, line_input);
-	  goto done;
-	}
-    }
-
-  if (sw_if_index == ~0)
-    {
-      error = clib_error_return (0, "Interface required, not set.");
-      goto done;
-    }
-  if (address_set == 0)
-    {
-      error = clib_error_return (0, "ip address required, not set.");
-      goto done;
-    }
-  if (address_set > 1)
-    {
-      error = clib_error_return (0, "Multiple ip addresses not supported.");
-      goto done;
-    }
-
-  if (is_ip4)
-    error = ip4_probe_neighbor_wait (vm, &a4, sw_if_index, retry_count);
-  else
-    error = ip6_probe_neighbor_wait (vm, &a6, sw_if_index, retry_count);
-
-done:
-  unformat_free (line_input);
-
-  return error;
-}
-
-/*?
- * The '<em>ip probe-neighbor</em>' command ARPs for IPv4 addresses or
- * attempts IPv6 neighbor discovery depending on the supplied IP address
- * format.
- *
- * @note This command will not immediately affect the indicated FIB; it
- * is not suitable for use in establishing a FIB entry prior to adding
- * recursive FIB entries. As in: don't use it in a script to probe a
- * gateway prior to adding a default route. It won't work. Instead,
- * configure a static ARP cache entry [see '<em>set ip arp</em>'], or
- * a static IPv6 neighbor [see '<em>set ip6 neighbor</em>'].
- *
- * @cliexpar
- * Example of probe for an IPv4 address:
- * @cliexcmd{ip probe-neighbor GigabitEthernet2/0/0 172.16.1.2}
-?*/
-/* *INDENT-OFF* */
-VLIB_CLI_COMMAND (ip_probe_neighbor_command, static) = {
-  .path = "ip probe-neighbor",
-  .function = probe_neighbor_address,
-  .short_help = "ip probe-neighbor <interface> <ip4-addr> | <ip6-addr> [retry nn]",
   .is_mp_safe = 1,
 };
 /* *INDENT-ON* */

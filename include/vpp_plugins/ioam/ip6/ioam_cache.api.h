@@ -1,5 +1,5 @@
 /*
- * VLIB API definitions 2020-06-13 05:57:50
+ * VLIB API definitions 2020-06-30 12:39:05
  * Input file: ioam_cache.api
  * Automatically generated: please edit the input file NOT this file!
  */
@@ -16,6 +16,9 @@
 #endif
 
 #define VL_API_PACKED(x) x __attribute__ ((packed))
+/* Imported API files */
+#ifndef vl_api_version
+#endif
 
 /****** Message ID / handler enum ******/
 
@@ -33,40 +36,26 @@ vl_msg_name(vl_api_ioam_cache_ip6_enable_disable_reply_t, 1)
 
 #ifdef vl_msg_name_crc_list
 #define foreach_vl_msg_name_crc_ioam_cache \
-_(VL_API_IOAM_CACHE_IP6_ENABLE_DISABLE, ioam_cache_ip6_enable_disable, 22324d89) \
+_(VL_API_IOAM_CACHE_IP6_ENABLE_DISABLE, ioam_cache_ip6_enable_disable, 47705c03) \
 _(VL_API_IOAM_CACHE_IP6_ENABLE_DISABLE_REPLY, ioam_cache_ip6_enable_disable_reply, e8d4e804) 
 #endif
-
 /****** Typedefs ******/
 
 #ifdef vl_typedefs
-#ifndef included_ioam_cache_api
-#define included_ioam_cache_api
-#ifndef _vl_api_defined_ioam_cache_ip6_enable_disable
-#define _vl_api_defined_ioam_cache_ip6_enable_disable
-typedef VL_API_PACKED(struct _vl_api_ioam_cache_ip6_enable_disable {
-    u16 _vl_msg_id;
-    u32 client_index;
-    u32 context;
-    u8 is_disable;
-}) vl_api_ioam_cache_ip6_enable_disable_t;
+#include "ioam_cache.api_types.h"
 #endif
-
-#ifndef _vl_api_defined_ioam_cache_ip6_enable_disable_reply
-#define _vl_api_defined_ioam_cache_ip6_enable_disable_reply
-typedef VL_API_PACKED(struct _vl_api_ioam_cache_ip6_enable_disable_reply {
-    u16 _vl_msg_id;
-    u32 context;
-    i32 retval;
-}) vl_api_ioam_cache_ip6_enable_disable_reply_t;
-#endif
-
-
-#endif
-#endif
-
 /****** Print functions *****/
 #ifdef vl_printfun
+#ifndef included_ioam_cache_printfun_types
+#define included_ioam_cache_printfun_types
+
+
+#endif
+#endif /* vl_printfun_types */
+/****** Print functions *****/
+#ifdef vl_printfun
+#ifndef included_ioam_cache_printfun
+#define included_ioam_cache_printfun
 
 #ifdef LP64
 #define _uword_fmt "%lld"
@@ -76,38 +65,42 @@ typedef VL_API_PACKED(struct _vl_api_ioam_cache_ip6_enable_disable_reply {
 #define _uword_cast long
 #endif
 
-#ifndef _vl_api_defined_ioam_cache_ip6_enable_disable_t_print
-#define _vl_api_defined_ioam_cache_ip6_enable_disable_t_print
-static inline void *vl_api_ioam_cache_ip6_enable_disable_t_print (vl_api_ioam_cache_ip6_enable_disable_t *a,void *handle)
+static inline void *vl_api_ioam_cache_ip6_enable_disable_t_print (vl_api_ioam_cache_ip6_enable_disable_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_ioam_cache_ip6_enable_disable_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "client_index: %u\n", a->client_index);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "is_disable: %u\n", a->is_disable);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_ioam_cache_ip6_enable_disable_t: */
+    s = format(s, "vl_api_ioam_cache_ip6_enable_disable_t:");
+    s = format(s, "\n%Uis_disable: %u", format_white_space, indent, a->is_disable);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
-#endif
-
-#ifndef _vl_api_defined_ioam_cache_ip6_enable_disable_reply_t_print
-#define _vl_api_defined_ioam_cache_ip6_enable_disable_reply_t_print
-static inline void *vl_api_ioam_cache_ip6_enable_disable_reply_t_print (vl_api_ioam_cache_ip6_enable_disable_reply_t *a,void *handle)
+static inline void *vl_api_ioam_cache_ip6_enable_disable_reply_t_print (vl_api_ioam_cache_ip6_enable_disable_reply_t *a, void *handle)
 {
-    vl_print(handle, "vl_api_ioam_cache_ip6_enable_disable_reply_t:\n");
-    vl_print(handle, "_vl_msg_id: %u\n", a->_vl_msg_id);
-    vl_print(handle, "context: %u\n", a->context);
-    vl_print(handle, "retval: %ld\n", a->retval);
+    u8 *s = 0;
+    u32 indent __attribute__((unused)) = 2;
+    int i __attribute__((unused));
+    /* Message definition: vl_api_ioam_cache_ip6_enable_disable_reply_t: */
+    s = format(s, "vl_api_ioam_cache_ip6_enable_disable_reply_t:");
+    s = format(s, "\n%Uretval: %ld", format_white_space, indent, a->retval);
+    vec_add1(s, 0);
+    vl_print (handle, (char *)s);
+    vec_free (s);
     return handle;
 }
 
+
 #endif
-
-
 #endif /* vl_printfun */
 
 /****** Endian swap functions *****/
 #ifdef vl_endianfun
+#ifndef included_ioam_cache_endianfun
+#define included_ioam_cache_endianfun
 
 #undef clib_net_to_host_uword
 #ifdef LP64
@@ -116,30 +109,25 @@ static inline void *vl_api_ioam_cache_ip6_enable_disable_reply_t_print (vl_api_i
 #define clib_net_to_host_uword clib_net_to_host_u32
 #endif
 
-#ifndef _vl_api_defined_ioam_cache_ip6_enable_disable_t_endian
-#define _vl_api_defined_ioam_cache_ip6_enable_disable_t_endian
 static inline void vl_api_ioam_cache_ip6_enable_disable_t_endian (vl_api_ioam_cache_ip6_enable_disable_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->client_index = clib_net_to_host_u32(a->client_index);
     a->context = clib_net_to_host_u32(a->context);
     /* a->is_disable = a->is_disable (no-op) */
 }
 
-#endif
-
-#ifndef _vl_api_defined_ioam_cache_ip6_enable_disable_reply_t_endian
-#define _vl_api_defined_ioam_cache_ip6_enable_disable_reply_t_endian
 static inline void vl_api_ioam_cache_ip6_enable_disable_reply_t_endian (vl_api_ioam_cache_ip6_enable_disable_reply_t *a)
 {
+    int i __attribute__((unused));
     a->_vl_msg_id = clib_net_to_host_u16(a->_vl_msg_id);
     a->context = clib_net_to_host_u32(a->context);
-    a->retval = clib_net_to_host_u32(a->retval);
+    a->retval = clib_net_to_host_i32(a->retval);
 }
 
+
 #endif
-
-
 #endif /* vl_endianfun */
 
 /****** Version tuple *****/
@@ -153,7 +141,7 @@ vl_api_version_tuple(ioam_cache.api, 1, 0, 0)
 /****** API CRC (whole file) *****/
 
 #ifdef vl_api_version
-vl_api_version(ioam_cache.api, 0x162a902b)
+vl_api_version(ioam_cache.api, 0xd0a0cf20)
 
 #endif
 

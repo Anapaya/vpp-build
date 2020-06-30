@@ -1,7 +1,7 @@
 /*
- * oddbuf.c - skeleton vpp engine plug-in
+ * oddbuf.c - awkward chained buffer geometry test tool
  *
- * Copyright (c) <current-year> <your-organization>
+ * Copyright (c) 2019 by Cisco and/or its affiliates.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at:
@@ -25,38 +25,13 @@
 #include <stdbool.h>
 
 /* define message IDs */
-#include <oddbuf/oddbuf_msg_enum.h>
-
-/* define message structures */
-#define vl_typedefs
-#include <oddbuf/oddbuf_all_api_h.h>
-#undef vl_typedefs
-
-/* define generated endian-swappers */
-#define vl_endianfun
-#include <oddbuf/oddbuf_all_api_h.h>
-#undef vl_endianfun
-
-/* instantiate all the print functions we know about */
-#define vl_print(handle, ...) vlib_cli_output (handle, __VA_ARGS__)
-#define vl_printfun
-#include <oddbuf/oddbuf_all_api_h.h>
-#undef vl_printfun
-
-/* Get the API version number */
-#define vl_api_version(n,v) static u32 api_version=(v);
-#include <oddbuf/oddbuf_all_api_h.h>
-#undef vl_api_version
+#include <oddbuf/oddbuf.api_enum.h>
+#include <oddbuf/oddbuf.api_types.h>
 
 #define REPLY_MSG_ID_BASE omp->msg_id_base
 #include <vlibapi/api_helper_macros.h>
 
 oddbuf_main_t oddbuf_main;
-
-/* List of message types that this plugin understands */
-
-#define foreach_oddbuf_plugin_api_msg                           \
-_(ODDBUF_ENABLE_DISABLE, oddbuf_enable_disable)
 
 /* Action function shared between message handler and debug CLI */
 
@@ -147,72 +122,35 @@ static void vl_api_oddbuf_enable_disable_t_handler
 {
   vl_api_oddbuf_enable_disable_reply_t *rmp;
   oddbuf_main_t *omp = &oddbuf_main;
+  u32 sw_if_index;
   int rv;
 
-  rv = oddbuf_enable_disable (omp, ntohl (mp->sw_if_index),
-			      (int) (mp->enable_disable));
+  VALIDATE_SW_IF_INDEX (mp);
 
+  sw_if_index = clib_net_to_host_u32 (mp->sw_if_index);
+  rv = oddbuf_enable_disable (omp, sw_if_index, (int) (mp->enable_disable));
+
+  BAD_SW_IF_INDEX_LABEL;
   REPLY_MACRO (VL_API_ODDBUF_ENABLE_DISABLE_REPLY);
 }
 
-/* Set up the API message handling tables */
-static clib_error_t *
-oddbuf_plugin_api_hookup (vlib_main_t * vm)
-{
-  oddbuf_main_t *omp = &oddbuf_main;
-#define _(N,n)                                                  \
-    vl_msg_api_set_handlers((VL_API_##N + omp->msg_id_base),     \
-                           #n,					\
-                           vl_api_##n##_t_handler,              \
-                           vl_noop_handler,                     \
-                           vl_api_##n##_t_endian,               \
-                           vl_api_##n##_t_print,                \
-                           sizeof(vl_api_##n##_t), 1);
-  foreach_oddbuf_plugin_api_msg;
-#undef _
-
-  return 0;
-}
-
-#define vl_msg_name_crc_list
-#include <oddbuf/oddbuf_all_api_h.h>
-#undef vl_msg_name_crc_list
-
-static void
-setup_message_id_table (oddbuf_main_t * omp, api_main_t * am)
-{
-#define _(id,n,crc)   vl_msg_api_add_msg_name_crc (am, #n "_" #crc, id + omp->msg_id_base);
-  foreach_vl_msg_name_crc_oddbuf;
-#undef _
-}
-
+#include <oddbuf/oddbuf.api.c>
 static clib_error_t *
 oddbuf_init (vlib_main_t * vm)
 {
   oddbuf_main_t *om = &oddbuf_main;
   clib_error_t *error = 0;
-  u8 *name;
 
   om->vlib_main = vm;
   om->vnet_main = vnet_get_main ();
 
-  name = format (0, "oddbuf_%08x%c", api_version, 0);
-
   /* Ask for a correctly-sized block of API message decode slots */
-  om->msg_id_base = vl_msg_api_get_msg_ids
-    ((char *) name, VL_MSG_FIRST_AVAILABLE);
-
-  error = oddbuf_plugin_api_hookup (vm);
-
-  /* Add our API messages to the global name_crc hash table */
-  setup_message_id_table (om, &api_main);
+  om->msg_id_base = setup_message_id_table ();
 
   /* Basic setup */
   om->n_to_copy = 1;
   om->second_chunk_offset = 1;
   om->first_chunk_offset = 0;
-
-  vec_free (name);
 
   return error;
 }

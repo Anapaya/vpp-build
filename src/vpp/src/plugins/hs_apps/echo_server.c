@@ -125,7 +125,7 @@ echo_server_session_reset_callback (session_t * s)
 
 int
 echo_server_session_connected_callback (u32 app_index, u32 api_context,
-					session_t * s, u8 is_fail)
+					session_t * s, session_error_t err)
 {
   clib_warning ("called...");
   return -1;
@@ -306,7 +306,7 @@ static int
 create_api_loopback (vlib_main_t * vm)
 {
   echo_server_main_t *esm = &echo_server_main;
-  api_main_t *am = &api_main;
+  api_main_t *am = vlibapi_get_main ();
   vl_shmem_hdr_t *shmem_hdr;
 
   shmem_hdr = am->shmem_hdr;
@@ -351,6 +351,7 @@ echo_server_attach (u8 * appns_id, u64 appns_flags, u64 appns_secret)
   a->options[APP_OPTIONS_TX_FIFO_SIZE] = esm->fifo_size;
   a->options[APP_OPTIONS_PRIVATE_SEGMENT_COUNT] = esm->private_segment_count;
   a->options[APP_OPTIONS_TLS_ENGINE] = esm->tls_engine;
+  a->options[APP_OPTIONS_PCT_FIRST_ALLOC] = 100;
   a->options[APP_OPTIONS_PREALLOC_FIFO_PAIRS] =
     esm->prealloc_fifos ? esm->prealloc_fifos : 1;
 
@@ -471,7 +472,7 @@ echo_server_create_command_fn (vlib_main_t * vm, unformat_input_t * input,
   esm->prealloc_fifos = 0;
   esm->private_segment_count = 0;
   esm->private_segment_size = 0;
-  esm->tls_engine = TLS_ENGINE_OPENSSL;
+  esm->tls_engine = CRYPTO_ENGINE_OPENSSL;
   vec_free (esm->server_uri);
 
   while (unformat_check_input (input) != UNFORMAT_END_OF_INPUT)

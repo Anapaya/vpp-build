@@ -645,10 +645,18 @@ fib_path_last_lock_gone (fib_node_t *node)
     ASSERT(0);
 }
 
-static const adj_index_t
+static fib_path_t*
 fib_path_attached_next_hop_get_adj (fib_path_t *path,
-				    vnet_link_t link)
+				    vnet_link_t link,
+                                    dpo_id_t *dpo)
 {
+    fib_node_index_t fib_path_index;
+    fib_protocol_t nh_proto;
+    adj_index_t ai;
+
+    fib_path_index = fib_path_get_index(path);
+    nh_proto = dpo_proto_to_fib(path->fp_nh_proto);
+
     if (vnet_sw_interface_is_p2p(vnet_get_main(),
 				 path->attached_next_hop.fp_interface))
     {
@@ -658,18 +666,20 @@ fib_path_attached_next_hop_get_adj (fib_path_t *path,
 	 * the subnet address (the attached route) links to the
 	 * auto-adj (see below), we want that adj here too.
 	 */
-	return (adj_nbr_add_or_lock(dpo_proto_to_fib(path->fp_nh_proto),
-				    link,
-				    &zero_addr,
-				    path->attached_next_hop.fp_interface));
+	ai = adj_nbr_add_or_lock(nh_proto, link, &zero_addr,
+                                 path->attached_next_hop.fp_interface);
     }
     else
     {
-	return (adj_nbr_add_or_lock(dpo_proto_to_fib(path->fp_nh_proto),
-				    link,
-				    &path->attached_next_hop.fp_nh,
-				    path->attached_next_hop.fp_interface));
+	ai = adj_nbr_add_or_lock(nh_proto, link,
+                                 &path->attached_next_hop.fp_nh,
+                                 path->attached_next_hop.fp_interface);
     }
+
+    dpo_set(dpo, DPO_ADJACENCY, vnet_link_to_dpo_proto(link), ai);
+    adj_unlock(ai);
+
+    return (fib_path_get(fib_path_index));
 }
 
 static void
@@ -679,12 +689,11 @@ fib_path_attached_next_hop_set (fib_path_t *path)
      * resolve directly via the adjacency discribed by the
      * interface and next-hop
      */
-    dpo_set(&path->fp_dpo,
-	    DPO_ADJACENCY,
-	    path->fp_nh_proto,
-	    fib_path_attached_next_hop_get_adj(
-		 path,
-		 dpo_proto_to_link(path->fp_nh_proto)));
+    path = fib_path_attached_next_hop_get_adj(path,
+                                              dpo_proto_to_link(path->fp_nh_proto),
+                                              &path->fp_dpo);
+
+    ASSERT(dpo_is_adj(&path->fp_dpo));
 
     /*
      * become a child of the adjacency so we receive updates
@@ -702,10 +711,15 @@ fib_path_attached_next_hop_set (fib_path_t *path)
     }
 }
 
-static const adj_index_t
+static void
 fib_path_attached_get_adj (fib_path_t *path,
-                           vnet_link_t link)
+                           vnet_link_t link,
+                           dpo_id_t *dpo)
 {
+    fib_protocol_t nh_proto;
+
+    nh_proto = dpo_proto_to_fib(path->fp_nh_proto);
+
     if (vnet_sw_interface_is_p2p(vnet_get_main(),
                                  path->attached.fp_interface))
     {
@@ -713,17 +727,28 @@ fib_path_attached_get_adj (fib_path_t *path,
          * point-2-point interfaces do not require a glean, since
          * there is nothing to ARP. Install a rewrite/nbr adj instead
          */
-        return (adj_nbr_add_or_lock(dpo_proto_to_fib(path->fp_nh_proto),
-                                    link,
-                                    &zero_addr,
-                                    path->attached.fp_interface));
+        adj_index_t ai;
+
+        ai = adj_nbr_add_or_lock(nh_proto, link, &zero_addr,
+                                 path->attached.fp_interface);
+
+        dpo_set(dpo, DPO_ADJACENCY, vnet_link_to_dpo_proto(link), ai);
+        adj_unlock(ai);
+    }
+    else if (vnet_sw_interface_is_nbma(vnet_get_main(),
+                                       path->attached.fp_interface))
+    {
+        dpo_copy(dpo, drop_dpo_get(path->fp_nh_proto));
     }
     else
     {
-        return (adj_glean_add_or_lock(dpo_proto_to_fib(path->fp_nh_proto),
-                                      link,
-                                      path->attached.fp_interface,
-                                      NULL));
+        adj_index_t ai;
+
+        ai = adj_glean_add_or_lock(nh_proto, link,
+                                   path->attached.fp_interface,
+                                   NULL);
+        dpo_set(dpo, DPO_ADJACENCY_GLEAN, vnet_link_to_dpo_proto(link), ai);
+        adj_unlock(ai);
     }
 }
 
@@ -910,14 +935,10 @@ fib_path_unresolve (fib_path_t *path)
         bier_table_ecmp_unlock(path->fp_via_bier_tbl);
         break;
     case FIB_PATH_TYPE_ATTACHED_NEXT_HOP:
-	adj_child_remove(path->fp_dpo.dpoi_index,
-			 path->fp_sibling);
-        adj_unlock(path->fp_dpo.dpoi_index);
-        break;
     case FIB_PATH_TYPE_ATTACHED:
-        adj_child_remove(path->fp_dpo.dpoi_index,
-                         path->fp_sibling);
-        adj_unlock(path->fp_dpo.dpoi_index);
+	if (dpo_is_adj(&path->fp_dpo))
+            adj_child_remove(path->fp_dpo.dpoi_index,
+                             path->fp_sibling);
         break;
     case FIB_PATH_TYPE_UDP_ENCAP:
 	udp_encap_unlock(path->fp_dpo.dpoi_index);
@@ -1089,24 +1110,21 @@ FIXME comment
              * restack the DPO to pick up the correct DPO sub-type
              */
             uword if_is_up;
-            adj_index_t ai;
 
             if_is_up = vnet_sw_interface_is_up(
                            vnet_get_main(),
                            path->attached_next_hop.fp_interface);
 
-            ai = fib_path_attached_next_hop_get_adj(
-                     path,
-                     dpo_proto_to_link(path->fp_nh_proto));
+            path = fib_path_attached_next_hop_get_adj(
+                path,
+                dpo_proto_to_link(path->fp_nh_proto),
+                &path->fp_dpo);
 
             path->fp_oper_flags &= ~FIB_PATH_OPER_FLAG_RESOLVED;
-            if (if_is_up && adj_is_up(ai))
+            if (if_is_up && adj_is_up(path->fp_dpo.dpoi_index))
             {
                 path->fp_oper_flags |= FIB_PATH_OPER_FLAG_RESOLVED;
             }
-
-            dpo_set(&path->fp_dpo, DPO_ADJACENCY, path->fp_nh_proto, ai);
-            adj_unlock(ai);
 
             if (!if_is_up)
             {
@@ -1474,7 +1492,7 @@ fib_path_copy (fib_node_index_t path_index,
     orig_path = fib_path_get(path_index);
     ASSERT(NULL != orig_path);
 
-    memcpy(path, orig_path, sizeof(*path));
+    clib_memcpy(path, orig_path, sizeof(*path));
 
     FIB_PATH_DBG(path, "create-copy:%d", path_index);
 
@@ -1576,8 +1594,8 @@ fib_path_cmp_i (const fib_path_t *path1,
                    path2->attached.fp_interface);
 	    break;
 	case FIB_PATH_TYPE_RECURSIVE:
-	    res = ip46_address_cmp(&path1->recursive.fp_nh,
-				   &path2->recursive.fp_nh);
+	    res = ip46_address_cmp(&path1->recursive.fp_nh.fp_ip,
+				   &path2->recursive.fp_nh.fp_ip);
  
 	    if (0 == res)
 	    {
@@ -1856,7 +1874,8 @@ fib_path_recursive_loop_detect (fib_node_index_t path_index,
     }
     case FIB_PATH_TYPE_ATTACHED_NEXT_HOP:
     case FIB_PATH_TYPE_ATTACHED:
-	if (adj_recursive_loop_detect(path->fp_dpo.dpoi_index,
+	if (dpo_is_adj(&path->fp_dpo) &&
+            adj_recursive_loop_detect(path->fp_dpo.dpoi_index,
                                       entry_indicies))
 	{
 	    FIB_PATH_DBG(path, "recursive loop formed");
@@ -1927,11 +1946,9 @@ fib_path_resolve (fib_node_index_t path_index)
         {
             path->fp_oper_flags &= ~FIB_PATH_OPER_FLAG_RESOLVED;
         }
-        dpo_set(&tmp,
-                DPO_ADJACENCY,
-                path->fp_nh_proto,
-                fib_path_attached_get_adj(path,
-                                          dpo_proto_to_link(path->fp_nh_proto)));
+        fib_path_attached_get_adj(path,
+                                  dpo_proto_to_link(path->fp_nh_proto),
+                                  &tmp);
 
         /*
          * re-fetch after possible mem realloc
@@ -1943,9 +1960,12 @@ fib_path_resolve (fib_node_index_t path_index)
          * become a child of the adjacency so we receive updates
          * when the interface state changes
          */
-        path->fp_sibling = adj_child_add(path->fp_dpo.dpoi_index,
-                                         FIB_NODE_TYPE_PATH,
-                                         fib_path_get_index(path));
+        if (dpo_is_adj(&path->fp_dpo))
+        {
+            path->fp_sibling = adj_child_add(path->fp_dpo.dpoi_index,
+                                             FIB_NODE_TYPE_PATH,
+                                             fib_path_get_index(path));
+        }
         dpo_reset(&tmp);
 	break;
     }
@@ -2213,7 +2233,6 @@ fib_path_get_adj (fib_node_index_t path_index)
 
     path = fib_path_get(path_index);
 
-    ASSERT(dpo_is_adj(&path->fp_dpo));
     if (dpo_is_adj(&path->fp_dpo))
     {
 	return (path->fp_dpo.dpoi_index);
@@ -2432,21 +2451,11 @@ fib_path_contribute_forwarding (fib_node_index_t path_index,
 	    case FIB_FORW_CHAIN_TYPE_NSH:
 	    case FIB_FORW_CHAIN_TYPE_MCAST_IP4:
 	    case FIB_FORW_CHAIN_TYPE_MCAST_IP6:
-	    {
-		adj_index_t ai;
-
-		/*
-		 * get a appropriate link type adj.
-		 */
-		ai = fib_path_attached_next_hop_get_adj(
-		         path,
-			 fib_forw_chain_type_to_link_type(fct));
-		dpo_set(dpo, DPO_ADJACENCY,
-			fib_forw_chain_type_to_dpo_proto(fct), ai);
-		adj_unlock(ai);
-
+		path = fib_path_attached_next_hop_get_adj(
+                    path,
+                    fib_forw_chain_type_to_link_type(fct),
+                    dpo);
 		break;
-	    }
 	    case FIB_FORW_CHAIN_TYPE_BIER:
 		break;
 	    }
@@ -2549,20 +2558,10 @@ fib_path_contribute_forwarding (fib_node_index_t path_index,
 	    case FIB_FORW_CHAIN_TYPE_ETHERNET:
 	    case FIB_FORW_CHAIN_TYPE_NSH:
             case FIB_FORW_CHAIN_TYPE_BIER:
-                {
-                    adj_index_t ai;
-
-                    /*
-                     * get a appropriate link type adj.
-                     */
-                    ai = fib_path_attached_get_adj(
-                            path,
-                            fib_forw_chain_type_to_link_type(fct));
-                    dpo_set(dpo, DPO_ADJACENCY,
-                            fib_forw_chain_type_to_dpo_proto(fct), ai);
-                    adj_unlock(ai);
-                    break;
-                }
+                fib_path_attached_get_adj(path,
+                                          fib_forw_chain_type_to_link_type(fct),
+                                          dpo);
+                break;
 	    case FIB_FORW_CHAIN_TYPE_MCAST_IP4:
 	    case FIB_FORW_CHAIN_TYPE_MCAST_IP6:
                 {
@@ -2824,7 +2823,7 @@ show_fib_path_command (vlib_main_t * vm,
                            FIB_PATH_FORMAT_FLAGS_NONE);
 	    s = format(s, "\n  children:");
 	    s = fib_node_children_format(path->fp_node.fn_children, s);
-	    vlib_cli_output (vm, "%s", s);
+	    vlib_cli_output (vm, "%v", s);
 	    vec_free(s);
 	}
 	else

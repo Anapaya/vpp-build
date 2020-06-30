@@ -292,50 +292,22 @@ geneve_decap_next_is_valid (geneve_main_t * vxm, u32 is_ip6,
   return decap_next_index < r->n_next_nodes;
 }
 
-static uword
-vtep_addr_ref (ip46_address_t * ip)
+typedef union
 {
-  uword *vtep = ip46_address_is_ip4 (ip) ?
-    hash_get (geneve_main.vtep4, ip->ip4.as_u32) :
-    hash_get_mem (geneve_main.vtep6, &ip->ip6);
-  if (vtep)
-    return ++(*vtep);
-  ip46_address_is_ip4 (ip) ?
-    hash_set (geneve_main.vtep4, ip->ip4.as_u32, 1) :
-    hash_set_mem_alloc (&geneve_main.vtep6, &ip->ip6, 1);
-  return 1;
-}
-
-static uword
-vtep_addr_unref (ip46_address_t * ip)
-{
-  uword *vtep = ip46_address_is_ip4 (ip) ?
-    hash_get (geneve_main.vtep4, ip->ip4.as_u32) :
-    hash_get_mem (geneve_main.vtep6, &ip->ip6);
-  ASSERT (vtep);
-  if (--(*vtep) != 0)
-    return *vtep;
-  ip46_address_is_ip4 (ip) ?
-    hash_unset (geneve_main.vtep4, ip->ip4.as_u32) :
-    hash_unset_mem_free (&geneve_main.vtep6, &ip->ip6);
-  return 0;
-}
-
-typedef CLIB_PACKED (union
-		     {
-		     struct
-		     {
-		     fib_node_index_t mfib_entry_index;
-		     adj_index_t mcast_adj_index;
-		     }; u64 as_u64;
-		     }) mcast_shared_t;
+  struct
+  {
+    fib_node_index_t mfib_entry_index;
+    adj_index_t mcast_adj_index;
+  };
+  u64 as_u64;
+} __clib_packed mcast_shared_t;
 
 static inline mcast_shared_t
 mcast_shared_get (ip46_address_t * ip)
 {
   ASSERT (ip46_address_is_multicast (ip));
   uword *p = hash_get_mem (geneve_main.mcast_shared, ip);
-  ASSERT (p);
+  ALWAYS_ASSERT (p);
   return (mcast_shared_t)
   {
   .as_u64 = *p};
@@ -381,15 +353,13 @@ int vnet_geneve_add_del_tunnel
   if (!is_ip6)
     {
       key4.remote = a->remote.ip4.as_u32;
-      key4.vni =
-	clib_host_to_net_u32 ((a->vni << GENEVE_VNI_SHIFT) & GENEVE_VNI_MASK);
+      key4.vni = clib_host_to_net_u32 (a->vni << GENEVE_VNI_SHIFT);
       p = hash_get (vxm->geneve4_tunnel_by_key, key4.as_u64);
     }
   else
     {
       key6.remote = a->remote.ip6;
-      key6.vni =
-	clib_host_to_net_u32 ((a->vni << GENEVE_VNI_SHIFT) & GENEVE_VNI_MASK);
+      key6.vni = clib_host_to_net_u32 (a->vni << GENEVE_VNI_SHIFT);
       p = hash_get_mem (vxm->geneve6_tunnel_by_key, &key6);
     }
 
@@ -498,7 +468,7 @@ int vnet_geneve_add_del_tunnel
 	   * when the forwarding for the entry updates, and the tunnel can
 	   * re-stack accordingly
 	   */
-	  vtep_addr_ref (&t->local);
+	  vtep_addr_ref (&vxm->vtep_table, t->encap_fib_index, &t->local);
 	  t->fib_entry_index = fib_entry_track (t->encap_fib_index,
 						&tun_remote_pfx,
 						FIB_NODE_TYPE_GENEVE_TUNNEL,
@@ -515,7 +485,8 @@ int vnet_geneve_add_del_tunnel
 	   */
 	  fib_protocol_t fp = fib_ip_proto (is_ip6);
 
-	  if (vtep_addr_ref (&t->remote) == 1)
+	  if (vtep_addr_ref (&vxm->vtep_table,
+			     t->encap_fib_index, &t->remote) == 1)
 	    {
 	      fib_node_index_t mfei;
 	      adj_index_t ai;
@@ -604,10 +575,11 @@ int vnet_geneve_add_del_tunnel
 
       if (!ip46_address_is_multicast (&t->remote))
 	{
-	  vtep_addr_unref (&t->local);
+	  vtep_addr_unref (&vxm->vtep_table, t->encap_fib_index, &t->local);
 	  fib_entry_untrack (t->fib_entry_index, t->sibling_index);
 	}
-      else if (vtep_addr_unref (&t->remote) == 0)
+      else if (vtep_addr_unref (&vxm->vtep_table,
+				t->encap_fib_index, &t->remote) == 0)
 	{
 	  mcast_shared_remove (&t->remote);
 	}
@@ -1102,7 +1074,7 @@ set_ip6_geneve_bypass (vlib_main_t * vm,
 VLIB_CLI_COMMAND (set_interface_ip6_geneve_bypass_command, static) = {
   .path = "set interface ip6 geneve-bypass",
   .function = set_ip6_geneve_bypass,
-  .short_help = "set interface ip geneve-bypass <interface> [del]",
+  .short_help = "set interface ip6 geneve-bypass <interface> [del]",
 };
 /* *INDENT-ON* */
 
@@ -1118,7 +1090,7 @@ geneve_init (vlib_main_t * vm)
   vxm->geneve6_tunnel_by_key = hash_create_mem (0,
 						sizeof (geneve6_tunnel_key_t),
 						sizeof (uword));
-  vxm->vtep6 = hash_create_mem (0, sizeof (ip6_address_t), sizeof (uword));
+  vxm->vtep_table = vtep_table_create ();
   vxm->mcast_shared = hash_create_mem (0,
 				       sizeof (ip46_address_t),
 				       sizeof (mcast_shared_t));

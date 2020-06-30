@@ -25,10 +25,10 @@
 #include <vnet/ipsec/ipsec_spd.h>
 #include <vnet/ipsec/ipsec_spd_policy.h>
 #include <vnet/ipsec/ipsec_sa.h>
-#include <vnet/ipsec/ipsec_if.h>
 
 typedef clib_error_t *(*add_del_sa_sess_cb_t) (u32 sa_index, u8 is_add);
 typedef clib_error_t *(*check_support_cb_t) (ipsec_sa_t * sa);
+typedef clib_error_t *(*enable_disable_cb_t) (int is_enable);
 
 typedef struct
 {
@@ -54,6 +54,8 @@ typedef struct
   add_del_sa_sess_cb_t add_del_sa_sess_cb;
   /* check support function */
   check_support_cb_t check_support_cb;
+  /* enable or disable function */
+  enable_disable_cb_t enable_disable_cb;
   u32 esp4_encrypt_node_index;
   u32 esp4_decrypt_node_index;
   u32 esp4_encrypt_next_index;
@@ -62,8 +64,12 @@ typedef struct
   u32 esp6_decrypt_node_index;
   u32 esp6_encrypt_next_index;
   u32 esp6_decrypt_next_index;
-  u32 esp4_encrypt_tun_feature_index;
-  u32 esp6_encrypt_tun_feature_index;
+  u32 esp4_decrypt_tun_node_index;
+  u32 esp4_decrypt_tun_next_index;
+  u32 esp4_encrypt_tun_node_index;
+  u32 esp6_decrypt_tun_node_index;
+  u32 esp6_decrypt_tun_next_index;
+  u32 esp6_encrypt_tun_node_index;
 } ipsec_esp_backend_t;
 
 typedef struct
@@ -85,8 +91,12 @@ typedef struct
 
 typedef struct
 {
+  CLIB_CACHE_LINE_ALIGN_MARK (cacheline0);
   vnet_crypto_op_t *crypto_ops;
   vnet_crypto_op_t *integ_ops;
+  vnet_crypto_op_t *chained_crypto_ops;
+  vnet_crypto_op_t *chained_integ_ops;
+  vnet_crypto_op_chunk_t *chunks;
 } ipsec_per_thread_data_t;
 
 typedef struct
@@ -98,8 +108,8 @@ typedef struct
   /* pool of policies */
   ipsec_policy_t *policies;
 
-  /* pool of tunnel interfaces */
-  ipsec_tunnel_if_t *tunnel_interfaces;
+  /* hash tables of UDP port registrations */
+  uword *udp_port_registrations;
 
   uword *tunnel_index_by_key;
 
@@ -122,29 +132,35 @@ typedef struct
   u32 error_drop_node_index;
   u32 esp4_encrypt_node_index;
   u32 esp4_decrypt_node_index;
+  u32 esp4_decrypt_tun_node_index;
+  u32 esp4_encrypt_tun_node_index;
   u32 ah4_encrypt_node_index;
   u32 ah4_decrypt_node_index;
   u32 esp6_encrypt_node_index;
   u32 esp6_decrypt_node_index;
+  u32 esp6_decrypt_tun_node_index;
+  u32 esp6_encrypt_tun_node_index;
   u32 ah6_encrypt_node_index;
   u32 ah6_decrypt_node_index;
   /* next node indices */
   u32 esp4_encrypt_next_index;
   u32 esp4_decrypt_next_index;
+  u32 esp4_decrypt_tun_next_index;
   u32 ah4_encrypt_next_index;
   u32 ah4_decrypt_next_index;
   u32 esp6_encrypt_next_index;
   u32 esp6_decrypt_next_index;
+  u32 esp6_decrypt_tun_next_index;
   u32 ah6_encrypt_next_index;
   u32 ah6_decrypt_next_index;
 
-  /* tun encrypt arcs and feature nodes */
-  u32 esp4_encrypt_tun_feature_index;
-  u32 esp6_encrypt_tun_feature_index;
-
   /* tun nodes to drop packets when no crypto alg set on outbound SA */
-  u32 esp4_no_crypto_tun_feature_index;
-  u32 esp6_no_crypto_tun_feature_index;
+  u32 esp4_no_crypto_tun_node_index;
+  u32 esp6_no_crypto_tun_node_index;
+
+  /* tun nodes for encrypt on L2 interfaces */
+  u32 esp4_encrypt_l2_tun_node_index;
+  u32 esp6_encrypt_l2_tun_node_index;
 
   /* pool of ah backends */
   ipsec_ah_backend_t *ah_backends;
@@ -167,6 +183,23 @@ typedef struct
 
   /* per-thread data */
   ipsec_per_thread_data_t *ptd;
+
+  /** Worker handoff */
+  u32 ah4_enc_fq_index;
+  u32 ah4_dec_fq_index;
+  u32 ah6_enc_fq_index;
+  u32 ah6_dec_fq_index;
+
+  u32 esp4_enc_fq_index;
+  u32 esp4_dec_fq_index;
+  u32 esp6_enc_fq_index;
+  u32 esp6_dec_fq_index;
+  u32 esp4_enc_tun_fq_index;
+  u32 esp6_enc_tun_fq_index;
+  u32 esp4_dec_tun_fq_index;
+  u32 esp6_dec_tun_fq_index;
+
+  u8 async_mode;
 } ipsec_main_t;
 
 typedef enum ipsec_format_flags_t_
@@ -183,16 +216,20 @@ clib_error_t *ipsec_add_del_sa_sess_cb (ipsec_main_t * im, u32 sa_index,
 
 clib_error_t *ipsec_check_support_cb (ipsec_main_t * im, ipsec_sa_t * sa);
 
-extern vlib_node_registration_t esp4_encrypt_node;
-extern vlib_node_registration_t esp4_decrypt_node;
 extern vlib_node_registration_t ah4_encrypt_node;
 extern vlib_node_registration_t ah4_decrypt_node;
-extern vlib_node_registration_t esp6_encrypt_node;
-extern vlib_node_registration_t esp6_decrypt_node;
 extern vlib_node_registration_t ah6_encrypt_node;
 extern vlib_node_registration_t ah6_decrypt_node;
-extern vlib_node_registration_t ipsec4_if_input_node;
-extern vlib_node_registration_t ipsec6_if_input_node;
+extern vlib_node_registration_t esp4_encrypt_node;
+extern vlib_node_registration_t esp4_decrypt_node;
+extern vlib_node_registration_t esp6_encrypt_node;
+extern vlib_node_registration_t esp6_decrypt_node;
+extern vlib_node_registration_t esp4_encrypt_tun_node;
+extern vlib_node_registration_t esp6_encrypt_tun_node;
+extern vlib_node_registration_t esp4_decrypt_tun_node;
+extern vlib_node_registration_t esp6_decrypt_tun_node;
+extern vlib_node_registration_t ipsec4_tun_input_node;
+extern vlib_node_registration_t ipsec6_tun_input_node;
 
 /*
  * functions
@@ -229,16 +266,20 @@ u32 ipsec_register_esp_backend (vlib_main_t * vm, ipsec_main_t * im,
 				const char *esp4_encrypt_node_name,
 				const char *esp4_encrypt_tun_node_name,
 				const char *esp4_decrypt_node_name,
+				const char *esp4_decrypt_tun_node_name,
 				const char *esp6_encrypt_node_name,
 				const char *esp6_encrypt_tun_node_name,
 				const char *esp6_decrypt_node_name,
+				const char *esp6_decrypt_tun_node_name,
 				check_support_cb_t esp_check_support_cb,
-				add_del_sa_sess_cb_t esp_add_del_sa_sess_cb);
+				add_del_sa_sess_cb_t esp_add_del_sa_sess_cb,
+				enable_disable_cb_t enable_disable_cb);
 
 int ipsec_select_ah_backend (ipsec_main_t * im, u32 ah_backend_idx);
 int ipsec_select_esp_backend (ipsec_main_t * im, u32 esp_backend_idx);
 
 clib_error_t *ipsec_rsc_in_use (ipsec_main_t * im);
+void ipsec_set_async_mode (u32 is_enabled);
 
 always_inline ipsec_sa_t *
 ipsec_sa_get (u32 sa_index)
@@ -248,6 +289,10 @@ ipsec_sa_get (u32 sa_index)
 
 void ipsec_add_feature (const char *arc_name, const char *node_name,
 			u32 * out_feature_index);
+
+void ipsec_set_async_mode (u32 is_enabled);
+extern void ipsec_register_udp_port (u16 udp_port);
+extern void ipsec_unregister_udp_port (u16 udp_port);
 
 #endif /* __IPSEC_H__ */
 

@@ -2,8 +2,8 @@
 
 The RDMA subsystem relies on the kernel, udev and systemd to load modules on
 demand when RDMA hardware is present. The RDMA subsystem is unique since it
-does not do not load the optional RDMA hardware modules unless the system has
-the rdma-core package installed.
+does not load the optional RDMA hardware modules unless the system has the
+rdma-core package installed.
 
 This is to avoid exposing systems not using RDMA from having RDMA enabled, for
 instance if a system has a multi-protocol ethernet adapter, but is only using
@@ -168,7 +168,7 @@ directory.
  * NAME_PCI - read PCI location and topology as a source for stable names,
  which won't change in any software event (reset, PCI probe e.t.c.).
  Example: "ibp0s12f4".
- * NAME_GUID - read system image GUID information in similar manner to
+ * NAME_GUID - read node GUID information in similar manner to
  net MAC naming policy. Example "rocex525400c0fe123455".
  * NAME_ONBOARD - read Firmware/BIOS provided index numbers for on-board devices.
  Example: "ibo3".
@@ -188,7 +188,7 @@ Type of names:
 
  * o<index> - on-board device index number
  * s<slot>[f<function>] - hotplug slot index number
- * x<GUID> - System image GUID
+ * x<GUID> - Node GUID
  * [P<domain>]p<bus>s<slot>[f<function>] - PCI geographical location
 
 Notes:
@@ -196,3 +196,5 @@ Notes:
  * All multi-function PCI devices will carry the [f<function>] number in the
  device name, including the function 0 device.
  * When using PCI geography, The PCI domain is only prepended when it is not 0.
+ * SR-IOV virtual devices are named based on the name of the parent interface,
+ with a suffix of "v<N>", where <N> is the virtual device number.

@@ -46,34 +46,6 @@ template class Request<vapi_msg_avf_create, vapi_msg_avf_create_reply>;
 
 using Avf_create = Request<vapi_msg_avf_create, vapi_msg_avf_create_reply>;
 
-template <> inline void vapi_swap_to_be<vapi_msg_avf_delete_reply>(vapi_msg_avf_delete_reply *msg)
-{
-  vapi_msg_avf_delete_reply_hton(msg);
-}
-
-template <> inline void vapi_swap_to_host<vapi_msg_avf_delete_reply>(vapi_msg_avf_delete_reply *msg)
-{
-  vapi_msg_avf_delete_reply_ntoh(msg);
-}
-
-template <> inline vapi_msg_id_t vapi_get_msg_id_t<vapi_msg_avf_delete_reply>()
-{
-  return ::vapi_msg_id_avf_delete_reply; 
-}
-
-template <> inline vapi_msg_id_t vapi_get_msg_id_t<Msg<vapi_msg_avf_delete_reply>>()
-{
-  return ::vapi_msg_id_avf_delete_reply; 
-}
-
-static void __attribute__((constructor)) __vapi_cpp_constructor_avf_delete_reply()
-{
-  vapi::vapi_msg_set_msg_id<vapi_msg_avf_delete_reply>(vapi_msg_id_avf_delete_reply);
-}
-
-template class Msg<vapi_msg_avf_delete_reply>;
-
-using Avf_delete_reply = Msg<vapi_msg_avf_delete_reply>;
 template <> inline void vapi_swap_to_be<vapi_msg_avf_create_reply>(vapi_msg_avf_create_reply *msg)
 {
   vapi_msg_avf_create_reply_hton(msg);
@@ -142,5 +114,33 @@ template class Request<vapi_msg_avf_delete, vapi_msg_avf_delete_reply>;
 
 using Avf_delete = Request<vapi_msg_avf_delete, vapi_msg_avf_delete_reply>;
 
+template <> inline void vapi_swap_to_be<vapi_msg_avf_delete_reply>(vapi_msg_avf_delete_reply *msg)
+{
+  vapi_msg_avf_delete_reply_hton(msg);
+}
+
+template <> inline void vapi_swap_to_host<vapi_msg_avf_delete_reply>(vapi_msg_avf_delete_reply *msg)
+{
+  vapi_msg_avf_delete_reply_ntoh(msg);
+}
+
+template <> inline vapi_msg_id_t vapi_get_msg_id_t<vapi_msg_avf_delete_reply>()
+{
+  return ::vapi_msg_id_avf_delete_reply; 
+}
+
+template <> inline vapi_msg_id_t vapi_get_msg_id_t<Msg<vapi_msg_avf_delete_reply>>()
+{
+  return ::vapi_msg_id_avf_delete_reply; 
+}
+
+static void __attribute__((constructor)) __vapi_cpp_constructor_avf_delete_reply()
+{
+  vapi::vapi_msg_set_msg_id<vapi_msg_avf_delete_reply>(vapi_msg_id_avf_delete_reply);
+}
+
+template class Msg<vapi_msg_avf_delete_reply>;
+
+using Avf_delete_reply = Msg<vapi_msg_avf_delete_reply>;
 }
 #endif

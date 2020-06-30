@@ -23,7 +23,7 @@ extern "C" {
 typedef enum {
   ADDRESS_IP4 = 0,
   ADDRESS_IP6 = 1,
-} vapi_enum_address_family;
+} __attribute__((packed)) vapi_enum_address_family;
 
 #endif
 
@@ -34,7 +34,7 @@ typedef enum {
   IP_API_ECN_ECT0 = 1,
   IP_API_ECN_ECT1 = 2,
   IP_API_ECN_CE = 3,
-} vapi_enum_ip_ecn;
+} __attribute__((packed)) vapi_enum_ip_ecn;
 
 #endif
 
@@ -62,7 +62,7 @@ typedef enum {
   IP_API_DSCP_EF = 46,
   IP_API_DSCP_CS6 = 48,
   IP_API_DSCP_CS7 = 50,
-} vapi_enum_ip_dscp;
+} __attribute__((packed)) vapi_enum_ip_dscp;
 
 #endif
 
@@ -75,13 +75,14 @@ typedef enum {
   IP_API_PROTO_TCP = 6,
   IP_API_PROTO_UDP = 17,
   IP_API_PROTO_GRE = 47,
-  IP_API_PROTO_AH = 50,
-  IP_API_PROTO_ESP = 51,
+  IP_API_PROTO_ESP = 50,
+  IP_API_PROTO_AH = 51,
+  IP_API_PROTO_ICMP6 = 58,
   IP_API_PROTO_EIGRP = 88,
   IP_API_PROTO_OSPF = 89,
   IP_API_PROTO_SCTP = 132,
   IP_API_PROTO_RESERVED = 255,
-} vapi_enum_ip_proto;
+} __attribute__((packed)) vapi_enum_ip_proto;
 
 #endif
 
@@ -91,7 +92,7 @@ typedef enum {
   LB_API_SRV_TYPE_CLUSTERIP = 0,
   LB_API_SRV_TYPE_NODEPORT = 1,
   LB_API_SRV_N_TYPES = 2,
-} vapi_enum_lb_srv_type;
+}  vapi_enum_lb_srv_type;
 
 #endif
 
@@ -104,7 +105,7 @@ typedef enum {
   LB_API_ENCAP_TYPE_NAT4 = 3,
   LB_API_ENCAP_TYPE_NAT6 = 4,
   LB_API_ENCAP_N_TYPES = 5,
-} vapi_enum_lb_encap_type;
+}  vapi_enum_lb_encap_type;
 
 #endif
 
@@ -115,7 +116,7 @@ typedef enum {
   LB_API_LKP_DIFF_IP_PORT = 1,
   LB_API_LKP_ALL_PORT_IP = 2,
   LB_API_LKP_N_TYPES = 3,
-} vapi_enum_lb_lkp_type_t;
+}  vapi_enum_lb_lkp_type_t;
 
 #endif
 
@@ -130,7 +131,7 @@ typedef enum {
   LB_API_VIP_TYPE_IP4_NAT4 = 5,
   LB_API_VIP_TYPE_IP6_NAT6 = 6,
   LB_API_VIP_N_TYPES = 7,
-} vapi_enum_lb_vip_type;
+}  vapi_enum_lb_vip_type;
 
 #endif
 
@@ -140,7 +141,7 @@ typedef enum {
   LB_API_NAT_PROTOCOL_UDP = 6,
   LB_API_NAT_PROTOCOL_TCP = 23,
   LB_API_NAT_PROTOCOL_ANY = 4294967295,
-} vapi_enum_lb_nat_protocol;
+}  vapi_enum_lb_nat_protocol;
 
 #endif
 
@@ -192,12 +193,12 @@ typedef struct __attribute__((__packed__)) {
 
 static inline void vapi_type_address_hton(vapi_type_address *msg)
 {
-  msg->af = (vapi_enum_address_family)htobe32(msg->af);
+
 }
 
 static inline void vapi_type_address_ntoh(vapi_type_address *msg)
 {
-  msg->af = (vapi_enum_address_family)be32toh(msg->af);
+
 }
 #endif
 
@@ -210,12 +211,12 @@ typedef struct __attribute__((__packed__)) {
 
 static inline void vapi_type_prefix_hton(vapi_type_prefix *msg)
 {
-  vapi_type_address_hton(&msg->address);
+
 }
 
 static inline void vapi_type_prefix_ntoh(vapi_type_prefix *msg)
 {
-  vapi_type_address_ntoh(&msg->address);
+
 }
 #endif
 
@@ -230,13 +231,11 @@ typedef struct __attribute__((__packed__)) {
 
 static inline void vapi_type_mprefix_hton(vapi_type_mprefix *msg)
 {
-  msg->af = (vapi_enum_address_family)htobe32(msg->af);
   msg->grp_address_length = htobe16(msg->grp_address_length);
 }
 
 static inline void vapi_type_mprefix_ntoh(vapi_type_mprefix *msg)
 {
-  msg->af = (vapi_enum_address_family)be32toh(msg->af);
   msg->grp_address_length = be16toh(msg->grp_address_length);
 }
 #endif
@@ -293,28 +292,24 @@ typedef struct __attribute__((__packed__)) {
 
 static inline void vapi_type_lb_vip_hton(vapi_type_lb_vip *msg)
 {
-  vapi_type_prefix_hton(&msg->pfx);
-  msg->protocol = (vapi_enum_ip_proto)htobe32(msg->protocol);
   msg->port = htobe16(msg->port);
 }
 
 static inline void vapi_type_lb_vip_ntoh(vapi_type_lb_vip *msg)
 {
-  vapi_type_prefix_ntoh(&msg->pfx);
-  msg->protocol = (vapi_enum_ip_proto)be32toh(msg->protocol);
   msg->port = be16toh(msg->port);
 }
-#endif
-
-#ifndef defined_vapi_type_ip6_address_with_prefix
-#define defined_vapi_type_ip6_address_with_prefix
-typedef vapi_type_ip6_prefix vapi_type_ip6_address_with_prefix;
-
 #endif
 
 #ifndef defined_vapi_type_ip4_address_with_prefix
 #define defined_vapi_type_ip4_address_with_prefix
 typedef vapi_type_ip4_prefix vapi_type_ip4_address_with_prefix;
+
+#endif
+
+#ifndef defined_vapi_type_ip6_address_with_prefix
+#define defined_vapi_type_ip6_address_with_prefix
+typedef vapi_type_ip6_prefix vapi_type_ip6_address_with_prefix;
 
 #endif
 

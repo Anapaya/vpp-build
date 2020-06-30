@@ -13,65 +13,612 @@ extern "C" {
 #endif
 #include <vapi/vpe.api.vapi.h>
 
-extern vapi_msg_id_t vapi_msg_id_policer_classify_set_interface;
-extern vapi_msg_id_t vapi_msg_id_flow_classify_set_interface_reply;
-extern vapi_msg_id_t vapi_msg_id_classify_table_ids;
-extern vapi_msg_id_t vapi_msg_id_output_acl_set_interface;
-extern vapi_msg_id_t vapi_msg_id_classify_session_details;
-extern vapi_msg_id_t vapi_msg_id_classify_set_interface_l2_tables;
-extern vapi_msg_id_t vapi_msg_id_policer_classify_details;
-extern vapi_msg_id_t vapi_msg_id_input_acl_set_interface_reply;
-extern vapi_msg_id_t vapi_msg_id_classify_add_del_session_reply;
-extern vapi_msg_id_t vapi_msg_id_classify_add_del_table_reply;
-extern vapi_msg_id_t vapi_msg_id_policer_classify_dump;
-extern vapi_msg_id_t vapi_msg_id_classify_set_interface_ip_table_reply;
-extern vapi_msg_id_t vapi_msg_id_classify_add_del_session;
-extern vapi_msg_id_t vapi_msg_id_classify_table_info_reply;
-extern vapi_msg_id_t vapi_msg_id_classify_table_by_interface_reply;
 extern vapi_msg_id_t vapi_msg_id_classify_add_del_table;
-extern vapi_msg_id_t vapi_msg_id_flow_classify_details;
-extern vapi_msg_id_t vapi_msg_id_output_acl_set_interface_reply;
-extern vapi_msg_id_t vapi_msg_id_classify_set_interface_l2_tables_reply;
+extern vapi_msg_id_t vapi_msg_id_classify_add_del_table_reply;
+extern vapi_msg_id_t vapi_msg_id_classify_add_del_session;
+extern vapi_msg_id_t vapi_msg_id_classify_add_del_session_reply;
+extern vapi_msg_id_t vapi_msg_id_policer_classify_set_interface;
 extern vapi_msg_id_t vapi_msg_id_policer_classify_set_interface_reply;
-extern vapi_msg_id_t vapi_msg_id_flow_classify_dump;
+extern vapi_msg_id_t vapi_msg_id_policer_classify_dump;
+extern vapi_msg_id_t vapi_msg_id_policer_classify_details;
+extern vapi_msg_id_t vapi_msg_id_classify_table_ids;
 extern vapi_msg_id_t vapi_msg_id_classify_table_ids_reply;
-extern vapi_msg_id_t vapi_msg_id_flow_classify_set_interface;
-extern vapi_msg_id_t vapi_msg_id_classify_session_dump;
-extern vapi_msg_id_t vapi_msg_id_classify_set_interface_ip_table;
-extern vapi_msg_id_t vapi_msg_id_input_acl_set_interface;
-extern vapi_msg_id_t vapi_msg_id_classify_table_info;
 extern vapi_msg_id_t vapi_msg_id_classify_table_by_interface;
+extern vapi_msg_id_t vapi_msg_id_classify_table_by_interface_reply;
+extern vapi_msg_id_t vapi_msg_id_classify_table_info;
+extern vapi_msg_id_t vapi_msg_id_classify_table_info_reply;
+extern vapi_msg_id_t vapi_msg_id_classify_session_dump;
+extern vapi_msg_id_t vapi_msg_id_classify_session_details;
+extern vapi_msg_id_t vapi_msg_id_flow_classify_set_interface;
+extern vapi_msg_id_t vapi_msg_id_flow_classify_set_interface_reply;
+extern vapi_msg_id_t vapi_msg_id_flow_classify_dump;
+extern vapi_msg_id_t vapi_msg_id_flow_classify_details;
+extern vapi_msg_id_t vapi_msg_id_classify_set_interface_ip_table;
+extern vapi_msg_id_t vapi_msg_id_classify_set_interface_ip_table_reply;
+extern vapi_msg_id_t vapi_msg_id_classify_set_interface_l2_tables;
+extern vapi_msg_id_t vapi_msg_id_classify_set_interface_l2_tables_reply;
+extern vapi_msg_id_t vapi_msg_id_input_acl_set_interface;
+extern vapi_msg_id_t vapi_msg_id_input_acl_set_interface_reply;
+extern vapi_msg_id_t vapi_msg_id_output_acl_set_interface;
+extern vapi_msg_id_t vapi_msg_id_output_acl_set_interface_reply;
 
 #define DEFINE_VAPI_MSG_IDS_CLASSIFY_API_JSON\
-  vapi_msg_id_t vapi_msg_id_policer_classify_set_interface;\
-  vapi_msg_id_t vapi_msg_id_flow_classify_set_interface_reply;\
-  vapi_msg_id_t vapi_msg_id_classify_table_ids;\
-  vapi_msg_id_t vapi_msg_id_output_acl_set_interface;\
-  vapi_msg_id_t vapi_msg_id_classify_session_details;\
-  vapi_msg_id_t vapi_msg_id_classify_set_interface_l2_tables;\
-  vapi_msg_id_t vapi_msg_id_policer_classify_details;\
-  vapi_msg_id_t vapi_msg_id_input_acl_set_interface_reply;\
-  vapi_msg_id_t vapi_msg_id_classify_add_del_session_reply;\
-  vapi_msg_id_t vapi_msg_id_classify_add_del_table_reply;\
-  vapi_msg_id_t vapi_msg_id_policer_classify_dump;\
-  vapi_msg_id_t vapi_msg_id_classify_set_interface_ip_table_reply;\
-  vapi_msg_id_t vapi_msg_id_classify_add_del_session;\
-  vapi_msg_id_t vapi_msg_id_classify_table_info_reply;\
-  vapi_msg_id_t vapi_msg_id_classify_table_by_interface_reply;\
   vapi_msg_id_t vapi_msg_id_classify_add_del_table;\
-  vapi_msg_id_t vapi_msg_id_flow_classify_details;\
-  vapi_msg_id_t vapi_msg_id_output_acl_set_interface_reply;\
-  vapi_msg_id_t vapi_msg_id_classify_set_interface_l2_tables_reply;\
+  vapi_msg_id_t vapi_msg_id_classify_add_del_table_reply;\
+  vapi_msg_id_t vapi_msg_id_classify_add_del_session;\
+  vapi_msg_id_t vapi_msg_id_classify_add_del_session_reply;\
+  vapi_msg_id_t vapi_msg_id_policer_classify_set_interface;\
   vapi_msg_id_t vapi_msg_id_policer_classify_set_interface_reply;\
-  vapi_msg_id_t vapi_msg_id_flow_classify_dump;\
+  vapi_msg_id_t vapi_msg_id_policer_classify_dump;\
+  vapi_msg_id_t vapi_msg_id_policer_classify_details;\
+  vapi_msg_id_t vapi_msg_id_classify_table_ids;\
   vapi_msg_id_t vapi_msg_id_classify_table_ids_reply;\
-  vapi_msg_id_t vapi_msg_id_flow_classify_set_interface;\
-  vapi_msg_id_t vapi_msg_id_classify_session_dump;\
-  vapi_msg_id_t vapi_msg_id_classify_set_interface_ip_table;\
-  vapi_msg_id_t vapi_msg_id_input_acl_set_interface;\
+  vapi_msg_id_t vapi_msg_id_classify_table_by_interface;\
+  vapi_msg_id_t vapi_msg_id_classify_table_by_interface_reply;\
   vapi_msg_id_t vapi_msg_id_classify_table_info;\
-  vapi_msg_id_t vapi_msg_id_classify_table_by_interface;
+  vapi_msg_id_t vapi_msg_id_classify_table_info_reply;\
+  vapi_msg_id_t vapi_msg_id_classify_session_dump;\
+  vapi_msg_id_t vapi_msg_id_classify_session_details;\
+  vapi_msg_id_t vapi_msg_id_flow_classify_set_interface;\
+  vapi_msg_id_t vapi_msg_id_flow_classify_set_interface_reply;\
+  vapi_msg_id_t vapi_msg_id_flow_classify_dump;\
+  vapi_msg_id_t vapi_msg_id_flow_classify_details;\
+  vapi_msg_id_t vapi_msg_id_classify_set_interface_ip_table;\
+  vapi_msg_id_t vapi_msg_id_classify_set_interface_ip_table_reply;\
+  vapi_msg_id_t vapi_msg_id_classify_set_interface_l2_tables;\
+  vapi_msg_id_t vapi_msg_id_classify_set_interface_l2_tables_reply;\
+  vapi_msg_id_t vapi_msg_id_input_acl_set_interface;\
+  vapi_msg_id_t vapi_msg_id_input_acl_set_interface_reply;\
+  vapi_msg_id_t vapi_msg_id_output_acl_set_interface;\
+  vapi_msg_id_t vapi_msg_id_output_acl_set_interface_reply;
 
+
+#ifndef defined_vapi_enum_if_status_flags
+#define defined_vapi_enum_if_status_flags
+typedef enum {
+  IF_STATUS_API_FLAG_ADMIN_UP = 1,
+  IF_STATUS_API_FLAG_LINK_UP = 2,
+}  vapi_enum_if_status_flags;
+
+#endif
+
+#ifndef defined_vapi_enum_mtu_proto
+#define defined_vapi_enum_mtu_proto
+typedef enum {
+  MTU_PROTO_API_L3 = 0,
+  MTU_PROTO_API_IP4 = 1,
+  MTU_PROTO_API_IP6 = 2,
+  MTU_PROTO_API_MPLS = 3,
+}  vapi_enum_mtu_proto;
+
+#endif
+
+#ifndef defined_vapi_enum_link_duplex
+#define defined_vapi_enum_link_duplex
+typedef enum {
+  LINK_DUPLEX_API_UNKNOWN = 0,
+  LINK_DUPLEX_API_HALF = 1,
+  LINK_DUPLEX_API_FULL = 2,
+}  vapi_enum_link_duplex;
+
+#endif
+
+#ifndef defined_vapi_enum_sub_if_flags
+#define defined_vapi_enum_sub_if_flags
+typedef enum {
+  SUB_IF_API_FLAG_NO_TAGS = 1,
+  SUB_IF_API_FLAG_ONE_TAG = 2,
+  SUB_IF_API_FLAG_TWO_TAGS = 4,
+  SUB_IF_API_FLAG_DOT1AD = 8,
+  SUB_IF_API_FLAG_EXACT_MATCH = 16,
+  SUB_IF_API_FLAG_DEFAULT = 32,
+  SUB_IF_API_FLAG_OUTER_VLAN_ID_ANY = 64,
+  SUB_IF_API_FLAG_INNER_VLAN_ID_ANY = 128,
+  SUB_IF_API_FLAG_MASK_VNET = 254,
+  SUB_IF_API_FLAG_DOT1AH = 256,
+}  vapi_enum_sub_if_flags;
+
+#endif
+
+#ifndef defined_vapi_enum_rx_mode
+#define defined_vapi_enum_rx_mode
+typedef enum {
+  RX_MODE_API_UNKNOWN = 0,
+  RX_MODE_API_POLLING = 1,
+  RX_MODE_API_INTERRUPT = 2,
+  RX_MODE_API_ADAPTIVE = 3,
+  RX_MODE_API_DEFAULT = 4,
+}  vapi_enum_rx_mode;
+
+#endif
+
+#ifndef defined_vapi_enum_if_type
+#define defined_vapi_enum_if_type
+typedef enum {
+  IF_API_TYPE_HARDWARE = 0,
+  IF_API_TYPE_SUB = 1,
+  IF_API_TYPE_P2P = 2,
+  IF_API_TYPE_PIPE = 3,
+}  vapi_enum_if_type;
+
+#endif
+
+#ifndef defined_vapi_enum_classify_action
+#define defined_vapi_enum_classify_action
+typedef enum {
+  CLASSIFY_API_ACTION_NONE = 0,
+  CLASSIFY_API_ACTION_SET_IP4_FIB_INDEX = 1,
+  CLASSIFY_API_ACTION_SET_IP6_FIB_INDEX = 2,
+  CLASSIFY_API_ACTION_SET_METADATA = 3,
+} __attribute__((packed)) vapi_enum_classify_action;
+
+#endif
+
+#ifndef defined_vapi_enum_policer_classify_table
+#define defined_vapi_enum_policer_classify_table
+typedef enum {
+  POLICER_CLASSIFY_API_TABLE_IP4 = 1,
+  POLICER_CLASSIFY_API_TABLE_IP6 = 2,
+  POLICER_CLASSIFY_API_TABLE_L2 = 3,
+} __attribute__((packed)) vapi_enum_policer_classify_table;
+
+#endif
+
+#ifndef defined_vapi_enum_flow_classify_table
+#define defined_vapi_enum_flow_classify_table
+typedef enum {
+  FLOW_CLASSIFY_API_TABLE_IP4 = 1,
+  FLOW_CLASSIFY_API_TABLE_IP6 = 2,
+} __attribute__((packed)) vapi_enum_flow_classify_table;
+
+#endif
+
+#ifndef defined_vapi_type_interface_index
+#define defined_vapi_type_interface_index
+typedef u32 vapi_type_interface_index;
+
+#endif
+
+#ifndef defined_vapi_msg_classify_add_del_table_reply
+#define defined_vapi_msg_classify_add_del_table_reply
+typedef struct __attribute__ ((__packed__)) {
+  i32 retval;
+  u32 new_table_index;
+  u32 skip_n_vectors;
+  u32 match_n_vectors; 
+} vapi_payload_classify_add_del_table_reply;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header1_t header;
+  vapi_payload_classify_add_del_table_reply payload;
+} vapi_msg_classify_add_del_table_reply;
+
+static inline void vapi_msg_classify_add_del_table_reply_payload_hton(vapi_payload_classify_add_del_table_reply *payload)
+{
+  payload->retval = htobe32(payload->retval);
+  payload->new_table_index = htobe32(payload->new_table_index);
+  payload->skip_n_vectors = htobe32(payload->skip_n_vectors);
+  payload->match_n_vectors = htobe32(payload->match_n_vectors);
+}
+
+static inline void vapi_msg_classify_add_del_table_reply_payload_ntoh(vapi_payload_classify_add_del_table_reply *payload)
+{
+  payload->retval = be32toh(payload->retval);
+  payload->new_table_index = be32toh(payload->new_table_index);
+  payload->skip_n_vectors = be32toh(payload->skip_n_vectors);
+  payload->match_n_vectors = be32toh(payload->match_n_vectors);
+}
+
+static inline void vapi_msg_classify_add_del_table_reply_hton(vapi_msg_classify_add_del_table_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_classify_add_del_table_reply'@%p to big endian", msg);
+  vapi_type_msg_header1_t_hton(&msg->header);
+  vapi_msg_classify_add_del_table_reply_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_classify_add_del_table_reply_ntoh(vapi_msg_classify_add_del_table_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_classify_add_del_table_reply'@%p to host byte order", msg);
+  vapi_type_msg_header1_t_ntoh(&msg->header);
+  vapi_msg_classify_add_del_table_reply_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_classify_add_del_table_reply_msg_size(vapi_msg_classify_add_del_table_reply *msg)
+{
+  return sizeof(*msg);
+}
+
+static void __attribute__((constructor)) __vapi_constructor_classify_add_del_table_reply()
+{
+  static const char name[] = "classify_add_del_table_reply";
+  static const char name_with_crc[] = "classify_add_del_table_reply_05486349";
+  static vapi_message_desc_t __vapi_metadata_classify_add_del_table_reply = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header1_t, context),
+    offsetof(vapi_msg_classify_add_del_table_reply, payload),
+    sizeof(vapi_msg_classify_add_del_table_reply),
+    (generic_swap_fn_t)vapi_msg_classify_add_del_table_reply_hton,
+    (generic_swap_fn_t)vapi_msg_classify_add_del_table_reply_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_classify_add_del_table_reply = vapi_register_msg(&__vapi_metadata_classify_add_del_table_reply);
+  VAPI_DBG("Assigned msg id %d to classify_add_del_table_reply", vapi_msg_id_classify_add_del_table_reply);
+}
+
+static inline void vapi_set_vapi_msg_classify_add_del_table_reply_event_cb (
+  struct vapi_ctx_s *ctx, 
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_classify_add_del_table_reply *payload),
+  void *callback_ctx)
+{
+  vapi_set_event_cb(ctx, vapi_msg_id_classify_add_del_table_reply, (vapi_event_cb)callback, callback_ctx);
+};
+#endif
+
+#ifndef defined_vapi_msg_classify_add_del_table
+#define defined_vapi_msg_classify_add_del_table
+typedef struct __attribute__ ((__packed__)) {
+  bool is_add;
+  bool del_chain;
+  u32 table_index;
+  u32 nbuckets;
+  u32 memory_size;
+  u32 skip_n_vectors;
+  u32 match_n_vectors;
+  u32 next_table_index;
+  u32 miss_next_index;
+  u8 current_data_flag;
+  i16 current_data_offset;
+  u32 mask_len;
+  u8 mask[0]; 
+} vapi_payload_classify_add_del_table;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header2_t header;
+  vapi_payload_classify_add_del_table payload;
+} vapi_msg_classify_add_del_table;
+
+static inline void vapi_msg_classify_add_del_table_payload_hton(vapi_payload_classify_add_del_table *payload)
+{
+  payload->table_index = htobe32(payload->table_index);
+  payload->nbuckets = htobe32(payload->nbuckets);
+  payload->memory_size = htobe32(payload->memory_size);
+  payload->skip_n_vectors = htobe32(payload->skip_n_vectors);
+  payload->match_n_vectors = htobe32(payload->match_n_vectors);
+  payload->next_table_index = htobe32(payload->next_table_index);
+  payload->miss_next_index = htobe32(payload->miss_next_index);
+  payload->current_data_offset = htobe16(payload->current_data_offset);
+  payload->mask_len = htobe32(payload->mask_len);
+}
+
+static inline void vapi_msg_classify_add_del_table_payload_ntoh(vapi_payload_classify_add_del_table *payload)
+{
+  payload->table_index = be32toh(payload->table_index);
+  payload->nbuckets = be32toh(payload->nbuckets);
+  payload->memory_size = be32toh(payload->memory_size);
+  payload->skip_n_vectors = be32toh(payload->skip_n_vectors);
+  payload->match_n_vectors = be32toh(payload->match_n_vectors);
+  payload->next_table_index = be32toh(payload->next_table_index);
+  payload->miss_next_index = be32toh(payload->miss_next_index);
+  payload->current_data_offset = be16toh(payload->current_data_offset);
+  payload->mask_len = be32toh(payload->mask_len);
+}
+
+static inline void vapi_msg_classify_add_del_table_hton(vapi_msg_classify_add_del_table *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_classify_add_del_table'@%p to big endian", msg);
+  vapi_type_msg_header2_t_hton(&msg->header);
+  vapi_msg_classify_add_del_table_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_classify_add_del_table_ntoh(vapi_msg_classify_add_del_table *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_classify_add_del_table'@%p to host byte order", msg);
+  vapi_type_msg_header2_t_ntoh(&msg->header);
+  vapi_msg_classify_add_del_table_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_classify_add_del_table_msg_size(vapi_msg_classify_add_del_table *msg)
+{
+  return sizeof(*msg)+ msg->payload.mask_len * sizeof(msg->payload.mask[0]);
+}
+
+static inline vapi_msg_classify_add_del_table* vapi_alloc_classify_add_del_table(struct vapi_ctx_s *ctx, size_t _mask_array_size)
+{
+  vapi_msg_classify_add_del_table *msg = NULL;
+  const size_t size = sizeof(vapi_msg_classify_add_del_table) + sizeof(msg->payload.mask[0]) * _mask_array_size;
+  /* cast here required to play nicely with C++ world ... */
+  msg = (vapi_msg_classify_add_del_table*)vapi_msg_alloc(ctx, size);
+  if (!msg) {
+    return NULL;
+  }
+  msg->header.client_index = vapi_get_client_index(ctx);
+  msg->header.context = 0;
+  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_classify_add_del_table);
+  msg->payload.mask_len = _mask_array_size;
+
+  return msg;
+}
+
+static inline vapi_error_e vapi_classify_add_del_table(struct vapi_ctx_s *ctx,
+  vapi_msg_classify_add_del_table *msg,
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
+                           void *callback_ctx,
+                           vapi_error_e rv,
+                           bool is_last,
+                           vapi_payload_classify_add_del_table_reply *reply),
+  void *callback_ctx)
+{
+  if (!msg || !callback) {
+    return VAPI_EINVAL;
+  }
+  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
+    return VAPI_EAGAIN;
+  }
+  vapi_error_e rv;
+  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
+    return rv;
+  }
+  u32 req_context = vapi_gen_req_context(ctx);
+  msg->header.context = req_context;
+  vapi_msg_classify_add_del_table_hton(msg);
+  if (VAPI_OK == (rv = vapi_send (ctx, msg))) {
+    vapi_store_request(ctx, req_context, false, (vapi_cb_t)callback, callback_ctx);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+    if (vapi_is_nonblocking(ctx)) {
+      rv = VAPI_OK;
+    } else {
+      rv = vapi_dispatch(ctx);
+    }
+  } else {
+    vapi_msg_classify_add_del_table_ntoh(msg);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+  }
+  return rv;
+}
+
+
+static void __attribute__((constructor)) __vapi_constructor_classify_add_del_table()
+{
+  static const char name[] = "classify_add_del_table";
+  static const char name_with_crc[] = "classify_add_del_table_6849e39e";
+  static vapi_message_desc_t __vapi_metadata_classify_add_del_table = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header2_t, context),
+    offsetof(vapi_msg_classify_add_del_table, payload),
+    sizeof(vapi_msg_classify_add_del_table),
+    (generic_swap_fn_t)vapi_msg_classify_add_del_table_hton,
+    (generic_swap_fn_t)vapi_msg_classify_add_del_table_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_classify_add_del_table = vapi_register_msg(&__vapi_metadata_classify_add_del_table);
+  VAPI_DBG("Assigned msg id %d to classify_add_del_table", vapi_msg_id_classify_add_del_table);
+}
+#endif
+
+#ifndef defined_vapi_msg_classify_add_del_session_reply
+#define defined_vapi_msg_classify_add_del_session_reply
+typedef struct __attribute__ ((__packed__)) {
+  i32 retval; 
+} vapi_payload_classify_add_del_session_reply;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header1_t header;
+  vapi_payload_classify_add_del_session_reply payload;
+} vapi_msg_classify_add_del_session_reply;
+
+static inline void vapi_msg_classify_add_del_session_reply_payload_hton(vapi_payload_classify_add_del_session_reply *payload)
+{
+  payload->retval = htobe32(payload->retval);
+}
+
+static inline void vapi_msg_classify_add_del_session_reply_payload_ntoh(vapi_payload_classify_add_del_session_reply *payload)
+{
+  payload->retval = be32toh(payload->retval);
+}
+
+static inline void vapi_msg_classify_add_del_session_reply_hton(vapi_msg_classify_add_del_session_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_classify_add_del_session_reply'@%p to big endian", msg);
+  vapi_type_msg_header1_t_hton(&msg->header);
+  vapi_msg_classify_add_del_session_reply_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_classify_add_del_session_reply_ntoh(vapi_msg_classify_add_del_session_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_classify_add_del_session_reply'@%p to host byte order", msg);
+  vapi_type_msg_header1_t_ntoh(&msg->header);
+  vapi_msg_classify_add_del_session_reply_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_classify_add_del_session_reply_msg_size(vapi_msg_classify_add_del_session_reply *msg)
+{
+  return sizeof(*msg);
+}
+
+static void __attribute__((constructor)) __vapi_constructor_classify_add_del_session_reply()
+{
+  static const char name[] = "classify_add_del_session_reply";
+  static const char name_with_crc[] = "classify_add_del_session_reply_e8d4e804";
+  static vapi_message_desc_t __vapi_metadata_classify_add_del_session_reply = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header1_t, context),
+    offsetof(vapi_msg_classify_add_del_session_reply, payload),
+    sizeof(vapi_msg_classify_add_del_session_reply),
+    (generic_swap_fn_t)vapi_msg_classify_add_del_session_reply_hton,
+    (generic_swap_fn_t)vapi_msg_classify_add_del_session_reply_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_classify_add_del_session_reply = vapi_register_msg(&__vapi_metadata_classify_add_del_session_reply);
+  VAPI_DBG("Assigned msg id %d to classify_add_del_session_reply", vapi_msg_id_classify_add_del_session_reply);
+}
+
+static inline void vapi_set_vapi_msg_classify_add_del_session_reply_event_cb (
+  struct vapi_ctx_s *ctx, 
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_classify_add_del_session_reply *payload),
+  void *callback_ctx)
+{
+  vapi_set_event_cb(ctx, vapi_msg_id_classify_add_del_session_reply, (vapi_event_cb)callback, callback_ctx);
+};
+#endif
+
+#ifndef defined_vapi_msg_classify_add_del_session
+#define defined_vapi_msg_classify_add_del_session
+typedef struct __attribute__ ((__packed__)) {
+  bool is_add;
+  u32 table_index;
+  u32 hit_next_index;
+  u32 opaque_index;
+  i32 advance;
+  vapi_enum_classify_action action;
+  u32 metadata;
+  u32 match_len;
+  u8 match[0]; 
+} vapi_payload_classify_add_del_session;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header2_t header;
+  vapi_payload_classify_add_del_session payload;
+} vapi_msg_classify_add_del_session;
+
+static inline void vapi_msg_classify_add_del_session_payload_hton(vapi_payload_classify_add_del_session *payload)
+{
+  payload->table_index = htobe32(payload->table_index);
+  payload->hit_next_index = htobe32(payload->hit_next_index);
+  payload->opaque_index = htobe32(payload->opaque_index);
+  payload->advance = htobe32(payload->advance);
+  payload->metadata = htobe32(payload->metadata);
+  payload->match_len = htobe32(payload->match_len);
+}
+
+static inline void vapi_msg_classify_add_del_session_payload_ntoh(vapi_payload_classify_add_del_session *payload)
+{
+  payload->table_index = be32toh(payload->table_index);
+  payload->hit_next_index = be32toh(payload->hit_next_index);
+  payload->opaque_index = be32toh(payload->opaque_index);
+  payload->advance = be32toh(payload->advance);
+  payload->metadata = be32toh(payload->metadata);
+  payload->match_len = be32toh(payload->match_len);
+}
+
+static inline void vapi_msg_classify_add_del_session_hton(vapi_msg_classify_add_del_session *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_classify_add_del_session'@%p to big endian", msg);
+  vapi_type_msg_header2_t_hton(&msg->header);
+  vapi_msg_classify_add_del_session_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_classify_add_del_session_ntoh(vapi_msg_classify_add_del_session *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_classify_add_del_session'@%p to host byte order", msg);
+  vapi_type_msg_header2_t_ntoh(&msg->header);
+  vapi_msg_classify_add_del_session_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_classify_add_del_session_msg_size(vapi_msg_classify_add_del_session *msg)
+{
+  return sizeof(*msg)+ msg->payload.match_len * sizeof(msg->payload.match[0]);
+}
+
+static inline vapi_msg_classify_add_del_session* vapi_alloc_classify_add_del_session(struct vapi_ctx_s *ctx, size_t _match_array_size)
+{
+  vapi_msg_classify_add_del_session *msg = NULL;
+  const size_t size = sizeof(vapi_msg_classify_add_del_session) + sizeof(msg->payload.match[0]) * _match_array_size;
+  /* cast here required to play nicely with C++ world ... */
+  msg = (vapi_msg_classify_add_del_session*)vapi_msg_alloc(ctx, size);
+  if (!msg) {
+    return NULL;
+  }
+  msg->header.client_index = vapi_get_client_index(ctx);
+  msg->header.context = 0;
+  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_classify_add_del_session);
+  msg->payload.match_len = _match_array_size;
+
+  return msg;
+}
+
+static inline vapi_error_e vapi_classify_add_del_session(struct vapi_ctx_s *ctx,
+  vapi_msg_classify_add_del_session *msg,
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
+                           void *callback_ctx,
+                           vapi_error_e rv,
+                           bool is_last,
+                           vapi_payload_classify_add_del_session_reply *reply),
+  void *callback_ctx)
+{
+  if (!msg || !callback) {
+    return VAPI_EINVAL;
+  }
+  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
+    return VAPI_EAGAIN;
+  }
+  vapi_error_e rv;
+  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
+    return rv;
+  }
+  u32 req_context = vapi_gen_req_context(ctx);
+  msg->header.context = req_context;
+  vapi_msg_classify_add_del_session_hton(msg);
+  if (VAPI_OK == (rv = vapi_send (ctx, msg))) {
+    vapi_store_request(ctx, req_context, false, (vapi_cb_t)callback, callback_ctx);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+    if (vapi_is_nonblocking(ctx)) {
+      rv = VAPI_OK;
+    } else {
+      rv = vapi_dispatch(ctx);
+    }
+  } else {
+    vapi_msg_classify_add_del_session_ntoh(msg);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+  }
+  return rv;
+}
+
+
+static void __attribute__((constructor)) __vapi_constructor_classify_add_del_session()
+{
+  static const char name[] = "classify_add_del_session";
+  static const char name_with_crc[] = "classify_add_del_session_f20879f0";
+  static vapi_message_desc_t __vapi_metadata_classify_add_del_session = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header2_t, context),
+    offsetof(vapi_msg_classify_add_del_session, payload),
+    sizeof(vapi_msg_classify_add_del_session),
+    (generic_swap_fn_t)vapi_msg_classify_add_del_session_hton,
+    (generic_swap_fn_t)vapi_msg_classify_add_del_session_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_classify_add_del_session = vapi_register_msg(&__vapi_metadata_classify_add_del_session);
+  VAPI_DBG("Assigned msg id %d to classify_add_del_session", vapi_msg_id_classify_add_del_session);
+}
+#endif
 
 #ifndef defined_vapi_msg_policer_classify_set_interface_reply
 #define defined_vapi_msg_policer_classify_set_interface_reply
@@ -147,11 +694,11 @@ static inline void vapi_set_vapi_msg_policer_classify_set_interface_reply_event_
 #ifndef defined_vapi_msg_policer_classify_set_interface
 #define defined_vapi_msg_policer_classify_set_interface
 typedef struct __attribute__ ((__packed__)) {
-  u32 sw_if_index;
+  vapi_type_interface_index sw_if_index;
   u32 ip4_table_index;
   u32 ip6_table_index;
   u32 l2_table_index;
-  u8 is_add; 
+  bool is_add; 
 } vapi_payload_policer_classify_set_interface;
 
 typedef struct __attribute__ ((__packed__)) {
@@ -255,7 +802,7 @@ static inline vapi_error_e vapi_policer_classify_set_interface(struct vapi_ctx_s
 static void __attribute__((constructor)) __vapi_constructor_policer_classify_set_interface()
 {
   static const char name[] = "policer_classify_set_interface";
-  static const char name_with_crc[] = "policer_classify_set_interface_e09537b0";
+  static const char name_with_crc[] = "policer_classify_set_interface_de7ad708";
   static vapi_message_desc_t __vapi_metadata_policer_classify_set_interface = {
     name,
     sizeof(name) - 1,
@@ -275,75 +822,200 @@ static void __attribute__((constructor)) __vapi_constructor_policer_classify_set
 }
 #endif
 
-#ifndef defined_vapi_msg_flow_classify_set_interface_reply
-#define defined_vapi_msg_flow_classify_set_interface_reply
+#ifndef defined_vapi_msg_policer_classify_details
+#define defined_vapi_msg_policer_classify_details
 typedef struct __attribute__ ((__packed__)) {
-  i32 retval; 
-} vapi_payload_flow_classify_set_interface_reply;
+  vapi_type_interface_index sw_if_index;
+  u32 table_index; 
+} vapi_payload_policer_classify_details;
 
 typedef struct __attribute__ ((__packed__)) {
   vapi_type_msg_header1_t header;
-  vapi_payload_flow_classify_set_interface_reply payload;
-} vapi_msg_flow_classify_set_interface_reply;
+  vapi_payload_policer_classify_details payload;
+} vapi_msg_policer_classify_details;
 
-static inline void vapi_msg_flow_classify_set_interface_reply_payload_hton(vapi_payload_flow_classify_set_interface_reply *payload)
+static inline void vapi_msg_policer_classify_details_payload_hton(vapi_payload_policer_classify_details *payload)
 {
-  payload->retval = htobe32(payload->retval);
+  payload->sw_if_index = htobe32(payload->sw_if_index);
+  payload->table_index = htobe32(payload->table_index);
 }
 
-static inline void vapi_msg_flow_classify_set_interface_reply_payload_ntoh(vapi_payload_flow_classify_set_interface_reply *payload)
+static inline void vapi_msg_policer_classify_details_payload_ntoh(vapi_payload_policer_classify_details *payload)
 {
-  payload->retval = be32toh(payload->retval);
+  payload->sw_if_index = be32toh(payload->sw_if_index);
+  payload->table_index = be32toh(payload->table_index);
 }
 
-static inline void vapi_msg_flow_classify_set_interface_reply_hton(vapi_msg_flow_classify_set_interface_reply *msg)
+static inline void vapi_msg_policer_classify_details_hton(vapi_msg_policer_classify_details *msg)
 {
-  VAPI_DBG("Swapping `vapi_msg_flow_classify_set_interface_reply'@%p to big endian", msg);
+  VAPI_DBG("Swapping `vapi_msg_policer_classify_details'@%p to big endian", msg);
   vapi_type_msg_header1_t_hton(&msg->header);
-  vapi_msg_flow_classify_set_interface_reply_payload_hton(&msg->payload);
+  vapi_msg_policer_classify_details_payload_hton(&msg->payload);
 }
 
-static inline void vapi_msg_flow_classify_set_interface_reply_ntoh(vapi_msg_flow_classify_set_interface_reply *msg)
+static inline void vapi_msg_policer_classify_details_ntoh(vapi_msg_policer_classify_details *msg)
 {
-  VAPI_DBG("Swapping `vapi_msg_flow_classify_set_interface_reply'@%p to host byte order", msg);
+  VAPI_DBG("Swapping `vapi_msg_policer_classify_details'@%p to host byte order", msg);
   vapi_type_msg_header1_t_ntoh(&msg->header);
-  vapi_msg_flow_classify_set_interface_reply_payload_ntoh(&msg->payload);
+  vapi_msg_policer_classify_details_payload_ntoh(&msg->payload);
 }
 
-static inline uword vapi_calc_flow_classify_set_interface_reply_msg_size(vapi_msg_flow_classify_set_interface_reply *msg)
+static inline uword vapi_calc_policer_classify_details_msg_size(vapi_msg_policer_classify_details *msg)
 {
   return sizeof(*msg);
 }
 
-static void __attribute__((constructor)) __vapi_constructor_flow_classify_set_interface_reply()
+static void __attribute__((constructor)) __vapi_constructor_policer_classify_details()
 {
-  static const char name[] = "flow_classify_set_interface_reply";
-  static const char name_with_crc[] = "flow_classify_set_interface_reply_e8d4e804";
-  static vapi_message_desc_t __vapi_metadata_flow_classify_set_interface_reply = {
+  static const char name[] = "policer_classify_details";
+  static const char name_with_crc[] = "policer_classify_details_dfd08765";
+  static vapi_message_desc_t __vapi_metadata_policer_classify_details = {
     name,
     sizeof(name) - 1,
     name_with_crc,
     sizeof(name_with_crc) - 1,
     true,
     offsetof(vapi_type_msg_header1_t, context),
-    offsetof(vapi_msg_flow_classify_set_interface_reply, payload),
-    sizeof(vapi_msg_flow_classify_set_interface_reply),
-    (generic_swap_fn_t)vapi_msg_flow_classify_set_interface_reply_hton,
-    (generic_swap_fn_t)vapi_msg_flow_classify_set_interface_reply_ntoh,
+    offsetof(vapi_msg_policer_classify_details, payload),
+    sizeof(vapi_msg_policer_classify_details),
+    (generic_swap_fn_t)vapi_msg_policer_classify_details_hton,
+    (generic_swap_fn_t)vapi_msg_policer_classify_details_ntoh,
     VAPI_INVALID_MSG_ID,
   };
 
-  vapi_msg_id_flow_classify_set_interface_reply = vapi_register_msg(&__vapi_metadata_flow_classify_set_interface_reply);
-  VAPI_DBG("Assigned msg id %d to flow_classify_set_interface_reply", vapi_msg_id_flow_classify_set_interface_reply);
+  vapi_msg_id_policer_classify_details = vapi_register_msg(&__vapi_metadata_policer_classify_details);
+  VAPI_DBG("Assigned msg id %d to policer_classify_details", vapi_msg_id_policer_classify_details);
 }
 
-static inline void vapi_set_vapi_msg_flow_classify_set_interface_reply_event_cb (
+static inline void vapi_set_vapi_msg_policer_classify_details_event_cb (
   struct vapi_ctx_s *ctx, 
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_flow_classify_set_interface_reply *payload),
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_policer_classify_details *payload),
   void *callback_ctx)
 {
-  vapi_set_event_cb(ctx, vapi_msg_id_flow_classify_set_interface_reply, (vapi_event_cb)callback, callback_ctx);
+  vapi_set_event_cb(ctx, vapi_msg_id_policer_classify_details, (vapi_event_cb)callback, callback_ctx);
 };
+#endif
+
+#ifndef defined_vapi_msg_policer_classify_dump
+#define defined_vapi_msg_policer_classify_dump
+typedef struct __attribute__ ((__packed__)) {
+  vapi_enum_policer_classify_table type;
+  vapi_type_interface_index sw_if_index; 
+} vapi_payload_policer_classify_dump;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header2_t header;
+  vapi_payload_policer_classify_dump payload;
+} vapi_msg_policer_classify_dump;
+
+static inline void vapi_msg_policer_classify_dump_payload_hton(vapi_payload_policer_classify_dump *payload)
+{
+  payload->sw_if_index = htobe32(payload->sw_if_index);
+}
+
+static inline void vapi_msg_policer_classify_dump_payload_ntoh(vapi_payload_policer_classify_dump *payload)
+{
+  payload->sw_if_index = be32toh(payload->sw_if_index);
+}
+
+static inline void vapi_msg_policer_classify_dump_hton(vapi_msg_policer_classify_dump *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_policer_classify_dump'@%p to big endian", msg);
+  vapi_type_msg_header2_t_hton(&msg->header);
+  vapi_msg_policer_classify_dump_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_policer_classify_dump_ntoh(vapi_msg_policer_classify_dump *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_policer_classify_dump'@%p to host byte order", msg);
+  vapi_type_msg_header2_t_ntoh(&msg->header);
+  vapi_msg_policer_classify_dump_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_policer_classify_dump_msg_size(vapi_msg_policer_classify_dump *msg)
+{
+  return sizeof(*msg);
+}
+
+static inline vapi_msg_policer_classify_dump* vapi_alloc_policer_classify_dump(struct vapi_ctx_s *ctx)
+{
+  vapi_msg_policer_classify_dump *msg = NULL;
+  const size_t size = sizeof(vapi_msg_policer_classify_dump);
+  /* cast here required to play nicely with C++ world ... */
+  msg = (vapi_msg_policer_classify_dump*)vapi_msg_alloc(ctx, size);
+  if (!msg) {
+    return NULL;
+  }
+  msg->header.client_index = vapi_get_client_index(ctx);
+  msg->header.context = 0;
+  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_policer_classify_dump);
+
+  return msg;
+}
+
+static inline vapi_error_e vapi_policer_classify_dump(struct vapi_ctx_s *ctx,
+  vapi_msg_policer_classify_dump *msg,
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
+                           void *callback_ctx,
+                           vapi_error_e rv,
+                           bool is_last,
+                           vapi_payload_policer_classify_details *reply),
+  void *callback_ctx)
+{
+  if (!msg || !callback) {
+    return VAPI_EINVAL;
+  }
+  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
+    return VAPI_EAGAIN;
+  }
+  vapi_error_e rv;
+  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
+    return rv;
+  }
+  u32 req_context = vapi_gen_req_context(ctx);
+  msg->header.context = req_context;
+  vapi_msg_policer_classify_dump_hton(msg);
+  if (VAPI_OK == (rv = vapi_send_with_control_ping (ctx, msg, req_context))) {
+    vapi_store_request(ctx, req_context, true, (vapi_cb_t)callback, callback_ctx);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+    if (vapi_is_nonblocking(ctx)) {
+      rv = VAPI_OK;
+    } else {
+      rv = vapi_dispatch(ctx);
+    }
+  } else {
+    vapi_msg_policer_classify_dump_ntoh(msg);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+  }
+  return rv;
+}
+
+
+static void __attribute__((constructor)) __vapi_constructor_policer_classify_dump()
+{
+  static const char name[] = "policer_classify_dump";
+  static const char name_with_crc[] = "policer_classify_dump_6bfe6603";
+  static vapi_message_desc_t __vapi_metadata_policer_classify_dump = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header2_t, context),
+    offsetof(vapi_msg_policer_classify_dump, payload),
+    sizeof(vapi_msg_policer_classify_dump),
+    (generic_swap_fn_t)vapi_msg_policer_classify_dump_hton,
+    (generic_swap_fn_t)vapi_msg_policer_classify_dump_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_policer_classify_dump = vapi_register_msg(&__vapi_metadata_policer_classify_dump);
+  VAPI_DBG("Assigned msg id %d to policer_classify_dump", vapi_msg_id_policer_classify_dump);
+}
 #endif
 
 #ifndef defined_vapi_msg_classify_table_ids_reply
@@ -529,439 +1201,152 @@ static void __attribute__((constructor)) __vapi_constructor_classify_table_ids()
 }
 #endif
 
-#ifndef defined_vapi_msg_output_acl_set_interface_reply
-#define defined_vapi_msg_output_acl_set_interface_reply
-typedef struct __attribute__ ((__packed__)) {
-  i32 retval; 
-} vapi_payload_output_acl_set_interface_reply;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header1_t header;
-  vapi_payload_output_acl_set_interface_reply payload;
-} vapi_msg_output_acl_set_interface_reply;
-
-static inline void vapi_msg_output_acl_set_interface_reply_payload_hton(vapi_payload_output_acl_set_interface_reply *payload)
-{
-  payload->retval = htobe32(payload->retval);
-}
-
-static inline void vapi_msg_output_acl_set_interface_reply_payload_ntoh(vapi_payload_output_acl_set_interface_reply *payload)
-{
-  payload->retval = be32toh(payload->retval);
-}
-
-static inline void vapi_msg_output_acl_set_interface_reply_hton(vapi_msg_output_acl_set_interface_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_output_acl_set_interface_reply'@%p to big endian", msg);
-  vapi_type_msg_header1_t_hton(&msg->header);
-  vapi_msg_output_acl_set_interface_reply_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_output_acl_set_interface_reply_ntoh(vapi_msg_output_acl_set_interface_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_output_acl_set_interface_reply'@%p to host byte order", msg);
-  vapi_type_msg_header1_t_ntoh(&msg->header);
-  vapi_msg_output_acl_set_interface_reply_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_output_acl_set_interface_reply_msg_size(vapi_msg_output_acl_set_interface_reply *msg)
-{
-  return sizeof(*msg);
-}
-
-static void __attribute__((constructor)) __vapi_constructor_output_acl_set_interface_reply()
-{
-  static const char name[] = "output_acl_set_interface_reply";
-  static const char name_with_crc[] = "output_acl_set_interface_reply_e8d4e804";
-  static vapi_message_desc_t __vapi_metadata_output_acl_set_interface_reply = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header1_t, context),
-    offsetof(vapi_msg_output_acl_set_interface_reply, payload),
-    sizeof(vapi_msg_output_acl_set_interface_reply),
-    (generic_swap_fn_t)vapi_msg_output_acl_set_interface_reply_hton,
-    (generic_swap_fn_t)vapi_msg_output_acl_set_interface_reply_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_output_acl_set_interface_reply = vapi_register_msg(&__vapi_metadata_output_acl_set_interface_reply);
-  VAPI_DBG("Assigned msg id %d to output_acl_set_interface_reply", vapi_msg_id_output_acl_set_interface_reply);
-}
-
-static inline void vapi_set_vapi_msg_output_acl_set_interface_reply_event_cb (
-  struct vapi_ctx_s *ctx, 
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_output_acl_set_interface_reply *payload),
-  void *callback_ctx)
-{
-  vapi_set_event_cb(ctx, vapi_msg_id_output_acl_set_interface_reply, (vapi_event_cb)callback, callback_ctx);
-};
-#endif
-
-#ifndef defined_vapi_msg_output_acl_set_interface
-#define defined_vapi_msg_output_acl_set_interface
-typedef struct __attribute__ ((__packed__)) {
-  u32 sw_if_index;
-  u32 ip4_table_index;
-  u32 ip6_table_index;
-  u32 l2_table_index;
-  u8 is_add; 
-} vapi_payload_output_acl_set_interface;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header2_t header;
-  vapi_payload_output_acl_set_interface payload;
-} vapi_msg_output_acl_set_interface;
-
-static inline void vapi_msg_output_acl_set_interface_payload_hton(vapi_payload_output_acl_set_interface *payload)
-{
-  payload->sw_if_index = htobe32(payload->sw_if_index);
-  payload->ip4_table_index = htobe32(payload->ip4_table_index);
-  payload->ip6_table_index = htobe32(payload->ip6_table_index);
-  payload->l2_table_index = htobe32(payload->l2_table_index);
-}
-
-static inline void vapi_msg_output_acl_set_interface_payload_ntoh(vapi_payload_output_acl_set_interface *payload)
-{
-  payload->sw_if_index = be32toh(payload->sw_if_index);
-  payload->ip4_table_index = be32toh(payload->ip4_table_index);
-  payload->ip6_table_index = be32toh(payload->ip6_table_index);
-  payload->l2_table_index = be32toh(payload->l2_table_index);
-}
-
-static inline void vapi_msg_output_acl_set_interface_hton(vapi_msg_output_acl_set_interface *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_output_acl_set_interface'@%p to big endian", msg);
-  vapi_type_msg_header2_t_hton(&msg->header);
-  vapi_msg_output_acl_set_interface_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_output_acl_set_interface_ntoh(vapi_msg_output_acl_set_interface *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_output_acl_set_interface'@%p to host byte order", msg);
-  vapi_type_msg_header2_t_ntoh(&msg->header);
-  vapi_msg_output_acl_set_interface_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_output_acl_set_interface_msg_size(vapi_msg_output_acl_set_interface *msg)
-{
-  return sizeof(*msg);
-}
-
-static inline vapi_msg_output_acl_set_interface* vapi_alloc_output_acl_set_interface(struct vapi_ctx_s *ctx)
-{
-  vapi_msg_output_acl_set_interface *msg = NULL;
-  const size_t size = sizeof(vapi_msg_output_acl_set_interface);
-  /* cast here required to play nicely with C++ world ... */
-  msg = (vapi_msg_output_acl_set_interface*)vapi_msg_alloc(ctx, size);
-  if (!msg) {
-    return NULL;
-  }
-  msg->header.client_index = vapi_get_client_index(ctx);
-  msg->header.context = 0;
-  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_output_acl_set_interface);
-
-  return msg;
-}
-
-static inline vapi_error_e vapi_output_acl_set_interface(struct vapi_ctx_s *ctx,
-  vapi_msg_output_acl_set_interface *msg,
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
-                           void *callback_ctx,
-                           vapi_error_e rv,
-                           bool is_last,
-                           vapi_payload_output_acl_set_interface_reply *reply),
-  void *callback_ctx)
-{
-  if (!msg || !callback) {
-    return VAPI_EINVAL;
-  }
-  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
-    return VAPI_EAGAIN;
-  }
-  vapi_error_e rv;
-  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
-    return rv;
-  }
-  u32 req_context = vapi_gen_req_context(ctx);
-  msg->header.context = req_context;
-  vapi_msg_output_acl_set_interface_hton(msg);
-  if (VAPI_OK == (rv = vapi_send (ctx, msg))) {
-    vapi_store_request(ctx, req_context, false, (vapi_cb_t)callback, callback_ctx);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-    if (vapi_is_nonblocking(ctx)) {
-      rv = VAPI_OK;
-    } else {
-      rv = vapi_dispatch(ctx);
-    }
-  } else {
-    vapi_msg_output_acl_set_interface_ntoh(msg);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-  }
-  return rv;
-}
-
-
-static void __attribute__((constructor)) __vapi_constructor_output_acl_set_interface()
-{
-  static const char name[] = "output_acl_set_interface";
-  static const char name_with_crc[] = "output_acl_set_interface_e09537b0";
-  static vapi_message_desc_t __vapi_metadata_output_acl_set_interface = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header2_t, context),
-    offsetof(vapi_msg_output_acl_set_interface, payload),
-    sizeof(vapi_msg_output_acl_set_interface),
-    (generic_swap_fn_t)vapi_msg_output_acl_set_interface_hton,
-    (generic_swap_fn_t)vapi_msg_output_acl_set_interface_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_output_acl_set_interface = vapi_register_msg(&__vapi_metadata_output_acl_set_interface);
-  VAPI_DBG("Assigned msg id %d to output_acl_set_interface", vapi_msg_id_output_acl_set_interface);
-}
-#endif
-
-#ifndef defined_vapi_msg_classify_session_details
-#define defined_vapi_msg_classify_session_details
+#ifndef defined_vapi_msg_classify_table_by_interface_reply
+#define defined_vapi_msg_classify_table_by_interface_reply
 typedef struct __attribute__ ((__packed__)) {
   i32 retval;
-  u32 table_id;
-  u32 hit_next_index;
-  i32 advance;
-  u32 opaque_index;
-  u32 match_length;
-  u8 match[0]; 
-} vapi_payload_classify_session_details;
+  vapi_type_interface_index sw_if_index;
+  u32 l2_table_id;
+  u32 ip4_table_id;
+  u32 ip6_table_id; 
+} vapi_payload_classify_table_by_interface_reply;
 
 typedef struct __attribute__ ((__packed__)) {
   vapi_type_msg_header1_t header;
-  vapi_payload_classify_session_details payload;
-} vapi_msg_classify_session_details;
+  vapi_payload_classify_table_by_interface_reply payload;
+} vapi_msg_classify_table_by_interface_reply;
 
-static inline void vapi_msg_classify_session_details_payload_hton(vapi_payload_classify_session_details *payload)
+static inline void vapi_msg_classify_table_by_interface_reply_payload_hton(vapi_payload_classify_table_by_interface_reply *payload)
 {
   payload->retval = htobe32(payload->retval);
-  payload->table_id = htobe32(payload->table_id);
-  payload->hit_next_index = htobe32(payload->hit_next_index);
-  payload->advance = htobe32(payload->advance);
-  payload->opaque_index = htobe32(payload->opaque_index);
-  payload->match_length = htobe32(payload->match_length);
+  payload->sw_if_index = htobe32(payload->sw_if_index);
+  payload->l2_table_id = htobe32(payload->l2_table_id);
+  payload->ip4_table_id = htobe32(payload->ip4_table_id);
+  payload->ip6_table_id = htobe32(payload->ip6_table_id);
 }
 
-static inline void vapi_msg_classify_session_details_payload_ntoh(vapi_payload_classify_session_details *payload)
+static inline void vapi_msg_classify_table_by_interface_reply_payload_ntoh(vapi_payload_classify_table_by_interface_reply *payload)
 {
   payload->retval = be32toh(payload->retval);
-  payload->table_id = be32toh(payload->table_id);
-  payload->hit_next_index = be32toh(payload->hit_next_index);
-  payload->advance = be32toh(payload->advance);
-  payload->opaque_index = be32toh(payload->opaque_index);
-  payload->match_length = be32toh(payload->match_length);
+  payload->sw_if_index = be32toh(payload->sw_if_index);
+  payload->l2_table_id = be32toh(payload->l2_table_id);
+  payload->ip4_table_id = be32toh(payload->ip4_table_id);
+  payload->ip6_table_id = be32toh(payload->ip6_table_id);
 }
 
-static inline void vapi_msg_classify_session_details_hton(vapi_msg_classify_session_details *msg)
+static inline void vapi_msg_classify_table_by_interface_reply_hton(vapi_msg_classify_table_by_interface_reply *msg)
 {
-  VAPI_DBG("Swapping `vapi_msg_classify_session_details'@%p to big endian", msg);
+  VAPI_DBG("Swapping `vapi_msg_classify_table_by_interface_reply'@%p to big endian", msg);
   vapi_type_msg_header1_t_hton(&msg->header);
-  vapi_msg_classify_session_details_payload_hton(&msg->payload);
+  vapi_msg_classify_table_by_interface_reply_payload_hton(&msg->payload);
 }
 
-static inline void vapi_msg_classify_session_details_ntoh(vapi_msg_classify_session_details *msg)
+static inline void vapi_msg_classify_table_by_interface_reply_ntoh(vapi_msg_classify_table_by_interface_reply *msg)
 {
-  VAPI_DBG("Swapping `vapi_msg_classify_session_details'@%p to host byte order", msg);
+  VAPI_DBG("Swapping `vapi_msg_classify_table_by_interface_reply'@%p to host byte order", msg);
   vapi_type_msg_header1_t_ntoh(&msg->header);
-  vapi_msg_classify_session_details_payload_ntoh(&msg->payload);
+  vapi_msg_classify_table_by_interface_reply_payload_ntoh(&msg->payload);
 }
 
-static inline uword vapi_calc_classify_session_details_msg_size(vapi_msg_classify_session_details *msg)
-{
-  return sizeof(*msg)+ msg->payload.match_length * sizeof(msg->payload.match[0]);
-}
-
-static void __attribute__((constructor)) __vapi_constructor_classify_session_details()
-{
-  static const char name[] = "classify_session_details";
-  static const char name_with_crc[] = "classify_session_details_60e3ef94";
-  static vapi_message_desc_t __vapi_metadata_classify_session_details = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header1_t, context),
-    offsetof(vapi_msg_classify_session_details, payload),
-    sizeof(vapi_msg_classify_session_details),
-    (generic_swap_fn_t)vapi_msg_classify_session_details_hton,
-    (generic_swap_fn_t)vapi_msg_classify_session_details_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_classify_session_details = vapi_register_msg(&__vapi_metadata_classify_session_details);
-  VAPI_DBG("Assigned msg id %d to classify_session_details", vapi_msg_id_classify_session_details);
-}
-
-static inline void vapi_set_vapi_msg_classify_session_details_event_cb (
-  struct vapi_ctx_s *ctx, 
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_classify_session_details *payload),
-  void *callback_ctx)
-{
-  vapi_set_event_cb(ctx, vapi_msg_id_classify_session_details, (vapi_event_cb)callback, callback_ctx);
-};
-#endif
-
-#ifndef defined_vapi_msg_classify_set_interface_l2_tables_reply
-#define defined_vapi_msg_classify_set_interface_l2_tables_reply
-typedef struct __attribute__ ((__packed__)) {
-  i32 retval; 
-} vapi_payload_classify_set_interface_l2_tables_reply;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header1_t header;
-  vapi_payload_classify_set_interface_l2_tables_reply payload;
-} vapi_msg_classify_set_interface_l2_tables_reply;
-
-static inline void vapi_msg_classify_set_interface_l2_tables_reply_payload_hton(vapi_payload_classify_set_interface_l2_tables_reply *payload)
-{
-  payload->retval = htobe32(payload->retval);
-}
-
-static inline void vapi_msg_classify_set_interface_l2_tables_reply_payload_ntoh(vapi_payload_classify_set_interface_l2_tables_reply *payload)
-{
-  payload->retval = be32toh(payload->retval);
-}
-
-static inline void vapi_msg_classify_set_interface_l2_tables_reply_hton(vapi_msg_classify_set_interface_l2_tables_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_classify_set_interface_l2_tables_reply'@%p to big endian", msg);
-  vapi_type_msg_header1_t_hton(&msg->header);
-  vapi_msg_classify_set_interface_l2_tables_reply_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_classify_set_interface_l2_tables_reply_ntoh(vapi_msg_classify_set_interface_l2_tables_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_classify_set_interface_l2_tables_reply'@%p to host byte order", msg);
-  vapi_type_msg_header1_t_ntoh(&msg->header);
-  vapi_msg_classify_set_interface_l2_tables_reply_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_classify_set_interface_l2_tables_reply_msg_size(vapi_msg_classify_set_interface_l2_tables_reply *msg)
+static inline uword vapi_calc_classify_table_by_interface_reply_msg_size(vapi_msg_classify_table_by_interface_reply *msg)
 {
   return sizeof(*msg);
 }
 
-static void __attribute__((constructor)) __vapi_constructor_classify_set_interface_l2_tables_reply()
+static void __attribute__((constructor)) __vapi_constructor_classify_table_by_interface_reply()
 {
-  static const char name[] = "classify_set_interface_l2_tables_reply";
-  static const char name_with_crc[] = "classify_set_interface_l2_tables_reply_e8d4e804";
-  static vapi_message_desc_t __vapi_metadata_classify_set_interface_l2_tables_reply = {
+  static const char name[] = "classify_table_by_interface_reply";
+  static const char name_with_crc[] = "classify_table_by_interface_reply_ed4197db";
+  static vapi_message_desc_t __vapi_metadata_classify_table_by_interface_reply = {
     name,
     sizeof(name) - 1,
     name_with_crc,
     sizeof(name_with_crc) - 1,
     true,
     offsetof(vapi_type_msg_header1_t, context),
-    offsetof(vapi_msg_classify_set_interface_l2_tables_reply, payload),
-    sizeof(vapi_msg_classify_set_interface_l2_tables_reply),
-    (generic_swap_fn_t)vapi_msg_classify_set_interface_l2_tables_reply_hton,
-    (generic_swap_fn_t)vapi_msg_classify_set_interface_l2_tables_reply_ntoh,
+    offsetof(vapi_msg_classify_table_by_interface_reply, payload),
+    sizeof(vapi_msg_classify_table_by_interface_reply),
+    (generic_swap_fn_t)vapi_msg_classify_table_by_interface_reply_hton,
+    (generic_swap_fn_t)vapi_msg_classify_table_by_interface_reply_ntoh,
     VAPI_INVALID_MSG_ID,
   };
 
-  vapi_msg_id_classify_set_interface_l2_tables_reply = vapi_register_msg(&__vapi_metadata_classify_set_interface_l2_tables_reply);
-  VAPI_DBG("Assigned msg id %d to classify_set_interface_l2_tables_reply", vapi_msg_id_classify_set_interface_l2_tables_reply);
+  vapi_msg_id_classify_table_by_interface_reply = vapi_register_msg(&__vapi_metadata_classify_table_by_interface_reply);
+  VAPI_DBG("Assigned msg id %d to classify_table_by_interface_reply", vapi_msg_id_classify_table_by_interface_reply);
 }
 
-static inline void vapi_set_vapi_msg_classify_set_interface_l2_tables_reply_event_cb (
+static inline void vapi_set_vapi_msg_classify_table_by_interface_reply_event_cb (
   struct vapi_ctx_s *ctx, 
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_classify_set_interface_l2_tables_reply *payload),
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_classify_table_by_interface_reply *payload),
   void *callback_ctx)
 {
-  vapi_set_event_cb(ctx, vapi_msg_id_classify_set_interface_l2_tables_reply, (vapi_event_cb)callback, callback_ctx);
+  vapi_set_event_cb(ctx, vapi_msg_id_classify_table_by_interface_reply, (vapi_event_cb)callback, callback_ctx);
 };
 #endif
 
-#ifndef defined_vapi_msg_classify_set_interface_l2_tables
-#define defined_vapi_msg_classify_set_interface_l2_tables
+#ifndef defined_vapi_msg_classify_table_by_interface
+#define defined_vapi_msg_classify_table_by_interface
 typedef struct __attribute__ ((__packed__)) {
-  u32 sw_if_index;
-  u32 ip4_table_index;
-  u32 ip6_table_index;
-  u32 other_table_index;
-  u8 is_input; 
-} vapi_payload_classify_set_interface_l2_tables;
+  vapi_type_interface_index sw_if_index; 
+} vapi_payload_classify_table_by_interface;
 
 typedef struct __attribute__ ((__packed__)) {
   vapi_type_msg_header2_t header;
-  vapi_payload_classify_set_interface_l2_tables payload;
-} vapi_msg_classify_set_interface_l2_tables;
+  vapi_payload_classify_table_by_interface payload;
+} vapi_msg_classify_table_by_interface;
 
-static inline void vapi_msg_classify_set_interface_l2_tables_payload_hton(vapi_payload_classify_set_interface_l2_tables *payload)
+static inline void vapi_msg_classify_table_by_interface_payload_hton(vapi_payload_classify_table_by_interface *payload)
 {
   payload->sw_if_index = htobe32(payload->sw_if_index);
-  payload->ip4_table_index = htobe32(payload->ip4_table_index);
-  payload->ip6_table_index = htobe32(payload->ip6_table_index);
-  payload->other_table_index = htobe32(payload->other_table_index);
 }
 
-static inline void vapi_msg_classify_set_interface_l2_tables_payload_ntoh(vapi_payload_classify_set_interface_l2_tables *payload)
+static inline void vapi_msg_classify_table_by_interface_payload_ntoh(vapi_payload_classify_table_by_interface *payload)
 {
   payload->sw_if_index = be32toh(payload->sw_if_index);
-  payload->ip4_table_index = be32toh(payload->ip4_table_index);
-  payload->ip6_table_index = be32toh(payload->ip6_table_index);
-  payload->other_table_index = be32toh(payload->other_table_index);
 }
 
-static inline void vapi_msg_classify_set_interface_l2_tables_hton(vapi_msg_classify_set_interface_l2_tables *msg)
+static inline void vapi_msg_classify_table_by_interface_hton(vapi_msg_classify_table_by_interface *msg)
 {
-  VAPI_DBG("Swapping `vapi_msg_classify_set_interface_l2_tables'@%p to big endian", msg);
+  VAPI_DBG("Swapping `vapi_msg_classify_table_by_interface'@%p to big endian", msg);
   vapi_type_msg_header2_t_hton(&msg->header);
-  vapi_msg_classify_set_interface_l2_tables_payload_hton(&msg->payload);
+  vapi_msg_classify_table_by_interface_payload_hton(&msg->payload);
 }
 
-static inline void vapi_msg_classify_set_interface_l2_tables_ntoh(vapi_msg_classify_set_interface_l2_tables *msg)
+static inline void vapi_msg_classify_table_by_interface_ntoh(vapi_msg_classify_table_by_interface *msg)
 {
-  VAPI_DBG("Swapping `vapi_msg_classify_set_interface_l2_tables'@%p to host byte order", msg);
+  VAPI_DBG("Swapping `vapi_msg_classify_table_by_interface'@%p to host byte order", msg);
   vapi_type_msg_header2_t_ntoh(&msg->header);
-  vapi_msg_classify_set_interface_l2_tables_payload_ntoh(&msg->payload);
+  vapi_msg_classify_table_by_interface_payload_ntoh(&msg->payload);
 }
 
-static inline uword vapi_calc_classify_set_interface_l2_tables_msg_size(vapi_msg_classify_set_interface_l2_tables *msg)
+static inline uword vapi_calc_classify_table_by_interface_msg_size(vapi_msg_classify_table_by_interface *msg)
 {
   return sizeof(*msg);
 }
 
-static inline vapi_msg_classify_set_interface_l2_tables* vapi_alloc_classify_set_interface_l2_tables(struct vapi_ctx_s *ctx)
+static inline vapi_msg_classify_table_by_interface* vapi_alloc_classify_table_by_interface(struct vapi_ctx_s *ctx)
 {
-  vapi_msg_classify_set_interface_l2_tables *msg = NULL;
-  const size_t size = sizeof(vapi_msg_classify_set_interface_l2_tables);
+  vapi_msg_classify_table_by_interface *msg = NULL;
+  const size_t size = sizeof(vapi_msg_classify_table_by_interface);
   /* cast here required to play nicely with C++ world ... */
-  msg = (vapi_msg_classify_set_interface_l2_tables*)vapi_msg_alloc(ctx, size);
+  msg = (vapi_msg_classify_table_by_interface*)vapi_msg_alloc(ctx, size);
   if (!msg) {
     return NULL;
   }
   msg->header.client_index = vapi_get_client_index(ctx);
   msg->header.context = 0;
-  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_classify_set_interface_l2_tables);
+  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_classify_table_by_interface);
 
   return msg;
 }
 
-static inline vapi_error_e vapi_classify_set_interface_l2_tables(struct vapi_ctx_s *ctx,
-  vapi_msg_classify_set_interface_l2_tables *msg,
+static inline vapi_error_e vapi_classify_table_by_interface(struct vapi_ctx_s *ctx,
+  vapi_msg_classify_table_by_interface *msg,
   vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
                            void *callback_ctx,
                            vapi_error_e rv,
                            bool is_last,
-                           vapi_payload_classify_set_interface_l2_tables_reply *reply),
+                           vapi_payload_classify_table_by_interface_reply *reply),
   void *callback_ctx)
 {
   if (!msg || !callback) {
@@ -976,7 +1361,7 @@ static inline vapi_error_e vapi_classify_set_interface_l2_tables(struct vapi_ctx
   }
   u32 req_context = vapi_gen_req_context(ctx);
   msg->header.context = req_context;
-  vapi_msg_classify_set_interface_l2_tables_hton(msg);
+  vapi_msg_classify_table_by_interface_hton(msg);
   if (VAPI_OK == (rv = vapi_send (ctx, msg))) {
     vapi_store_request(ctx, req_context, false, (vapi_cb_t)callback, callback_ctx);
     if (VAPI_OK != vapi_producer_unlock (ctx)) {
@@ -988,7 +1373,7 @@ static inline vapi_error_e vapi_classify_set_interface_l2_tables(struct vapi_ctx
       rv = vapi_dispatch(ctx);
     }
   } else {
-    vapi_msg_classify_set_interface_l2_tables_ntoh(msg);
+    vapi_msg_classify_table_by_interface_ntoh(msg);
     if (VAPI_OK != vapi_producer_unlock (ctx)) {
       abort (); /* this really shouldn't happen */
     }
@@ -997,654 +1382,26 @@ static inline vapi_error_e vapi_classify_set_interface_l2_tables(struct vapi_ctx
 }
 
 
-static void __attribute__((constructor)) __vapi_constructor_classify_set_interface_l2_tables()
+static void __attribute__((constructor)) __vapi_constructor_classify_table_by_interface()
 {
-  static const char name[] = "classify_set_interface_l2_tables";
-  static const char name_with_crc[] = "classify_set_interface_l2_tables_6d60ab5f";
-  static vapi_message_desc_t __vapi_metadata_classify_set_interface_l2_tables = {
+  static const char name[] = "classify_table_by_interface";
+  static const char name_with_crc[] = "classify_table_by_interface_f9e6675e";
+  static vapi_message_desc_t __vapi_metadata_classify_table_by_interface = {
     name,
     sizeof(name) - 1,
     name_with_crc,
     sizeof(name_with_crc) - 1,
     true,
     offsetof(vapi_type_msg_header2_t, context),
-    offsetof(vapi_msg_classify_set_interface_l2_tables, payload),
-    sizeof(vapi_msg_classify_set_interface_l2_tables),
-    (generic_swap_fn_t)vapi_msg_classify_set_interface_l2_tables_hton,
-    (generic_swap_fn_t)vapi_msg_classify_set_interface_l2_tables_ntoh,
+    offsetof(vapi_msg_classify_table_by_interface, payload),
+    sizeof(vapi_msg_classify_table_by_interface),
+    (generic_swap_fn_t)vapi_msg_classify_table_by_interface_hton,
+    (generic_swap_fn_t)vapi_msg_classify_table_by_interface_ntoh,
     VAPI_INVALID_MSG_ID,
   };
 
-  vapi_msg_id_classify_set_interface_l2_tables = vapi_register_msg(&__vapi_metadata_classify_set_interface_l2_tables);
-  VAPI_DBG("Assigned msg id %d to classify_set_interface_l2_tables", vapi_msg_id_classify_set_interface_l2_tables);
-}
-#endif
-
-#ifndef defined_vapi_msg_policer_classify_details
-#define defined_vapi_msg_policer_classify_details
-typedef struct __attribute__ ((__packed__)) {
-  u32 sw_if_index;
-  u32 table_index; 
-} vapi_payload_policer_classify_details;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header1_t header;
-  vapi_payload_policer_classify_details payload;
-} vapi_msg_policer_classify_details;
-
-static inline void vapi_msg_policer_classify_details_payload_hton(vapi_payload_policer_classify_details *payload)
-{
-  payload->sw_if_index = htobe32(payload->sw_if_index);
-  payload->table_index = htobe32(payload->table_index);
-}
-
-static inline void vapi_msg_policer_classify_details_payload_ntoh(vapi_payload_policer_classify_details *payload)
-{
-  payload->sw_if_index = be32toh(payload->sw_if_index);
-  payload->table_index = be32toh(payload->table_index);
-}
-
-static inline void vapi_msg_policer_classify_details_hton(vapi_msg_policer_classify_details *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_policer_classify_details'@%p to big endian", msg);
-  vapi_type_msg_header1_t_hton(&msg->header);
-  vapi_msg_policer_classify_details_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_policer_classify_details_ntoh(vapi_msg_policer_classify_details *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_policer_classify_details'@%p to host byte order", msg);
-  vapi_type_msg_header1_t_ntoh(&msg->header);
-  vapi_msg_policer_classify_details_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_policer_classify_details_msg_size(vapi_msg_policer_classify_details *msg)
-{
-  return sizeof(*msg);
-}
-
-static void __attribute__((constructor)) __vapi_constructor_policer_classify_details()
-{
-  static const char name[] = "policer_classify_details";
-  static const char name_with_crc[] = "policer_classify_details_cc3461ad";
-  static vapi_message_desc_t __vapi_metadata_policer_classify_details = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header1_t, context),
-    offsetof(vapi_msg_policer_classify_details, payload),
-    sizeof(vapi_msg_policer_classify_details),
-    (generic_swap_fn_t)vapi_msg_policer_classify_details_hton,
-    (generic_swap_fn_t)vapi_msg_policer_classify_details_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_policer_classify_details = vapi_register_msg(&__vapi_metadata_policer_classify_details);
-  VAPI_DBG("Assigned msg id %d to policer_classify_details", vapi_msg_id_policer_classify_details);
-}
-
-static inline void vapi_set_vapi_msg_policer_classify_details_event_cb (
-  struct vapi_ctx_s *ctx, 
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_policer_classify_details *payload),
-  void *callback_ctx)
-{
-  vapi_set_event_cb(ctx, vapi_msg_id_policer_classify_details, (vapi_event_cb)callback, callback_ctx);
-};
-#endif
-
-#ifndef defined_vapi_msg_input_acl_set_interface_reply
-#define defined_vapi_msg_input_acl_set_interface_reply
-typedef struct __attribute__ ((__packed__)) {
-  i32 retval; 
-} vapi_payload_input_acl_set_interface_reply;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header1_t header;
-  vapi_payload_input_acl_set_interface_reply payload;
-} vapi_msg_input_acl_set_interface_reply;
-
-static inline void vapi_msg_input_acl_set_interface_reply_payload_hton(vapi_payload_input_acl_set_interface_reply *payload)
-{
-  payload->retval = htobe32(payload->retval);
-}
-
-static inline void vapi_msg_input_acl_set_interface_reply_payload_ntoh(vapi_payload_input_acl_set_interface_reply *payload)
-{
-  payload->retval = be32toh(payload->retval);
-}
-
-static inline void vapi_msg_input_acl_set_interface_reply_hton(vapi_msg_input_acl_set_interface_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_input_acl_set_interface_reply'@%p to big endian", msg);
-  vapi_type_msg_header1_t_hton(&msg->header);
-  vapi_msg_input_acl_set_interface_reply_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_input_acl_set_interface_reply_ntoh(vapi_msg_input_acl_set_interface_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_input_acl_set_interface_reply'@%p to host byte order", msg);
-  vapi_type_msg_header1_t_ntoh(&msg->header);
-  vapi_msg_input_acl_set_interface_reply_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_input_acl_set_interface_reply_msg_size(vapi_msg_input_acl_set_interface_reply *msg)
-{
-  return sizeof(*msg);
-}
-
-static void __attribute__((constructor)) __vapi_constructor_input_acl_set_interface_reply()
-{
-  static const char name[] = "input_acl_set_interface_reply";
-  static const char name_with_crc[] = "input_acl_set_interface_reply_e8d4e804";
-  static vapi_message_desc_t __vapi_metadata_input_acl_set_interface_reply = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header1_t, context),
-    offsetof(vapi_msg_input_acl_set_interface_reply, payload),
-    sizeof(vapi_msg_input_acl_set_interface_reply),
-    (generic_swap_fn_t)vapi_msg_input_acl_set_interface_reply_hton,
-    (generic_swap_fn_t)vapi_msg_input_acl_set_interface_reply_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_input_acl_set_interface_reply = vapi_register_msg(&__vapi_metadata_input_acl_set_interface_reply);
-  VAPI_DBG("Assigned msg id %d to input_acl_set_interface_reply", vapi_msg_id_input_acl_set_interface_reply);
-}
-
-static inline void vapi_set_vapi_msg_input_acl_set_interface_reply_event_cb (
-  struct vapi_ctx_s *ctx, 
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_input_acl_set_interface_reply *payload),
-  void *callback_ctx)
-{
-  vapi_set_event_cb(ctx, vapi_msg_id_input_acl_set_interface_reply, (vapi_event_cb)callback, callback_ctx);
-};
-#endif
-
-#ifndef defined_vapi_msg_classify_add_del_session_reply
-#define defined_vapi_msg_classify_add_del_session_reply
-typedef struct __attribute__ ((__packed__)) {
-  i32 retval; 
-} vapi_payload_classify_add_del_session_reply;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header1_t header;
-  vapi_payload_classify_add_del_session_reply payload;
-} vapi_msg_classify_add_del_session_reply;
-
-static inline void vapi_msg_classify_add_del_session_reply_payload_hton(vapi_payload_classify_add_del_session_reply *payload)
-{
-  payload->retval = htobe32(payload->retval);
-}
-
-static inline void vapi_msg_classify_add_del_session_reply_payload_ntoh(vapi_payload_classify_add_del_session_reply *payload)
-{
-  payload->retval = be32toh(payload->retval);
-}
-
-static inline void vapi_msg_classify_add_del_session_reply_hton(vapi_msg_classify_add_del_session_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_classify_add_del_session_reply'@%p to big endian", msg);
-  vapi_type_msg_header1_t_hton(&msg->header);
-  vapi_msg_classify_add_del_session_reply_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_classify_add_del_session_reply_ntoh(vapi_msg_classify_add_del_session_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_classify_add_del_session_reply'@%p to host byte order", msg);
-  vapi_type_msg_header1_t_ntoh(&msg->header);
-  vapi_msg_classify_add_del_session_reply_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_classify_add_del_session_reply_msg_size(vapi_msg_classify_add_del_session_reply *msg)
-{
-  return sizeof(*msg);
-}
-
-static void __attribute__((constructor)) __vapi_constructor_classify_add_del_session_reply()
-{
-  static const char name[] = "classify_add_del_session_reply";
-  static const char name_with_crc[] = "classify_add_del_session_reply_e8d4e804";
-  static vapi_message_desc_t __vapi_metadata_classify_add_del_session_reply = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header1_t, context),
-    offsetof(vapi_msg_classify_add_del_session_reply, payload),
-    sizeof(vapi_msg_classify_add_del_session_reply),
-    (generic_swap_fn_t)vapi_msg_classify_add_del_session_reply_hton,
-    (generic_swap_fn_t)vapi_msg_classify_add_del_session_reply_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_classify_add_del_session_reply = vapi_register_msg(&__vapi_metadata_classify_add_del_session_reply);
-  VAPI_DBG("Assigned msg id %d to classify_add_del_session_reply", vapi_msg_id_classify_add_del_session_reply);
-}
-
-static inline void vapi_set_vapi_msg_classify_add_del_session_reply_event_cb (
-  struct vapi_ctx_s *ctx, 
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_classify_add_del_session_reply *payload),
-  void *callback_ctx)
-{
-  vapi_set_event_cb(ctx, vapi_msg_id_classify_add_del_session_reply, (vapi_event_cb)callback, callback_ctx);
-};
-#endif
-
-#ifndef defined_vapi_msg_classify_add_del_table_reply
-#define defined_vapi_msg_classify_add_del_table_reply
-typedef struct __attribute__ ((__packed__)) {
-  i32 retval;
-  u32 new_table_index;
-  u32 skip_n_vectors;
-  u32 match_n_vectors; 
-} vapi_payload_classify_add_del_table_reply;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header1_t header;
-  vapi_payload_classify_add_del_table_reply payload;
-} vapi_msg_classify_add_del_table_reply;
-
-static inline void vapi_msg_classify_add_del_table_reply_payload_hton(vapi_payload_classify_add_del_table_reply *payload)
-{
-  payload->retval = htobe32(payload->retval);
-  payload->new_table_index = htobe32(payload->new_table_index);
-  payload->skip_n_vectors = htobe32(payload->skip_n_vectors);
-  payload->match_n_vectors = htobe32(payload->match_n_vectors);
-}
-
-static inline void vapi_msg_classify_add_del_table_reply_payload_ntoh(vapi_payload_classify_add_del_table_reply *payload)
-{
-  payload->retval = be32toh(payload->retval);
-  payload->new_table_index = be32toh(payload->new_table_index);
-  payload->skip_n_vectors = be32toh(payload->skip_n_vectors);
-  payload->match_n_vectors = be32toh(payload->match_n_vectors);
-}
-
-static inline void vapi_msg_classify_add_del_table_reply_hton(vapi_msg_classify_add_del_table_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_classify_add_del_table_reply'@%p to big endian", msg);
-  vapi_type_msg_header1_t_hton(&msg->header);
-  vapi_msg_classify_add_del_table_reply_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_classify_add_del_table_reply_ntoh(vapi_msg_classify_add_del_table_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_classify_add_del_table_reply'@%p to host byte order", msg);
-  vapi_type_msg_header1_t_ntoh(&msg->header);
-  vapi_msg_classify_add_del_table_reply_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_classify_add_del_table_reply_msg_size(vapi_msg_classify_add_del_table_reply *msg)
-{
-  return sizeof(*msg);
-}
-
-static void __attribute__((constructor)) __vapi_constructor_classify_add_del_table_reply()
-{
-  static const char name[] = "classify_add_del_table_reply";
-  static const char name_with_crc[] = "classify_add_del_table_reply_05486349";
-  static vapi_message_desc_t __vapi_metadata_classify_add_del_table_reply = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header1_t, context),
-    offsetof(vapi_msg_classify_add_del_table_reply, payload),
-    sizeof(vapi_msg_classify_add_del_table_reply),
-    (generic_swap_fn_t)vapi_msg_classify_add_del_table_reply_hton,
-    (generic_swap_fn_t)vapi_msg_classify_add_del_table_reply_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_classify_add_del_table_reply = vapi_register_msg(&__vapi_metadata_classify_add_del_table_reply);
-  VAPI_DBG("Assigned msg id %d to classify_add_del_table_reply", vapi_msg_id_classify_add_del_table_reply);
-}
-
-static inline void vapi_set_vapi_msg_classify_add_del_table_reply_event_cb (
-  struct vapi_ctx_s *ctx, 
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_classify_add_del_table_reply *payload),
-  void *callback_ctx)
-{
-  vapi_set_event_cb(ctx, vapi_msg_id_classify_add_del_table_reply, (vapi_event_cb)callback, callback_ctx);
-};
-#endif
-
-#ifndef defined_vapi_msg_policer_classify_dump
-#define defined_vapi_msg_policer_classify_dump
-typedef struct __attribute__ ((__packed__)) {
-  u8 type; 
-} vapi_payload_policer_classify_dump;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header2_t header;
-  vapi_payload_policer_classify_dump payload;
-} vapi_msg_policer_classify_dump;
-
-static inline void vapi_msg_policer_classify_dump_payload_hton(vapi_payload_policer_classify_dump *payload)
-{
-
-}
-
-static inline void vapi_msg_policer_classify_dump_payload_ntoh(vapi_payload_policer_classify_dump *payload)
-{
-
-}
-
-static inline void vapi_msg_policer_classify_dump_hton(vapi_msg_policer_classify_dump *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_policer_classify_dump'@%p to big endian", msg);
-  vapi_type_msg_header2_t_hton(&msg->header);
-  vapi_msg_policer_classify_dump_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_policer_classify_dump_ntoh(vapi_msg_policer_classify_dump *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_policer_classify_dump'@%p to host byte order", msg);
-  vapi_type_msg_header2_t_ntoh(&msg->header);
-  vapi_msg_policer_classify_dump_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_policer_classify_dump_msg_size(vapi_msg_policer_classify_dump *msg)
-{
-  return sizeof(*msg);
-}
-
-static inline vapi_msg_policer_classify_dump* vapi_alloc_policer_classify_dump(struct vapi_ctx_s *ctx)
-{
-  vapi_msg_policer_classify_dump *msg = NULL;
-  const size_t size = sizeof(vapi_msg_policer_classify_dump);
-  /* cast here required to play nicely with C++ world ... */
-  msg = (vapi_msg_policer_classify_dump*)vapi_msg_alloc(ctx, size);
-  if (!msg) {
-    return NULL;
-  }
-  msg->header.client_index = vapi_get_client_index(ctx);
-  msg->header.context = 0;
-  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_policer_classify_dump);
-
-  return msg;
-}
-
-static inline vapi_error_e vapi_policer_classify_dump(struct vapi_ctx_s *ctx,
-  vapi_msg_policer_classify_dump *msg,
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
-                           void *callback_ctx,
-                           vapi_error_e rv,
-                           bool is_last,
-                           vapi_payload_policer_classify_details *reply),
-  void *callback_ctx)
-{
-  if (!msg || !callback) {
-    return VAPI_EINVAL;
-  }
-  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
-    return VAPI_EAGAIN;
-  }
-  vapi_error_e rv;
-  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
-    return rv;
-  }
-  u32 req_context = vapi_gen_req_context(ctx);
-  msg->header.context = req_context;
-  vapi_msg_policer_classify_dump_hton(msg);
-  if (VAPI_OK == (rv = vapi_send_with_control_ping (ctx, msg, req_context))) {
-    vapi_store_request(ctx, req_context, true, (vapi_cb_t)callback, callback_ctx);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-    if (vapi_is_nonblocking(ctx)) {
-      rv = VAPI_OK;
-    } else {
-      rv = vapi_dispatch(ctx);
-    }
-  } else {
-    vapi_msg_policer_classify_dump_ntoh(msg);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-  }
-  return rv;
-}
-
-
-static void __attribute__((constructor)) __vapi_constructor_policer_classify_dump()
-{
-  static const char name[] = "policer_classify_dump";
-  static const char name_with_crc[] = "policer_classify_dump_41503530";
-  static vapi_message_desc_t __vapi_metadata_policer_classify_dump = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header2_t, context),
-    offsetof(vapi_msg_policer_classify_dump, payload),
-    sizeof(vapi_msg_policer_classify_dump),
-    (generic_swap_fn_t)vapi_msg_policer_classify_dump_hton,
-    (generic_swap_fn_t)vapi_msg_policer_classify_dump_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_policer_classify_dump = vapi_register_msg(&__vapi_metadata_policer_classify_dump);
-  VAPI_DBG("Assigned msg id %d to policer_classify_dump", vapi_msg_id_policer_classify_dump);
-}
-#endif
-
-#ifndef defined_vapi_msg_classify_set_interface_ip_table_reply
-#define defined_vapi_msg_classify_set_interface_ip_table_reply
-typedef struct __attribute__ ((__packed__)) {
-  i32 retval; 
-} vapi_payload_classify_set_interface_ip_table_reply;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header1_t header;
-  vapi_payload_classify_set_interface_ip_table_reply payload;
-} vapi_msg_classify_set_interface_ip_table_reply;
-
-static inline void vapi_msg_classify_set_interface_ip_table_reply_payload_hton(vapi_payload_classify_set_interface_ip_table_reply *payload)
-{
-  payload->retval = htobe32(payload->retval);
-}
-
-static inline void vapi_msg_classify_set_interface_ip_table_reply_payload_ntoh(vapi_payload_classify_set_interface_ip_table_reply *payload)
-{
-  payload->retval = be32toh(payload->retval);
-}
-
-static inline void vapi_msg_classify_set_interface_ip_table_reply_hton(vapi_msg_classify_set_interface_ip_table_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_classify_set_interface_ip_table_reply'@%p to big endian", msg);
-  vapi_type_msg_header1_t_hton(&msg->header);
-  vapi_msg_classify_set_interface_ip_table_reply_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_classify_set_interface_ip_table_reply_ntoh(vapi_msg_classify_set_interface_ip_table_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_classify_set_interface_ip_table_reply'@%p to host byte order", msg);
-  vapi_type_msg_header1_t_ntoh(&msg->header);
-  vapi_msg_classify_set_interface_ip_table_reply_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_classify_set_interface_ip_table_reply_msg_size(vapi_msg_classify_set_interface_ip_table_reply *msg)
-{
-  return sizeof(*msg);
-}
-
-static void __attribute__((constructor)) __vapi_constructor_classify_set_interface_ip_table_reply()
-{
-  static const char name[] = "classify_set_interface_ip_table_reply";
-  static const char name_with_crc[] = "classify_set_interface_ip_table_reply_e8d4e804";
-  static vapi_message_desc_t __vapi_metadata_classify_set_interface_ip_table_reply = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header1_t, context),
-    offsetof(vapi_msg_classify_set_interface_ip_table_reply, payload),
-    sizeof(vapi_msg_classify_set_interface_ip_table_reply),
-    (generic_swap_fn_t)vapi_msg_classify_set_interface_ip_table_reply_hton,
-    (generic_swap_fn_t)vapi_msg_classify_set_interface_ip_table_reply_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_classify_set_interface_ip_table_reply = vapi_register_msg(&__vapi_metadata_classify_set_interface_ip_table_reply);
-  VAPI_DBG("Assigned msg id %d to classify_set_interface_ip_table_reply", vapi_msg_id_classify_set_interface_ip_table_reply);
-}
-
-static inline void vapi_set_vapi_msg_classify_set_interface_ip_table_reply_event_cb (
-  struct vapi_ctx_s *ctx, 
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_classify_set_interface_ip_table_reply *payload),
-  void *callback_ctx)
-{
-  vapi_set_event_cb(ctx, vapi_msg_id_classify_set_interface_ip_table_reply, (vapi_event_cb)callback, callback_ctx);
-};
-#endif
-
-#ifndef defined_vapi_msg_classify_add_del_session
-#define defined_vapi_msg_classify_add_del_session
-typedef struct __attribute__ ((__packed__)) {
-  u8 is_add;
-  u32 table_index;
-  u32 hit_next_index;
-  u32 opaque_index;
-  i32 advance;
-  u8 action;
-  u32 metadata;
-  u32 match_len;
-  u8 match[0]; 
-} vapi_payload_classify_add_del_session;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header2_t header;
-  vapi_payload_classify_add_del_session payload;
-} vapi_msg_classify_add_del_session;
-
-static inline void vapi_msg_classify_add_del_session_payload_hton(vapi_payload_classify_add_del_session *payload)
-{
-  payload->table_index = htobe32(payload->table_index);
-  payload->hit_next_index = htobe32(payload->hit_next_index);
-  payload->opaque_index = htobe32(payload->opaque_index);
-  payload->advance = htobe32(payload->advance);
-  payload->metadata = htobe32(payload->metadata);
-  payload->match_len = htobe32(payload->match_len);
-}
-
-static inline void vapi_msg_classify_add_del_session_payload_ntoh(vapi_payload_classify_add_del_session *payload)
-{
-  payload->table_index = be32toh(payload->table_index);
-  payload->hit_next_index = be32toh(payload->hit_next_index);
-  payload->opaque_index = be32toh(payload->opaque_index);
-  payload->advance = be32toh(payload->advance);
-  payload->metadata = be32toh(payload->metadata);
-  payload->match_len = be32toh(payload->match_len);
-}
-
-static inline void vapi_msg_classify_add_del_session_hton(vapi_msg_classify_add_del_session *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_classify_add_del_session'@%p to big endian", msg);
-  vapi_type_msg_header2_t_hton(&msg->header);
-  vapi_msg_classify_add_del_session_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_classify_add_del_session_ntoh(vapi_msg_classify_add_del_session *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_classify_add_del_session'@%p to host byte order", msg);
-  vapi_type_msg_header2_t_ntoh(&msg->header);
-  vapi_msg_classify_add_del_session_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_classify_add_del_session_msg_size(vapi_msg_classify_add_del_session *msg)
-{
-  return sizeof(*msg)+ msg->payload.match_len * sizeof(msg->payload.match[0]);
-}
-
-static inline vapi_msg_classify_add_del_session* vapi_alloc_classify_add_del_session(struct vapi_ctx_s *ctx, size_t _match_array_size)
-{
-  vapi_msg_classify_add_del_session *msg = NULL;
-  const size_t size = sizeof(vapi_msg_classify_add_del_session) + sizeof(msg->payload.match[0]) * _match_array_size;
-  /* cast here required to play nicely with C++ world ... */
-  msg = (vapi_msg_classify_add_del_session*)vapi_msg_alloc(ctx, size);
-  if (!msg) {
-    return NULL;
-  }
-  msg->header.client_index = vapi_get_client_index(ctx);
-  msg->header.context = 0;
-  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_classify_add_del_session);
-  msg->payload.match_len = _match_array_size;
-
-  return msg;
-}
-
-static inline vapi_error_e vapi_classify_add_del_session(struct vapi_ctx_s *ctx,
-  vapi_msg_classify_add_del_session *msg,
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
-                           void *callback_ctx,
-                           vapi_error_e rv,
-                           bool is_last,
-                           vapi_payload_classify_add_del_session_reply *reply),
-  void *callback_ctx)
-{
-  if (!msg || !callback) {
-    return VAPI_EINVAL;
-  }
-  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
-    return VAPI_EAGAIN;
-  }
-  vapi_error_e rv;
-  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
-    return rv;
-  }
-  u32 req_context = vapi_gen_req_context(ctx);
-  msg->header.context = req_context;
-  vapi_msg_classify_add_del_session_hton(msg);
-  if (VAPI_OK == (rv = vapi_send (ctx, msg))) {
-    vapi_store_request(ctx, req_context, false, (vapi_cb_t)callback, callback_ctx);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-    if (vapi_is_nonblocking(ctx)) {
-      rv = VAPI_OK;
-    } else {
-      rv = vapi_dispatch(ctx);
-    }
-  } else {
-    vapi_msg_classify_add_del_session_ntoh(msg);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-  }
-  return rv;
-}
-
-
-static void __attribute__((constructor)) __vapi_constructor_classify_add_del_session()
-{
-  static const char name[] = "classify_add_del_session";
-  static const char name_with_crc[] = "classify_add_del_session_85fd79f4";
-  static vapi_message_desc_t __vapi_metadata_classify_add_del_session = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header2_t, context),
-    offsetof(vapi_msg_classify_add_del_session, payload),
-    sizeof(vapi_msg_classify_add_del_session),
-    (generic_swap_fn_t)vapi_msg_classify_add_del_session_hton,
-    (generic_swap_fn_t)vapi_msg_classify_add_del_session_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_classify_add_del_session = vapi_register_msg(&__vapi_metadata_classify_add_del_session);
-  VAPI_DBG("Assigned msg id %d to classify_add_del_session", vapi_msg_id_classify_add_del_session);
+  vapi_msg_id_classify_table_by_interface = vapi_register_msg(&__vapi_metadata_classify_table_by_interface);
+  VAPI_DBG("Assigned msg id %d to classify_table_by_interface", vapi_msg_id_classify_table_by_interface);
 }
 #endif
 
@@ -1742,941 +1499,6 @@ static inline void vapi_set_vapi_msg_classify_table_info_reply_event_cb (
 {
   vapi_set_event_cb(ctx, vapi_msg_id_classify_table_info_reply, (vapi_event_cb)callback, callback_ctx);
 };
-#endif
-
-#ifndef defined_vapi_msg_classify_table_by_interface_reply
-#define defined_vapi_msg_classify_table_by_interface_reply
-typedef struct __attribute__ ((__packed__)) {
-  i32 retval;
-  u32 sw_if_index;
-  u32 l2_table_id;
-  u32 ip4_table_id;
-  u32 ip6_table_id; 
-} vapi_payload_classify_table_by_interface_reply;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header1_t header;
-  vapi_payload_classify_table_by_interface_reply payload;
-} vapi_msg_classify_table_by_interface_reply;
-
-static inline void vapi_msg_classify_table_by_interface_reply_payload_hton(vapi_payload_classify_table_by_interface_reply *payload)
-{
-  payload->retval = htobe32(payload->retval);
-  payload->sw_if_index = htobe32(payload->sw_if_index);
-  payload->l2_table_id = htobe32(payload->l2_table_id);
-  payload->ip4_table_id = htobe32(payload->ip4_table_id);
-  payload->ip6_table_id = htobe32(payload->ip6_table_id);
-}
-
-static inline void vapi_msg_classify_table_by_interface_reply_payload_ntoh(vapi_payload_classify_table_by_interface_reply *payload)
-{
-  payload->retval = be32toh(payload->retval);
-  payload->sw_if_index = be32toh(payload->sw_if_index);
-  payload->l2_table_id = be32toh(payload->l2_table_id);
-  payload->ip4_table_id = be32toh(payload->ip4_table_id);
-  payload->ip6_table_id = be32toh(payload->ip6_table_id);
-}
-
-static inline void vapi_msg_classify_table_by_interface_reply_hton(vapi_msg_classify_table_by_interface_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_classify_table_by_interface_reply'@%p to big endian", msg);
-  vapi_type_msg_header1_t_hton(&msg->header);
-  vapi_msg_classify_table_by_interface_reply_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_classify_table_by_interface_reply_ntoh(vapi_msg_classify_table_by_interface_reply *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_classify_table_by_interface_reply'@%p to host byte order", msg);
-  vapi_type_msg_header1_t_ntoh(&msg->header);
-  vapi_msg_classify_table_by_interface_reply_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_classify_table_by_interface_reply_msg_size(vapi_msg_classify_table_by_interface_reply *msg)
-{
-  return sizeof(*msg);
-}
-
-static void __attribute__((constructor)) __vapi_constructor_classify_table_by_interface_reply()
-{
-  static const char name[] = "classify_table_by_interface_reply";
-  static const char name_with_crc[] = "classify_table_by_interface_reply_eccde823";
-  static vapi_message_desc_t __vapi_metadata_classify_table_by_interface_reply = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header1_t, context),
-    offsetof(vapi_msg_classify_table_by_interface_reply, payload),
-    sizeof(vapi_msg_classify_table_by_interface_reply),
-    (generic_swap_fn_t)vapi_msg_classify_table_by_interface_reply_hton,
-    (generic_swap_fn_t)vapi_msg_classify_table_by_interface_reply_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_classify_table_by_interface_reply = vapi_register_msg(&__vapi_metadata_classify_table_by_interface_reply);
-  VAPI_DBG("Assigned msg id %d to classify_table_by_interface_reply", vapi_msg_id_classify_table_by_interface_reply);
-}
-
-static inline void vapi_set_vapi_msg_classify_table_by_interface_reply_event_cb (
-  struct vapi_ctx_s *ctx, 
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_classify_table_by_interface_reply *payload),
-  void *callback_ctx)
-{
-  vapi_set_event_cb(ctx, vapi_msg_id_classify_table_by_interface_reply, (vapi_event_cb)callback, callback_ctx);
-};
-#endif
-
-#ifndef defined_vapi_msg_classify_add_del_table
-#define defined_vapi_msg_classify_add_del_table
-typedef struct __attribute__ ((__packed__)) {
-  u8 is_add;
-  u8 del_chain;
-  u32 table_index;
-  u32 nbuckets;
-  u32 memory_size;
-  u32 skip_n_vectors;
-  u32 match_n_vectors;
-  u32 next_table_index;
-  u32 miss_next_index;
-  u32 current_data_flag;
-  i32 current_data_offset;
-  u32 mask_len;
-  u8 mask[0]; 
-} vapi_payload_classify_add_del_table;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header2_t header;
-  vapi_payload_classify_add_del_table payload;
-} vapi_msg_classify_add_del_table;
-
-static inline void vapi_msg_classify_add_del_table_payload_hton(vapi_payload_classify_add_del_table *payload)
-{
-  payload->table_index = htobe32(payload->table_index);
-  payload->nbuckets = htobe32(payload->nbuckets);
-  payload->memory_size = htobe32(payload->memory_size);
-  payload->skip_n_vectors = htobe32(payload->skip_n_vectors);
-  payload->match_n_vectors = htobe32(payload->match_n_vectors);
-  payload->next_table_index = htobe32(payload->next_table_index);
-  payload->miss_next_index = htobe32(payload->miss_next_index);
-  payload->current_data_flag = htobe32(payload->current_data_flag);
-  payload->current_data_offset = htobe32(payload->current_data_offset);
-  payload->mask_len = htobe32(payload->mask_len);
-}
-
-static inline void vapi_msg_classify_add_del_table_payload_ntoh(vapi_payload_classify_add_del_table *payload)
-{
-  payload->table_index = be32toh(payload->table_index);
-  payload->nbuckets = be32toh(payload->nbuckets);
-  payload->memory_size = be32toh(payload->memory_size);
-  payload->skip_n_vectors = be32toh(payload->skip_n_vectors);
-  payload->match_n_vectors = be32toh(payload->match_n_vectors);
-  payload->next_table_index = be32toh(payload->next_table_index);
-  payload->miss_next_index = be32toh(payload->miss_next_index);
-  payload->current_data_flag = be32toh(payload->current_data_flag);
-  payload->current_data_offset = be32toh(payload->current_data_offset);
-  payload->mask_len = be32toh(payload->mask_len);
-}
-
-static inline void vapi_msg_classify_add_del_table_hton(vapi_msg_classify_add_del_table *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_classify_add_del_table'@%p to big endian", msg);
-  vapi_type_msg_header2_t_hton(&msg->header);
-  vapi_msg_classify_add_del_table_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_classify_add_del_table_ntoh(vapi_msg_classify_add_del_table *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_classify_add_del_table'@%p to host byte order", msg);
-  vapi_type_msg_header2_t_ntoh(&msg->header);
-  vapi_msg_classify_add_del_table_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_classify_add_del_table_msg_size(vapi_msg_classify_add_del_table *msg)
-{
-  return sizeof(*msg)+ msg->payload.mask_len * sizeof(msg->payload.mask[0]);
-}
-
-static inline vapi_msg_classify_add_del_table* vapi_alloc_classify_add_del_table(struct vapi_ctx_s *ctx, size_t _mask_array_size)
-{
-  vapi_msg_classify_add_del_table *msg = NULL;
-  const size_t size = sizeof(vapi_msg_classify_add_del_table) + sizeof(msg->payload.mask[0]) * _mask_array_size;
-  /* cast here required to play nicely with C++ world ... */
-  msg = (vapi_msg_classify_add_del_table*)vapi_msg_alloc(ctx, size);
-  if (!msg) {
-    return NULL;
-  }
-  msg->header.client_index = vapi_get_client_index(ctx);
-  msg->header.context = 0;
-  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_classify_add_del_table);
-  msg->payload.mask_len = _mask_array_size;
-
-  return msg;
-}
-
-static inline vapi_error_e vapi_classify_add_del_table(struct vapi_ctx_s *ctx,
-  vapi_msg_classify_add_del_table *msg,
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
-                           void *callback_ctx,
-                           vapi_error_e rv,
-                           bool is_last,
-                           vapi_payload_classify_add_del_table_reply *reply),
-  void *callback_ctx)
-{
-  if (!msg || !callback) {
-    return VAPI_EINVAL;
-  }
-  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
-    return VAPI_EAGAIN;
-  }
-  vapi_error_e rv;
-  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
-    return rv;
-  }
-  u32 req_context = vapi_gen_req_context(ctx);
-  msg->header.context = req_context;
-  vapi_msg_classify_add_del_table_hton(msg);
-  if (VAPI_OK == (rv = vapi_send (ctx, msg))) {
-    vapi_store_request(ctx, req_context, false, (vapi_cb_t)callback, callback_ctx);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-    if (vapi_is_nonblocking(ctx)) {
-      rv = VAPI_OK;
-    } else {
-      rv = vapi_dispatch(ctx);
-    }
-  } else {
-    vapi_msg_classify_add_del_table_ntoh(msg);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-  }
-  return rv;
-}
-
-
-static void __attribute__((constructor)) __vapi_constructor_classify_add_del_table()
-{
-  static const char name[] = "classify_add_del_table";
-  static const char name_with_crc[] = "classify_add_del_table_9bd794ae";
-  static vapi_message_desc_t __vapi_metadata_classify_add_del_table = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header2_t, context),
-    offsetof(vapi_msg_classify_add_del_table, payload),
-    sizeof(vapi_msg_classify_add_del_table),
-    (generic_swap_fn_t)vapi_msg_classify_add_del_table_hton,
-    (generic_swap_fn_t)vapi_msg_classify_add_del_table_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_classify_add_del_table = vapi_register_msg(&__vapi_metadata_classify_add_del_table);
-  VAPI_DBG("Assigned msg id %d to classify_add_del_table", vapi_msg_id_classify_add_del_table);
-}
-#endif
-
-#ifndef defined_vapi_msg_flow_classify_details
-#define defined_vapi_msg_flow_classify_details
-typedef struct __attribute__ ((__packed__)) {
-  u32 sw_if_index;
-  u32 table_index; 
-} vapi_payload_flow_classify_details;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header1_t header;
-  vapi_payload_flow_classify_details payload;
-} vapi_msg_flow_classify_details;
-
-static inline void vapi_msg_flow_classify_details_payload_hton(vapi_payload_flow_classify_details *payload)
-{
-  payload->sw_if_index = htobe32(payload->sw_if_index);
-  payload->table_index = htobe32(payload->table_index);
-}
-
-static inline void vapi_msg_flow_classify_details_payload_ntoh(vapi_payload_flow_classify_details *payload)
-{
-  payload->sw_if_index = be32toh(payload->sw_if_index);
-  payload->table_index = be32toh(payload->table_index);
-}
-
-static inline void vapi_msg_flow_classify_details_hton(vapi_msg_flow_classify_details *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_flow_classify_details'@%p to big endian", msg);
-  vapi_type_msg_header1_t_hton(&msg->header);
-  vapi_msg_flow_classify_details_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_flow_classify_details_ntoh(vapi_msg_flow_classify_details *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_flow_classify_details'@%p to host byte order", msg);
-  vapi_type_msg_header1_t_ntoh(&msg->header);
-  vapi_msg_flow_classify_details_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_flow_classify_details_msg_size(vapi_msg_flow_classify_details *msg)
-{
-  return sizeof(*msg);
-}
-
-static void __attribute__((constructor)) __vapi_constructor_flow_classify_details()
-{
-  static const char name[] = "flow_classify_details";
-  static const char name_with_crc[] = "flow_classify_details_cc3461ad";
-  static vapi_message_desc_t __vapi_metadata_flow_classify_details = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header1_t, context),
-    offsetof(vapi_msg_flow_classify_details, payload),
-    sizeof(vapi_msg_flow_classify_details),
-    (generic_swap_fn_t)vapi_msg_flow_classify_details_hton,
-    (generic_swap_fn_t)vapi_msg_flow_classify_details_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_flow_classify_details = vapi_register_msg(&__vapi_metadata_flow_classify_details);
-  VAPI_DBG("Assigned msg id %d to flow_classify_details", vapi_msg_id_flow_classify_details);
-}
-
-static inline void vapi_set_vapi_msg_flow_classify_details_event_cb (
-  struct vapi_ctx_s *ctx, 
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_flow_classify_details *payload),
-  void *callback_ctx)
-{
-  vapi_set_event_cb(ctx, vapi_msg_id_flow_classify_details, (vapi_event_cb)callback, callback_ctx);
-};
-#endif
-
-#ifndef defined_vapi_msg_flow_classify_dump
-#define defined_vapi_msg_flow_classify_dump
-typedef struct __attribute__ ((__packed__)) {
-  u8 type; 
-} vapi_payload_flow_classify_dump;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header2_t header;
-  vapi_payload_flow_classify_dump payload;
-} vapi_msg_flow_classify_dump;
-
-static inline void vapi_msg_flow_classify_dump_payload_hton(vapi_payload_flow_classify_dump *payload)
-{
-
-}
-
-static inline void vapi_msg_flow_classify_dump_payload_ntoh(vapi_payload_flow_classify_dump *payload)
-{
-
-}
-
-static inline void vapi_msg_flow_classify_dump_hton(vapi_msg_flow_classify_dump *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_flow_classify_dump'@%p to big endian", msg);
-  vapi_type_msg_header2_t_hton(&msg->header);
-  vapi_msg_flow_classify_dump_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_flow_classify_dump_ntoh(vapi_msg_flow_classify_dump *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_flow_classify_dump'@%p to host byte order", msg);
-  vapi_type_msg_header2_t_ntoh(&msg->header);
-  vapi_msg_flow_classify_dump_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_flow_classify_dump_msg_size(vapi_msg_flow_classify_dump *msg)
-{
-  return sizeof(*msg);
-}
-
-static inline vapi_msg_flow_classify_dump* vapi_alloc_flow_classify_dump(struct vapi_ctx_s *ctx)
-{
-  vapi_msg_flow_classify_dump *msg = NULL;
-  const size_t size = sizeof(vapi_msg_flow_classify_dump);
-  /* cast here required to play nicely with C++ world ... */
-  msg = (vapi_msg_flow_classify_dump*)vapi_msg_alloc(ctx, size);
-  if (!msg) {
-    return NULL;
-  }
-  msg->header.client_index = vapi_get_client_index(ctx);
-  msg->header.context = 0;
-  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_flow_classify_dump);
-
-  return msg;
-}
-
-static inline vapi_error_e vapi_flow_classify_dump(struct vapi_ctx_s *ctx,
-  vapi_msg_flow_classify_dump *msg,
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
-                           void *callback_ctx,
-                           vapi_error_e rv,
-                           bool is_last,
-                           vapi_payload_flow_classify_details *reply),
-  void *callback_ctx)
-{
-  if (!msg || !callback) {
-    return VAPI_EINVAL;
-  }
-  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
-    return VAPI_EAGAIN;
-  }
-  vapi_error_e rv;
-  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
-    return rv;
-  }
-  u32 req_context = vapi_gen_req_context(ctx);
-  msg->header.context = req_context;
-  vapi_msg_flow_classify_dump_hton(msg);
-  if (VAPI_OK == (rv = vapi_send_with_control_ping (ctx, msg, req_context))) {
-    vapi_store_request(ctx, req_context, true, (vapi_cb_t)callback, callback_ctx);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-    if (vapi_is_nonblocking(ctx)) {
-      rv = VAPI_OK;
-    } else {
-      rv = vapi_dispatch(ctx);
-    }
-  } else {
-    vapi_msg_flow_classify_dump_ntoh(msg);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-  }
-  return rv;
-}
-
-
-static void __attribute__((constructor)) __vapi_constructor_flow_classify_dump()
-{
-  static const char name[] = "flow_classify_dump";
-  static const char name_with_crc[] = "flow_classify_dump_41503530";
-  static vapi_message_desc_t __vapi_metadata_flow_classify_dump = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header2_t, context),
-    offsetof(vapi_msg_flow_classify_dump, payload),
-    sizeof(vapi_msg_flow_classify_dump),
-    (generic_swap_fn_t)vapi_msg_flow_classify_dump_hton,
-    (generic_swap_fn_t)vapi_msg_flow_classify_dump_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_flow_classify_dump = vapi_register_msg(&__vapi_metadata_flow_classify_dump);
-  VAPI_DBG("Assigned msg id %d to flow_classify_dump", vapi_msg_id_flow_classify_dump);
-}
-#endif
-
-#ifndef defined_vapi_msg_flow_classify_set_interface
-#define defined_vapi_msg_flow_classify_set_interface
-typedef struct __attribute__ ((__packed__)) {
-  u32 sw_if_index;
-  u32 ip4_table_index;
-  u32 ip6_table_index;
-  u8 is_add; 
-} vapi_payload_flow_classify_set_interface;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header2_t header;
-  vapi_payload_flow_classify_set_interface payload;
-} vapi_msg_flow_classify_set_interface;
-
-static inline void vapi_msg_flow_classify_set_interface_payload_hton(vapi_payload_flow_classify_set_interface *payload)
-{
-  payload->sw_if_index = htobe32(payload->sw_if_index);
-  payload->ip4_table_index = htobe32(payload->ip4_table_index);
-  payload->ip6_table_index = htobe32(payload->ip6_table_index);
-}
-
-static inline void vapi_msg_flow_classify_set_interface_payload_ntoh(vapi_payload_flow_classify_set_interface *payload)
-{
-  payload->sw_if_index = be32toh(payload->sw_if_index);
-  payload->ip4_table_index = be32toh(payload->ip4_table_index);
-  payload->ip6_table_index = be32toh(payload->ip6_table_index);
-}
-
-static inline void vapi_msg_flow_classify_set_interface_hton(vapi_msg_flow_classify_set_interface *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_flow_classify_set_interface'@%p to big endian", msg);
-  vapi_type_msg_header2_t_hton(&msg->header);
-  vapi_msg_flow_classify_set_interface_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_flow_classify_set_interface_ntoh(vapi_msg_flow_classify_set_interface *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_flow_classify_set_interface'@%p to host byte order", msg);
-  vapi_type_msg_header2_t_ntoh(&msg->header);
-  vapi_msg_flow_classify_set_interface_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_flow_classify_set_interface_msg_size(vapi_msg_flow_classify_set_interface *msg)
-{
-  return sizeof(*msg);
-}
-
-static inline vapi_msg_flow_classify_set_interface* vapi_alloc_flow_classify_set_interface(struct vapi_ctx_s *ctx)
-{
-  vapi_msg_flow_classify_set_interface *msg = NULL;
-  const size_t size = sizeof(vapi_msg_flow_classify_set_interface);
-  /* cast here required to play nicely with C++ world ... */
-  msg = (vapi_msg_flow_classify_set_interface*)vapi_msg_alloc(ctx, size);
-  if (!msg) {
-    return NULL;
-  }
-  msg->header.client_index = vapi_get_client_index(ctx);
-  msg->header.context = 0;
-  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_flow_classify_set_interface);
-
-  return msg;
-}
-
-static inline vapi_error_e vapi_flow_classify_set_interface(struct vapi_ctx_s *ctx,
-  vapi_msg_flow_classify_set_interface *msg,
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
-                           void *callback_ctx,
-                           vapi_error_e rv,
-                           bool is_last,
-                           vapi_payload_flow_classify_set_interface_reply *reply),
-  void *callback_ctx)
-{
-  if (!msg || !callback) {
-    return VAPI_EINVAL;
-  }
-  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
-    return VAPI_EAGAIN;
-  }
-  vapi_error_e rv;
-  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
-    return rv;
-  }
-  u32 req_context = vapi_gen_req_context(ctx);
-  msg->header.context = req_context;
-  vapi_msg_flow_classify_set_interface_hton(msg);
-  if (VAPI_OK == (rv = vapi_send (ctx, msg))) {
-    vapi_store_request(ctx, req_context, false, (vapi_cb_t)callback, callback_ctx);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-    if (vapi_is_nonblocking(ctx)) {
-      rv = VAPI_OK;
-    } else {
-      rv = vapi_dispatch(ctx);
-    }
-  } else {
-    vapi_msg_flow_classify_set_interface_ntoh(msg);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-  }
-  return rv;
-}
-
-
-static void __attribute__((constructor)) __vapi_constructor_flow_classify_set_interface()
-{
-  static const char name[] = "flow_classify_set_interface";
-  static const char name_with_crc[] = "flow_classify_set_interface_275fa12c";
-  static vapi_message_desc_t __vapi_metadata_flow_classify_set_interface = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header2_t, context),
-    offsetof(vapi_msg_flow_classify_set_interface, payload),
-    sizeof(vapi_msg_flow_classify_set_interface),
-    (generic_swap_fn_t)vapi_msg_flow_classify_set_interface_hton,
-    (generic_swap_fn_t)vapi_msg_flow_classify_set_interface_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_flow_classify_set_interface = vapi_register_msg(&__vapi_metadata_flow_classify_set_interface);
-  VAPI_DBG("Assigned msg id %d to flow_classify_set_interface", vapi_msg_id_flow_classify_set_interface);
-}
-#endif
-
-#ifndef defined_vapi_msg_classify_session_dump
-#define defined_vapi_msg_classify_session_dump
-typedef struct __attribute__ ((__packed__)) {
-  u32 table_id; 
-} vapi_payload_classify_session_dump;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header2_t header;
-  vapi_payload_classify_session_dump payload;
-} vapi_msg_classify_session_dump;
-
-static inline void vapi_msg_classify_session_dump_payload_hton(vapi_payload_classify_session_dump *payload)
-{
-  payload->table_id = htobe32(payload->table_id);
-}
-
-static inline void vapi_msg_classify_session_dump_payload_ntoh(vapi_payload_classify_session_dump *payload)
-{
-  payload->table_id = be32toh(payload->table_id);
-}
-
-static inline void vapi_msg_classify_session_dump_hton(vapi_msg_classify_session_dump *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_classify_session_dump'@%p to big endian", msg);
-  vapi_type_msg_header2_t_hton(&msg->header);
-  vapi_msg_classify_session_dump_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_classify_session_dump_ntoh(vapi_msg_classify_session_dump *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_classify_session_dump'@%p to host byte order", msg);
-  vapi_type_msg_header2_t_ntoh(&msg->header);
-  vapi_msg_classify_session_dump_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_classify_session_dump_msg_size(vapi_msg_classify_session_dump *msg)
-{
-  return sizeof(*msg);
-}
-
-static inline vapi_msg_classify_session_dump* vapi_alloc_classify_session_dump(struct vapi_ctx_s *ctx)
-{
-  vapi_msg_classify_session_dump *msg = NULL;
-  const size_t size = sizeof(vapi_msg_classify_session_dump);
-  /* cast here required to play nicely with C++ world ... */
-  msg = (vapi_msg_classify_session_dump*)vapi_msg_alloc(ctx, size);
-  if (!msg) {
-    return NULL;
-  }
-  msg->header.client_index = vapi_get_client_index(ctx);
-  msg->header.context = 0;
-  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_classify_session_dump);
-
-  return msg;
-}
-
-static inline vapi_error_e vapi_classify_session_dump(struct vapi_ctx_s *ctx,
-  vapi_msg_classify_session_dump *msg,
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
-                           void *callback_ctx,
-                           vapi_error_e rv,
-                           bool is_last,
-                           vapi_payload_classify_session_details *reply),
-  void *callback_ctx)
-{
-  if (!msg || !callback) {
-    return VAPI_EINVAL;
-  }
-  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
-    return VAPI_EAGAIN;
-  }
-  vapi_error_e rv;
-  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
-    return rv;
-  }
-  u32 req_context = vapi_gen_req_context(ctx);
-  msg->header.context = req_context;
-  vapi_msg_classify_session_dump_hton(msg);
-  if (VAPI_OK == (rv = vapi_send_with_control_ping (ctx, msg, req_context))) {
-    vapi_store_request(ctx, req_context, true, (vapi_cb_t)callback, callback_ctx);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-    if (vapi_is_nonblocking(ctx)) {
-      rv = VAPI_OK;
-    } else {
-      rv = vapi_dispatch(ctx);
-    }
-  } else {
-    vapi_msg_classify_session_dump_ntoh(msg);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-  }
-  return rv;
-}
-
-
-static void __attribute__((constructor)) __vapi_constructor_classify_session_dump()
-{
-  static const char name[] = "classify_session_dump";
-  static const char name_with_crc[] = "classify_session_dump_0cca2cd9";
-  static vapi_message_desc_t __vapi_metadata_classify_session_dump = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header2_t, context),
-    offsetof(vapi_msg_classify_session_dump, payload),
-    sizeof(vapi_msg_classify_session_dump),
-    (generic_swap_fn_t)vapi_msg_classify_session_dump_hton,
-    (generic_swap_fn_t)vapi_msg_classify_session_dump_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_classify_session_dump = vapi_register_msg(&__vapi_metadata_classify_session_dump);
-  VAPI_DBG("Assigned msg id %d to classify_session_dump", vapi_msg_id_classify_session_dump);
-}
-#endif
-
-#ifndef defined_vapi_msg_classify_set_interface_ip_table
-#define defined_vapi_msg_classify_set_interface_ip_table
-typedef struct __attribute__ ((__packed__)) {
-  u8 is_ipv6;
-  u32 sw_if_index;
-  u32 table_index; 
-} vapi_payload_classify_set_interface_ip_table;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header2_t header;
-  vapi_payload_classify_set_interface_ip_table payload;
-} vapi_msg_classify_set_interface_ip_table;
-
-static inline void vapi_msg_classify_set_interface_ip_table_payload_hton(vapi_payload_classify_set_interface_ip_table *payload)
-{
-  payload->sw_if_index = htobe32(payload->sw_if_index);
-  payload->table_index = htobe32(payload->table_index);
-}
-
-static inline void vapi_msg_classify_set_interface_ip_table_payload_ntoh(vapi_payload_classify_set_interface_ip_table *payload)
-{
-  payload->sw_if_index = be32toh(payload->sw_if_index);
-  payload->table_index = be32toh(payload->table_index);
-}
-
-static inline void vapi_msg_classify_set_interface_ip_table_hton(vapi_msg_classify_set_interface_ip_table *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_classify_set_interface_ip_table'@%p to big endian", msg);
-  vapi_type_msg_header2_t_hton(&msg->header);
-  vapi_msg_classify_set_interface_ip_table_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_classify_set_interface_ip_table_ntoh(vapi_msg_classify_set_interface_ip_table *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_classify_set_interface_ip_table'@%p to host byte order", msg);
-  vapi_type_msg_header2_t_ntoh(&msg->header);
-  vapi_msg_classify_set_interface_ip_table_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_classify_set_interface_ip_table_msg_size(vapi_msg_classify_set_interface_ip_table *msg)
-{
-  return sizeof(*msg);
-}
-
-static inline vapi_msg_classify_set_interface_ip_table* vapi_alloc_classify_set_interface_ip_table(struct vapi_ctx_s *ctx)
-{
-  vapi_msg_classify_set_interface_ip_table *msg = NULL;
-  const size_t size = sizeof(vapi_msg_classify_set_interface_ip_table);
-  /* cast here required to play nicely with C++ world ... */
-  msg = (vapi_msg_classify_set_interface_ip_table*)vapi_msg_alloc(ctx, size);
-  if (!msg) {
-    return NULL;
-  }
-  msg->header.client_index = vapi_get_client_index(ctx);
-  msg->header.context = 0;
-  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_classify_set_interface_ip_table);
-
-  return msg;
-}
-
-static inline vapi_error_e vapi_classify_set_interface_ip_table(struct vapi_ctx_s *ctx,
-  vapi_msg_classify_set_interface_ip_table *msg,
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
-                           void *callback_ctx,
-                           vapi_error_e rv,
-                           bool is_last,
-                           vapi_payload_classify_set_interface_ip_table_reply *reply),
-  void *callback_ctx)
-{
-  if (!msg || !callback) {
-    return VAPI_EINVAL;
-  }
-  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
-    return VAPI_EAGAIN;
-  }
-  vapi_error_e rv;
-  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
-    return rv;
-  }
-  u32 req_context = vapi_gen_req_context(ctx);
-  msg->header.context = req_context;
-  vapi_msg_classify_set_interface_ip_table_hton(msg);
-  if (VAPI_OK == (rv = vapi_send (ctx, msg))) {
-    vapi_store_request(ctx, req_context, false, (vapi_cb_t)callback, callback_ctx);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-    if (vapi_is_nonblocking(ctx)) {
-      rv = VAPI_OK;
-    } else {
-      rv = vapi_dispatch(ctx);
-    }
-  } else {
-    vapi_msg_classify_set_interface_ip_table_ntoh(msg);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-  }
-  return rv;
-}
-
-
-static void __attribute__((constructor)) __vapi_constructor_classify_set_interface_ip_table()
-{
-  static const char name[] = "classify_set_interface_ip_table";
-  static const char name_with_crc[] = "classify_set_interface_ip_table_d7199b03";
-  static vapi_message_desc_t __vapi_metadata_classify_set_interface_ip_table = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header2_t, context),
-    offsetof(vapi_msg_classify_set_interface_ip_table, payload),
-    sizeof(vapi_msg_classify_set_interface_ip_table),
-    (generic_swap_fn_t)vapi_msg_classify_set_interface_ip_table_hton,
-    (generic_swap_fn_t)vapi_msg_classify_set_interface_ip_table_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_classify_set_interface_ip_table = vapi_register_msg(&__vapi_metadata_classify_set_interface_ip_table);
-  VAPI_DBG("Assigned msg id %d to classify_set_interface_ip_table", vapi_msg_id_classify_set_interface_ip_table);
-}
-#endif
-
-#ifndef defined_vapi_msg_input_acl_set_interface
-#define defined_vapi_msg_input_acl_set_interface
-typedef struct __attribute__ ((__packed__)) {
-  u32 sw_if_index;
-  u32 ip4_table_index;
-  u32 ip6_table_index;
-  u32 l2_table_index;
-  u8 is_add; 
-} vapi_payload_input_acl_set_interface;
-
-typedef struct __attribute__ ((__packed__)) {
-  vapi_type_msg_header2_t header;
-  vapi_payload_input_acl_set_interface payload;
-} vapi_msg_input_acl_set_interface;
-
-static inline void vapi_msg_input_acl_set_interface_payload_hton(vapi_payload_input_acl_set_interface *payload)
-{
-  payload->sw_if_index = htobe32(payload->sw_if_index);
-  payload->ip4_table_index = htobe32(payload->ip4_table_index);
-  payload->ip6_table_index = htobe32(payload->ip6_table_index);
-  payload->l2_table_index = htobe32(payload->l2_table_index);
-}
-
-static inline void vapi_msg_input_acl_set_interface_payload_ntoh(vapi_payload_input_acl_set_interface *payload)
-{
-  payload->sw_if_index = be32toh(payload->sw_if_index);
-  payload->ip4_table_index = be32toh(payload->ip4_table_index);
-  payload->ip6_table_index = be32toh(payload->ip6_table_index);
-  payload->l2_table_index = be32toh(payload->l2_table_index);
-}
-
-static inline void vapi_msg_input_acl_set_interface_hton(vapi_msg_input_acl_set_interface *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_input_acl_set_interface'@%p to big endian", msg);
-  vapi_type_msg_header2_t_hton(&msg->header);
-  vapi_msg_input_acl_set_interface_payload_hton(&msg->payload);
-}
-
-static inline void vapi_msg_input_acl_set_interface_ntoh(vapi_msg_input_acl_set_interface *msg)
-{
-  VAPI_DBG("Swapping `vapi_msg_input_acl_set_interface'@%p to host byte order", msg);
-  vapi_type_msg_header2_t_ntoh(&msg->header);
-  vapi_msg_input_acl_set_interface_payload_ntoh(&msg->payload);
-}
-
-static inline uword vapi_calc_input_acl_set_interface_msg_size(vapi_msg_input_acl_set_interface *msg)
-{
-  return sizeof(*msg);
-}
-
-static inline vapi_msg_input_acl_set_interface* vapi_alloc_input_acl_set_interface(struct vapi_ctx_s *ctx)
-{
-  vapi_msg_input_acl_set_interface *msg = NULL;
-  const size_t size = sizeof(vapi_msg_input_acl_set_interface);
-  /* cast here required to play nicely with C++ world ... */
-  msg = (vapi_msg_input_acl_set_interface*)vapi_msg_alloc(ctx, size);
-  if (!msg) {
-    return NULL;
-  }
-  msg->header.client_index = vapi_get_client_index(ctx);
-  msg->header.context = 0;
-  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_input_acl_set_interface);
-
-  return msg;
-}
-
-static inline vapi_error_e vapi_input_acl_set_interface(struct vapi_ctx_s *ctx,
-  vapi_msg_input_acl_set_interface *msg,
-  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
-                           void *callback_ctx,
-                           vapi_error_e rv,
-                           bool is_last,
-                           vapi_payload_input_acl_set_interface_reply *reply),
-  void *callback_ctx)
-{
-  if (!msg || !callback) {
-    return VAPI_EINVAL;
-  }
-  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
-    return VAPI_EAGAIN;
-  }
-  vapi_error_e rv;
-  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
-    return rv;
-  }
-  u32 req_context = vapi_gen_req_context(ctx);
-  msg->header.context = req_context;
-  vapi_msg_input_acl_set_interface_hton(msg);
-  if (VAPI_OK == (rv = vapi_send (ctx, msg))) {
-    vapi_store_request(ctx, req_context, false, (vapi_cb_t)callback, callback_ctx);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-    if (vapi_is_nonblocking(ctx)) {
-      rv = VAPI_OK;
-    } else {
-      rv = vapi_dispatch(ctx);
-    }
-  } else {
-    vapi_msg_input_acl_set_interface_ntoh(msg);
-    if (VAPI_OK != vapi_producer_unlock (ctx)) {
-      abort (); /* this really shouldn't happen */
-    }
-  }
-  return rv;
-}
-
-
-static void __attribute__((constructor)) __vapi_constructor_input_acl_set_interface()
-{
-  static const char name[] = "input_acl_set_interface";
-  static const char name_with_crc[] = "input_acl_set_interface_e09537b0";
-  static vapi_message_desc_t __vapi_metadata_input_acl_set_interface = {
-    name,
-    sizeof(name) - 1,
-    name_with_crc,
-    sizeof(name_with_crc) - 1,
-    true,
-    offsetof(vapi_type_msg_header2_t, context),
-    offsetof(vapi_msg_input_acl_set_interface, payload),
-    sizeof(vapi_msg_input_acl_set_interface),
-    (generic_swap_fn_t)vapi_msg_input_acl_set_interface_hton,
-    (generic_swap_fn_t)vapi_msg_input_acl_set_interface_ntoh,
-    VAPI_INVALID_MSG_ID,
-  };
-
-  vapi_msg_id_input_acl_set_interface = vapi_register_msg(&__vapi_metadata_input_acl_set_interface);
-  VAPI_DBG("Assigned msg id %d to input_acl_set_interface", vapi_msg_id_input_acl_set_interface);
-}
 #endif
 
 #ifndef defined_vapi_msg_classify_table_info
@@ -2800,69 +1622,156 @@ static void __attribute__((constructor)) __vapi_constructor_classify_table_info(
 }
 #endif
 
-#ifndef defined_vapi_msg_classify_table_by_interface
-#define defined_vapi_msg_classify_table_by_interface
+#ifndef defined_vapi_msg_classify_session_details
+#define defined_vapi_msg_classify_session_details
 typedef struct __attribute__ ((__packed__)) {
-  u32 sw_if_index; 
-} vapi_payload_classify_table_by_interface;
+  i32 retval;
+  u32 table_id;
+  u32 hit_next_index;
+  i32 advance;
+  u32 opaque_index;
+  u32 match_length;
+  u8 match[0]; 
+} vapi_payload_classify_session_details;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header1_t header;
+  vapi_payload_classify_session_details payload;
+} vapi_msg_classify_session_details;
+
+static inline void vapi_msg_classify_session_details_payload_hton(vapi_payload_classify_session_details *payload)
+{
+  payload->retval = htobe32(payload->retval);
+  payload->table_id = htobe32(payload->table_id);
+  payload->hit_next_index = htobe32(payload->hit_next_index);
+  payload->advance = htobe32(payload->advance);
+  payload->opaque_index = htobe32(payload->opaque_index);
+  payload->match_length = htobe32(payload->match_length);
+}
+
+static inline void vapi_msg_classify_session_details_payload_ntoh(vapi_payload_classify_session_details *payload)
+{
+  payload->retval = be32toh(payload->retval);
+  payload->table_id = be32toh(payload->table_id);
+  payload->hit_next_index = be32toh(payload->hit_next_index);
+  payload->advance = be32toh(payload->advance);
+  payload->opaque_index = be32toh(payload->opaque_index);
+  payload->match_length = be32toh(payload->match_length);
+}
+
+static inline void vapi_msg_classify_session_details_hton(vapi_msg_classify_session_details *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_classify_session_details'@%p to big endian", msg);
+  vapi_type_msg_header1_t_hton(&msg->header);
+  vapi_msg_classify_session_details_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_classify_session_details_ntoh(vapi_msg_classify_session_details *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_classify_session_details'@%p to host byte order", msg);
+  vapi_type_msg_header1_t_ntoh(&msg->header);
+  vapi_msg_classify_session_details_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_classify_session_details_msg_size(vapi_msg_classify_session_details *msg)
+{
+  return sizeof(*msg)+ msg->payload.match_length * sizeof(msg->payload.match[0]);
+}
+
+static void __attribute__((constructor)) __vapi_constructor_classify_session_details()
+{
+  static const char name[] = "classify_session_details";
+  static const char name_with_crc[] = "classify_session_details_60e3ef94";
+  static vapi_message_desc_t __vapi_metadata_classify_session_details = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header1_t, context),
+    offsetof(vapi_msg_classify_session_details, payload),
+    sizeof(vapi_msg_classify_session_details),
+    (generic_swap_fn_t)vapi_msg_classify_session_details_hton,
+    (generic_swap_fn_t)vapi_msg_classify_session_details_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_classify_session_details = vapi_register_msg(&__vapi_metadata_classify_session_details);
+  VAPI_DBG("Assigned msg id %d to classify_session_details", vapi_msg_id_classify_session_details);
+}
+
+static inline void vapi_set_vapi_msg_classify_session_details_event_cb (
+  struct vapi_ctx_s *ctx, 
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_classify_session_details *payload),
+  void *callback_ctx)
+{
+  vapi_set_event_cb(ctx, vapi_msg_id_classify_session_details, (vapi_event_cb)callback, callback_ctx);
+};
+#endif
+
+#ifndef defined_vapi_msg_classify_session_dump
+#define defined_vapi_msg_classify_session_dump
+typedef struct __attribute__ ((__packed__)) {
+  u32 table_id; 
+} vapi_payload_classify_session_dump;
 
 typedef struct __attribute__ ((__packed__)) {
   vapi_type_msg_header2_t header;
-  vapi_payload_classify_table_by_interface payload;
-} vapi_msg_classify_table_by_interface;
+  vapi_payload_classify_session_dump payload;
+} vapi_msg_classify_session_dump;
 
-static inline void vapi_msg_classify_table_by_interface_payload_hton(vapi_payload_classify_table_by_interface *payload)
+static inline void vapi_msg_classify_session_dump_payload_hton(vapi_payload_classify_session_dump *payload)
 {
-  payload->sw_if_index = htobe32(payload->sw_if_index);
+  payload->table_id = htobe32(payload->table_id);
 }
 
-static inline void vapi_msg_classify_table_by_interface_payload_ntoh(vapi_payload_classify_table_by_interface *payload)
+static inline void vapi_msg_classify_session_dump_payload_ntoh(vapi_payload_classify_session_dump *payload)
 {
-  payload->sw_if_index = be32toh(payload->sw_if_index);
+  payload->table_id = be32toh(payload->table_id);
 }
 
-static inline void vapi_msg_classify_table_by_interface_hton(vapi_msg_classify_table_by_interface *msg)
+static inline void vapi_msg_classify_session_dump_hton(vapi_msg_classify_session_dump *msg)
 {
-  VAPI_DBG("Swapping `vapi_msg_classify_table_by_interface'@%p to big endian", msg);
+  VAPI_DBG("Swapping `vapi_msg_classify_session_dump'@%p to big endian", msg);
   vapi_type_msg_header2_t_hton(&msg->header);
-  vapi_msg_classify_table_by_interface_payload_hton(&msg->payload);
+  vapi_msg_classify_session_dump_payload_hton(&msg->payload);
 }
 
-static inline void vapi_msg_classify_table_by_interface_ntoh(vapi_msg_classify_table_by_interface *msg)
+static inline void vapi_msg_classify_session_dump_ntoh(vapi_msg_classify_session_dump *msg)
 {
-  VAPI_DBG("Swapping `vapi_msg_classify_table_by_interface'@%p to host byte order", msg);
+  VAPI_DBG("Swapping `vapi_msg_classify_session_dump'@%p to host byte order", msg);
   vapi_type_msg_header2_t_ntoh(&msg->header);
-  vapi_msg_classify_table_by_interface_payload_ntoh(&msg->payload);
+  vapi_msg_classify_session_dump_payload_ntoh(&msg->payload);
 }
 
-static inline uword vapi_calc_classify_table_by_interface_msg_size(vapi_msg_classify_table_by_interface *msg)
+static inline uword vapi_calc_classify_session_dump_msg_size(vapi_msg_classify_session_dump *msg)
 {
   return sizeof(*msg);
 }
 
-static inline vapi_msg_classify_table_by_interface* vapi_alloc_classify_table_by_interface(struct vapi_ctx_s *ctx)
+static inline vapi_msg_classify_session_dump* vapi_alloc_classify_session_dump(struct vapi_ctx_s *ctx)
 {
-  vapi_msg_classify_table_by_interface *msg = NULL;
-  const size_t size = sizeof(vapi_msg_classify_table_by_interface);
+  vapi_msg_classify_session_dump *msg = NULL;
+  const size_t size = sizeof(vapi_msg_classify_session_dump);
   /* cast here required to play nicely with C++ world ... */
-  msg = (vapi_msg_classify_table_by_interface*)vapi_msg_alloc(ctx, size);
+  msg = (vapi_msg_classify_session_dump*)vapi_msg_alloc(ctx, size);
   if (!msg) {
     return NULL;
   }
   msg->header.client_index = vapi_get_client_index(ctx);
   msg->header.context = 0;
-  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_classify_table_by_interface);
+  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_classify_session_dump);
 
   return msg;
 }
 
-static inline vapi_error_e vapi_classify_table_by_interface(struct vapi_ctx_s *ctx,
-  vapi_msg_classify_table_by_interface *msg,
+static inline vapi_error_e vapi_classify_session_dump(struct vapi_ctx_s *ctx,
+  vapi_msg_classify_session_dump *msg,
   vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
                            void *callback_ctx,
                            vapi_error_e rv,
                            bool is_last,
-                           vapi_payload_classify_table_by_interface_reply *reply),
+                           vapi_payload_classify_session_details *reply),
   void *callback_ctx)
 {
   if (!msg || !callback) {
@@ -2877,7 +1786,206 @@ static inline vapi_error_e vapi_classify_table_by_interface(struct vapi_ctx_s *c
   }
   u32 req_context = vapi_gen_req_context(ctx);
   msg->header.context = req_context;
-  vapi_msg_classify_table_by_interface_hton(msg);
+  vapi_msg_classify_session_dump_hton(msg);
+  if (VAPI_OK == (rv = vapi_send_with_control_ping (ctx, msg, req_context))) {
+    vapi_store_request(ctx, req_context, true, (vapi_cb_t)callback, callback_ctx);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+    if (vapi_is_nonblocking(ctx)) {
+      rv = VAPI_OK;
+    } else {
+      rv = vapi_dispatch(ctx);
+    }
+  } else {
+    vapi_msg_classify_session_dump_ntoh(msg);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+  }
+  return rv;
+}
+
+
+static void __attribute__((constructor)) __vapi_constructor_classify_session_dump()
+{
+  static const char name[] = "classify_session_dump";
+  static const char name_with_crc[] = "classify_session_dump_0cca2cd9";
+  static vapi_message_desc_t __vapi_metadata_classify_session_dump = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header2_t, context),
+    offsetof(vapi_msg_classify_session_dump, payload),
+    sizeof(vapi_msg_classify_session_dump),
+    (generic_swap_fn_t)vapi_msg_classify_session_dump_hton,
+    (generic_swap_fn_t)vapi_msg_classify_session_dump_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_classify_session_dump = vapi_register_msg(&__vapi_metadata_classify_session_dump);
+  VAPI_DBG("Assigned msg id %d to classify_session_dump", vapi_msg_id_classify_session_dump);
+}
+#endif
+
+#ifndef defined_vapi_msg_flow_classify_set_interface_reply
+#define defined_vapi_msg_flow_classify_set_interface_reply
+typedef struct __attribute__ ((__packed__)) {
+  i32 retval; 
+} vapi_payload_flow_classify_set_interface_reply;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header1_t header;
+  vapi_payload_flow_classify_set_interface_reply payload;
+} vapi_msg_flow_classify_set_interface_reply;
+
+static inline void vapi_msg_flow_classify_set_interface_reply_payload_hton(vapi_payload_flow_classify_set_interface_reply *payload)
+{
+  payload->retval = htobe32(payload->retval);
+}
+
+static inline void vapi_msg_flow_classify_set_interface_reply_payload_ntoh(vapi_payload_flow_classify_set_interface_reply *payload)
+{
+  payload->retval = be32toh(payload->retval);
+}
+
+static inline void vapi_msg_flow_classify_set_interface_reply_hton(vapi_msg_flow_classify_set_interface_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_flow_classify_set_interface_reply'@%p to big endian", msg);
+  vapi_type_msg_header1_t_hton(&msg->header);
+  vapi_msg_flow_classify_set_interface_reply_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_flow_classify_set_interface_reply_ntoh(vapi_msg_flow_classify_set_interface_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_flow_classify_set_interface_reply'@%p to host byte order", msg);
+  vapi_type_msg_header1_t_ntoh(&msg->header);
+  vapi_msg_flow_classify_set_interface_reply_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_flow_classify_set_interface_reply_msg_size(vapi_msg_flow_classify_set_interface_reply *msg)
+{
+  return sizeof(*msg);
+}
+
+static void __attribute__((constructor)) __vapi_constructor_flow_classify_set_interface_reply()
+{
+  static const char name[] = "flow_classify_set_interface_reply";
+  static const char name_with_crc[] = "flow_classify_set_interface_reply_e8d4e804";
+  static vapi_message_desc_t __vapi_metadata_flow_classify_set_interface_reply = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header1_t, context),
+    offsetof(vapi_msg_flow_classify_set_interface_reply, payload),
+    sizeof(vapi_msg_flow_classify_set_interface_reply),
+    (generic_swap_fn_t)vapi_msg_flow_classify_set_interface_reply_hton,
+    (generic_swap_fn_t)vapi_msg_flow_classify_set_interface_reply_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_flow_classify_set_interface_reply = vapi_register_msg(&__vapi_metadata_flow_classify_set_interface_reply);
+  VAPI_DBG("Assigned msg id %d to flow_classify_set_interface_reply", vapi_msg_id_flow_classify_set_interface_reply);
+}
+
+static inline void vapi_set_vapi_msg_flow_classify_set_interface_reply_event_cb (
+  struct vapi_ctx_s *ctx, 
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_flow_classify_set_interface_reply *payload),
+  void *callback_ctx)
+{
+  vapi_set_event_cb(ctx, vapi_msg_id_flow_classify_set_interface_reply, (vapi_event_cb)callback, callback_ctx);
+};
+#endif
+
+#ifndef defined_vapi_msg_flow_classify_set_interface
+#define defined_vapi_msg_flow_classify_set_interface
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_interface_index sw_if_index;
+  u32 ip4_table_index;
+  u32 ip6_table_index;
+  bool is_add; 
+} vapi_payload_flow_classify_set_interface;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header2_t header;
+  vapi_payload_flow_classify_set_interface payload;
+} vapi_msg_flow_classify_set_interface;
+
+static inline void vapi_msg_flow_classify_set_interface_payload_hton(vapi_payload_flow_classify_set_interface *payload)
+{
+  payload->sw_if_index = htobe32(payload->sw_if_index);
+  payload->ip4_table_index = htobe32(payload->ip4_table_index);
+  payload->ip6_table_index = htobe32(payload->ip6_table_index);
+}
+
+static inline void vapi_msg_flow_classify_set_interface_payload_ntoh(vapi_payload_flow_classify_set_interface *payload)
+{
+  payload->sw_if_index = be32toh(payload->sw_if_index);
+  payload->ip4_table_index = be32toh(payload->ip4_table_index);
+  payload->ip6_table_index = be32toh(payload->ip6_table_index);
+}
+
+static inline void vapi_msg_flow_classify_set_interface_hton(vapi_msg_flow_classify_set_interface *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_flow_classify_set_interface'@%p to big endian", msg);
+  vapi_type_msg_header2_t_hton(&msg->header);
+  vapi_msg_flow_classify_set_interface_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_flow_classify_set_interface_ntoh(vapi_msg_flow_classify_set_interface *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_flow_classify_set_interface'@%p to host byte order", msg);
+  vapi_type_msg_header2_t_ntoh(&msg->header);
+  vapi_msg_flow_classify_set_interface_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_flow_classify_set_interface_msg_size(vapi_msg_flow_classify_set_interface *msg)
+{
+  return sizeof(*msg);
+}
+
+static inline vapi_msg_flow_classify_set_interface* vapi_alloc_flow_classify_set_interface(struct vapi_ctx_s *ctx)
+{
+  vapi_msg_flow_classify_set_interface *msg = NULL;
+  const size_t size = sizeof(vapi_msg_flow_classify_set_interface);
+  /* cast here required to play nicely with C++ world ... */
+  msg = (vapi_msg_flow_classify_set_interface*)vapi_msg_alloc(ctx, size);
+  if (!msg) {
+    return NULL;
+  }
+  msg->header.client_index = vapi_get_client_index(ctx);
+  msg->header.context = 0;
+  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_flow_classify_set_interface);
+
+  return msg;
+}
+
+static inline vapi_error_e vapi_flow_classify_set_interface(struct vapi_ctx_s *ctx,
+  vapi_msg_flow_classify_set_interface *msg,
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
+                           void *callback_ctx,
+                           vapi_error_e rv,
+                           bool is_last,
+                           vapi_payload_flow_classify_set_interface_reply *reply),
+  void *callback_ctx)
+{
+  if (!msg || !callback) {
+    return VAPI_EINVAL;
+  }
+  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
+    return VAPI_EAGAIN;
+  }
+  vapi_error_e rv;
+  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
+    return rv;
+  }
+  u32 req_context = vapi_gen_req_context(ctx);
+  msg->header.context = req_context;
+  vapi_msg_flow_classify_set_interface_hton(msg);
   if (VAPI_OK == (rv = vapi_send (ctx, msg))) {
     vapi_store_request(ctx, req_context, false, (vapi_cb_t)callback, callback_ctx);
     if (VAPI_OK != vapi_producer_unlock (ctx)) {
@@ -2889,7 +1997,7 @@ static inline vapi_error_e vapi_classify_table_by_interface(struct vapi_ctx_s *c
       rv = vapi_dispatch(ctx);
     }
   } else {
-    vapi_msg_classify_table_by_interface_ntoh(msg);
+    vapi_msg_flow_classify_set_interface_ntoh(msg);
     if (VAPI_OK != vapi_producer_unlock (ctx)) {
       abort (); /* this really shouldn't happen */
     }
@@ -2898,26 +2006,1024 @@ static inline vapi_error_e vapi_classify_table_by_interface(struct vapi_ctx_s *c
 }
 
 
-static void __attribute__((constructor)) __vapi_constructor_classify_table_by_interface()
+static void __attribute__((constructor)) __vapi_constructor_flow_classify_set_interface()
 {
-  static const char name[] = "classify_table_by_interface";
-  static const char name_with_crc[] = "classify_table_by_interface_529cb13f";
-  static vapi_message_desc_t __vapi_metadata_classify_table_by_interface = {
+  static const char name[] = "flow_classify_set_interface";
+  static const char name_with_crc[] = "flow_classify_set_interface_b6192f1c";
+  static vapi_message_desc_t __vapi_metadata_flow_classify_set_interface = {
     name,
     sizeof(name) - 1,
     name_with_crc,
     sizeof(name_with_crc) - 1,
     true,
     offsetof(vapi_type_msg_header2_t, context),
-    offsetof(vapi_msg_classify_table_by_interface, payload),
-    sizeof(vapi_msg_classify_table_by_interface),
-    (generic_swap_fn_t)vapi_msg_classify_table_by_interface_hton,
-    (generic_swap_fn_t)vapi_msg_classify_table_by_interface_ntoh,
+    offsetof(vapi_msg_flow_classify_set_interface, payload),
+    sizeof(vapi_msg_flow_classify_set_interface),
+    (generic_swap_fn_t)vapi_msg_flow_classify_set_interface_hton,
+    (generic_swap_fn_t)vapi_msg_flow_classify_set_interface_ntoh,
     VAPI_INVALID_MSG_ID,
   };
 
-  vapi_msg_id_classify_table_by_interface = vapi_register_msg(&__vapi_metadata_classify_table_by_interface);
-  VAPI_DBG("Assigned msg id %d to classify_table_by_interface", vapi_msg_id_classify_table_by_interface);
+  vapi_msg_id_flow_classify_set_interface = vapi_register_msg(&__vapi_metadata_flow_classify_set_interface);
+  VAPI_DBG("Assigned msg id %d to flow_classify_set_interface", vapi_msg_id_flow_classify_set_interface);
+}
+#endif
+
+#ifndef defined_vapi_msg_flow_classify_details
+#define defined_vapi_msg_flow_classify_details
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_interface_index sw_if_index;
+  u32 table_index; 
+} vapi_payload_flow_classify_details;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header1_t header;
+  vapi_payload_flow_classify_details payload;
+} vapi_msg_flow_classify_details;
+
+static inline void vapi_msg_flow_classify_details_payload_hton(vapi_payload_flow_classify_details *payload)
+{
+  payload->sw_if_index = htobe32(payload->sw_if_index);
+  payload->table_index = htobe32(payload->table_index);
+}
+
+static inline void vapi_msg_flow_classify_details_payload_ntoh(vapi_payload_flow_classify_details *payload)
+{
+  payload->sw_if_index = be32toh(payload->sw_if_index);
+  payload->table_index = be32toh(payload->table_index);
+}
+
+static inline void vapi_msg_flow_classify_details_hton(vapi_msg_flow_classify_details *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_flow_classify_details'@%p to big endian", msg);
+  vapi_type_msg_header1_t_hton(&msg->header);
+  vapi_msg_flow_classify_details_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_flow_classify_details_ntoh(vapi_msg_flow_classify_details *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_flow_classify_details'@%p to host byte order", msg);
+  vapi_type_msg_header1_t_ntoh(&msg->header);
+  vapi_msg_flow_classify_details_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_flow_classify_details_msg_size(vapi_msg_flow_classify_details *msg)
+{
+  return sizeof(*msg);
+}
+
+static void __attribute__((constructor)) __vapi_constructor_flow_classify_details()
+{
+  static const char name[] = "flow_classify_details";
+  static const char name_with_crc[] = "flow_classify_details_dfd08765";
+  static vapi_message_desc_t __vapi_metadata_flow_classify_details = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header1_t, context),
+    offsetof(vapi_msg_flow_classify_details, payload),
+    sizeof(vapi_msg_flow_classify_details),
+    (generic_swap_fn_t)vapi_msg_flow_classify_details_hton,
+    (generic_swap_fn_t)vapi_msg_flow_classify_details_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_flow_classify_details = vapi_register_msg(&__vapi_metadata_flow_classify_details);
+  VAPI_DBG("Assigned msg id %d to flow_classify_details", vapi_msg_id_flow_classify_details);
+}
+
+static inline void vapi_set_vapi_msg_flow_classify_details_event_cb (
+  struct vapi_ctx_s *ctx, 
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_flow_classify_details *payload),
+  void *callback_ctx)
+{
+  vapi_set_event_cb(ctx, vapi_msg_id_flow_classify_details, (vapi_event_cb)callback, callback_ctx);
+};
+#endif
+
+#ifndef defined_vapi_msg_flow_classify_dump
+#define defined_vapi_msg_flow_classify_dump
+typedef struct __attribute__ ((__packed__)) {
+  vapi_enum_flow_classify_table type;
+  vapi_type_interface_index sw_if_index; 
+} vapi_payload_flow_classify_dump;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header2_t header;
+  vapi_payload_flow_classify_dump payload;
+} vapi_msg_flow_classify_dump;
+
+static inline void vapi_msg_flow_classify_dump_payload_hton(vapi_payload_flow_classify_dump *payload)
+{
+  payload->sw_if_index = htobe32(payload->sw_if_index);
+}
+
+static inline void vapi_msg_flow_classify_dump_payload_ntoh(vapi_payload_flow_classify_dump *payload)
+{
+  payload->sw_if_index = be32toh(payload->sw_if_index);
+}
+
+static inline void vapi_msg_flow_classify_dump_hton(vapi_msg_flow_classify_dump *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_flow_classify_dump'@%p to big endian", msg);
+  vapi_type_msg_header2_t_hton(&msg->header);
+  vapi_msg_flow_classify_dump_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_flow_classify_dump_ntoh(vapi_msg_flow_classify_dump *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_flow_classify_dump'@%p to host byte order", msg);
+  vapi_type_msg_header2_t_ntoh(&msg->header);
+  vapi_msg_flow_classify_dump_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_flow_classify_dump_msg_size(vapi_msg_flow_classify_dump *msg)
+{
+  return sizeof(*msg);
+}
+
+static inline vapi_msg_flow_classify_dump* vapi_alloc_flow_classify_dump(struct vapi_ctx_s *ctx)
+{
+  vapi_msg_flow_classify_dump *msg = NULL;
+  const size_t size = sizeof(vapi_msg_flow_classify_dump);
+  /* cast here required to play nicely with C++ world ... */
+  msg = (vapi_msg_flow_classify_dump*)vapi_msg_alloc(ctx, size);
+  if (!msg) {
+    return NULL;
+  }
+  msg->header.client_index = vapi_get_client_index(ctx);
+  msg->header.context = 0;
+  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_flow_classify_dump);
+
+  return msg;
+}
+
+static inline vapi_error_e vapi_flow_classify_dump(struct vapi_ctx_s *ctx,
+  vapi_msg_flow_classify_dump *msg,
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
+                           void *callback_ctx,
+                           vapi_error_e rv,
+                           bool is_last,
+                           vapi_payload_flow_classify_details *reply),
+  void *callback_ctx)
+{
+  if (!msg || !callback) {
+    return VAPI_EINVAL;
+  }
+  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
+    return VAPI_EAGAIN;
+  }
+  vapi_error_e rv;
+  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
+    return rv;
+  }
+  u32 req_context = vapi_gen_req_context(ctx);
+  msg->header.context = req_context;
+  vapi_msg_flow_classify_dump_hton(msg);
+  if (VAPI_OK == (rv = vapi_send_with_control_ping (ctx, msg, req_context))) {
+    vapi_store_request(ctx, req_context, true, (vapi_cb_t)callback, callback_ctx);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+    if (vapi_is_nonblocking(ctx)) {
+      rv = VAPI_OK;
+    } else {
+      rv = vapi_dispatch(ctx);
+    }
+  } else {
+    vapi_msg_flow_classify_dump_ntoh(msg);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+  }
+  return rv;
+}
+
+
+static void __attribute__((constructor)) __vapi_constructor_flow_classify_dump()
+{
+  static const char name[] = "flow_classify_dump";
+  static const char name_with_crc[] = "flow_classify_dump_8a6ad43d";
+  static vapi_message_desc_t __vapi_metadata_flow_classify_dump = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header2_t, context),
+    offsetof(vapi_msg_flow_classify_dump, payload),
+    sizeof(vapi_msg_flow_classify_dump),
+    (generic_swap_fn_t)vapi_msg_flow_classify_dump_hton,
+    (generic_swap_fn_t)vapi_msg_flow_classify_dump_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_flow_classify_dump = vapi_register_msg(&__vapi_metadata_flow_classify_dump);
+  VAPI_DBG("Assigned msg id %d to flow_classify_dump", vapi_msg_id_flow_classify_dump);
+}
+#endif
+
+#ifndef defined_vapi_msg_classify_set_interface_ip_table_reply
+#define defined_vapi_msg_classify_set_interface_ip_table_reply
+typedef struct __attribute__ ((__packed__)) {
+  i32 retval; 
+} vapi_payload_classify_set_interface_ip_table_reply;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header1_t header;
+  vapi_payload_classify_set_interface_ip_table_reply payload;
+} vapi_msg_classify_set_interface_ip_table_reply;
+
+static inline void vapi_msg_classify_set_interface_ip_table_reply_payload_hton(vapi_payload_classify_set_interface_ip_table_reply *payload)
+{
+  payload->retval = htobe32(payload->retval);
+}
+
+static inline void vapi_msg_classify_set_interface_ip_table_reply_payload_ntoh(vapi_payload_classify_set_interface_ip_table_reply *payload)
+{
+  payload->retval = be32toh(payload->retval);
+}
+
+static inline void vapi_msg_classify_set_interface_ip_table_reply_hton(vapi_msg_classify_set_interface_ip_table_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_classify_set_interface_ip_table_reply'@%p to big endian", msg);
+  vapi_type_msg_header1_t_hton(&msg->header);
+  vapi_msg_classify_set_interface_ip_table_reply_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_classify_set_interface_ip_table_reply_ntoh(vapi_msg_classify_set_interface_ip_table_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_classify_set_interface_ip_table_reply'@%p to host byte order", msg);
+  vapi_type_msg_header1_t_ntoh(&msg->header);
+  vapi_msg_classify_set_interface_ip_table_reply_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_classify_set_interface_ip_table_reply_msg_size(vapi_msg_classify_set_interface_ip_table_reply *msg)
+{
+  return sizeof(*msg);
+}
+
+static void __attribute__((constructor)) __vapi_constructor_classify_set_interface_ip_table_reply()
+{
+  static const char name[] = "classify_set_interface_ip_table_reply";
+  static const char name_with_crc[] = "classify_set_interface_ip_table_reply_e8d4e804";
+  static vapi_message_desc_t __vapi_metadata_classify_set_interface_ip_table_reply = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header1_t, context),
+    offsetof(vapi_msg_classify_set_interface_ip_table_reply, payload),
+    sizeof(vapi_msg_classify_set_interface_ip_table_reply),
+    (generic_swap_fn_t)vapi_msg_classify_set_interface_ip_table_reply_hton,
+    (generic_swap_fn_t)vapi_msg_classify_set_interface_ip_table_reply_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_classify_set_interface_ip_table_reply = vapi_register_msg(&__vapi_metadata_classify_set_interface_ip_table_reply);
+  VAPI_DBG("Assigned msg id %d to classify_set_interface_ip_table_reply", vapi_msg_id_classify_set_interface_ip_table_reply);
+}
+
+static inline void vapi_set_vapi_msg_classify_set_interface_ip_table_reply_event_cb (
+  struct vapi_ctx_s *ctx, 
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_classify_set_interface_ip_table_reply *payload),
+  void *callback_ctx)
+{
+  vapi_set_event_cb(ctx, vapi_msg_id_classify_set_interface_ip_table_reply, (vapi_event_cb)callback, callback_ctx);
+};
+#endif
+
+#ifndef defined_vapi_msg_classify_set_interface_ip_table
+#define defined_vapi_msg_classify_set_interface_ip_table
+typedef struct __attribute__ ((__packed__)) {
+  bool is_ipv6;
+  vapi_type_interface_index sw_if_index;
+  u32 table_index; 
+} vapi_payload_classify_set_interface_ip_table;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header2_t header;
+  vapi_payload_classify_set_interface_ip_table payload;
+} vapi_msg_classify_set_interface_ip_table;
+
+static inline void vapi_msg_classify_set_interface_ip_table_payload_hton(vapi_payload_classify_set_interface_ip_table *payload)
+{
+  payload->sw_if_index = htobe32(payload->sw_if_index);
+  payload->table_index = htobe32(payload->table_index);
+}
+
+static inline void vapi_msg_classify_set_interface_ip_table_payload_ntoh(vapi_payload_classify_set_interface_ip_table *payload)
+{
+  payload->sw_if_index = be32toh(payload->sw_if_index);
+  payload->table_index = be32toh(payload->table_index);
+}
+
+static inline void vapi_msg_classify_set_interface_ip_table_hton(vapi_msg_classify_set_interface_ip_table *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_classify_set_interface_ip_table'@%p to big endian", msg);
+  vapi_type_msg_header2_t_hton(&msg->header);
+  vapi_msg_classify_set_interface_ip_table_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_classify_set_interface_ip_table_ntoh(vapi_msg_classify_set_interface_ip_table *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_classify_set_interface_ip_table'@%p to host byte order", msg);
+  vapi_type_msg_header2_t_ntoh(&msg->header);
+  vapi_msg_classify_set_interface_ip_table_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_classify_set_interface_ip_table_msg_size(vapi_msg_classify_set_interface_ip_table *msg)
+{
+  return sizeof(*msg);
+}
+
+static inline vapi_msg_classify_set_interface_ip_table* vapi_alloc_classify_set_interface_ip_table(struct vapi_ctx_s *ctx)
+{
+  vapi_msg_classify_set_interface_ip_table *msg = NULL;
+  const size_t size = sizeof(vapi_msg_classify_set_interface_ip_table);
+  /* cast here required to play nicely with C++ world ... */
+  msg = (vapi_msg_classify_set_interface_ip_table*)vapi_msg_alloc(ctx, size);
+  if (!msg) {
+    return NULL;
+  }
+  msg->header.client_index = vapi_get_client_index(ctx);
+  msg->header.context = 0;
+  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_classify_set_interface_ip_table);
+
+  return msg;
+}
+
+static inline vapi_error_e vapi_classify_set_interface_ip_table(struct vapi_ctx_s *ctx,
+  vapi_msg_classify_set_interface_ip_table *msg,
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
+                           void *callback_ctx,
+                           vapi_error_e rv,
+                           bool is_last,
+                           vapi_payload_classify_set_interface_ip_table_reply *reply),
+  void *callback_ctx)
+{
+  if (!msg || !callback) {
+    return VAPI_EINVAL;
+  }
+  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
+    return VAPI_EAGAIN;
+  }
+  vapi_error_e rv;
+  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
+    return rv;
+  }
+  u32 req_context = vapi_gen_req_context(ctx);
+  msg->header.context = req_context;
+  vapi_msg_classify_set_interface_ip_table_hton(msg);
+  if (VAPI_OK == (rv = vapi_send (ctx, msg))) {
+    vapi_store_request(ctx, req_context, false, (vapi_cb_t)callback, callback_ctx);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+    if (vapi_is_nonblocking(ctx)) {
+      rv = VAPI_OK;
+    } else {
+      rv = vapi_dispatch(ctx);
+    }
+  } else {
+    vapi_msg_classify_set_interface_ip_table_ntoh(msg);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+  }
+  return rv;
+}
+
+
+static void __attribute__((constructor)) __vapi_constructor_classify_set_interface_ip_table()
+{
+  static const char name[] = "classify_set_interface_ip_table";
+  static const char name_with_crc[] = "classify_set_interface_ip_table_e0b097c7";
+  static vapi_message_desc_t __vapi_metadata_classify_set_interface_ip_table = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header2_t, context),
+    offsetof(vapi_msg_classify_set_interface_ip_table, payload),
+    sizeof(vapi_msg_classify_set_interface_ip_table),
+    (generic_swap_fn_t)vapi_msg_classify_set_interface_ip_table_hton,
+    (generic_swap_fn_t)vapi_msg_classify_set_interface_ip_table_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_classify_set_interface_ip_table = vapi_register_msg(&__vapi_metadata_classify_set_interface_ip_table);
+  VAPI_DBG("Assigned msg id %d to classify_set_interface_ip_table", vapi_msg_id_classify_set_interface_ip_table);
+}
+#endif
+
+#ifndef defined_vapi_msg_classify_set_interface_l2_tables_reply
+#define defined_vapi_msg_classify_set_interface_l2_tables_reply
+typedef struct __attribute__ ((__packed__)) {
+  i32 retval; 
+} vapi_payload_classify_set_interface_l2_tables_reply;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header1_t header;
+  vapi_payload_classify_set_interface_l2_tables_reply payload;
+} vapi_msg_classify_set_interface_l2_tables_reply;
+
+static inline void vapi_msg_classify_set_interface_l2_tables_reply_payload_hton(vapi_payload_classify_set_interface_l2_tables_reply *payload)
+{
+  payload->retval = htobe32(payload->retval);
+}
+
+static inline void vapi_msg_classify_set_interface_l2_tables_reply_payload_ntoh(vapi_payload_classify_set_interface_l2_tables_reply *payload)
+{
+  payload->retval = be32toh(payload->retval);
+}
+
+static inline void vapi_msg_classify_set_interface_l2_tables_reply_hton(vapi_msg_classify_set_interface_l2_tables_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_classify_set_interface_l2_tables_reply'@%p to big endian", msg);
+  vapi_type_msg_header1_t_hton(&msg->header);
+  vapi_msg_classify_set_interface_l2_tables_reply_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_classify_set_interface_l2_tables_reply_ntoh(vapi_msg_classify_set_interface_l2_tables_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_classify_set_interface_l2_tables_reply'@%p to host byte order", msg);
+  vapi_type_msg_header1_t_ntoh(&msg->header);
+  vapi_msg_classify_set_interface_l2_tables_reply_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_classify_set_interface_l2_tables_reply_msg_size(vapi_msg_classify_set_interface_l2_tables_reply *msg)
+{
+  return sizeof(*msg);
+}
+
+static void __attribute__((constructor)) __vapi_constructor_classify_set_interface_l2_tables_reply()
+{
+  static const char name[] = "classify_set_interface_l2_tables_reply";
+  static const char name_with_crc[] = "classify_set_interface_l2_tables_reply_e8d4e804";
+  static vapi_message_desc_t __vapi_metadata_classify_set_interface_l2_tables_reply = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header1_t, context),
+    offsetof(vapi_msg_classify_set_interface_l2_tables_reply, payload),
+    sizeof(vapi_msg_classify_set_interface_l2_tables_reply),
+    (generic_swap_fn_t)vapi_msg_classify_set_interface_l2_tables_reply_hton,
+    (generic_swap_fn_t)vapi_msg_classify_set_interface_l2_tables_reply_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_classify_set_interface_l2_tables_reply = vapi_register_msg(&__vapi_metadata_classify_set_interface_l2_tables_reply);
+  VAPI_DBG("Assigned msg id %d to classify_set_interface_l2_tables_reply", vapi_msg_id_classify_set_interface_l2_tables_reply);
+}
+
+static inline void vapi_set_vapi_msg_classify_set_interface_l2_tables_reply_event_cb (
+  struct vapi_ctx_s *ctx, 
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_classify_set_interface_l2_tables_reply *payload),
+  void *callback_ctx)
+{
+  vapi_set_event_cb(ctx, vapi_msg_id_classify_set_interface_l2_tables_reply, (vapi_event_cb)callback, callback_ctx);
+};
+#endif
+
+#ifndef defined_vapi_msg_classify_set_interface_l2_tables
+#define defined_vapi_msg_classify_set_interface_l2_tables
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_interface_index sw_if_index;
+  u32 ip4_table_index;
+  u32 ip6_table_index;
+  u32 other_table_index;
+  bool is_input; 
+} vapi_payload_classify_set_interface_l2_tables;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header2_t header;
+  vapi_payload_classify_set_interface_l2_tables payload;
+} vapi_msg_classify_set_interface_l2_tables;
+
+static inline void vapi_msg_classify_set_interface_l2_tables_payload_hton(vapi_payload_classify_set_interface_l2_tables *payload)
+{
+  payload->sw_if_index = htobe32(payload->sw_if_index);
+  payload->ip4_table_index = htobe32(payload->ip4_table_index);
+  payload->ip6_table_index = htobe32(payload->ip6_table_index);
+  payload->other_table_index = htobe32(payload->other_table_index);
+}
+
+static inline void vapi_msg_classify_set_interface_l2_tables_payload_ntoh(vapi_payload_classify_set_interface_l2_tables *payload)
+{
+  payload->sw_if_index = be32toh(payload->sw_if_index);
+  payload->ip4_table_index = be32toh(payload->ip4_table_index);
+  payload->ip6_table_index = be32toh(payload->ip6_table_index);
+  payload->other_table_index = be32toh(payload->other_table_index);
+}
+
+static inline void vapi_msg_classify_set_interface_l2_tables_hton(vapi_msg_classify_set_interface_l2_tables *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_classify_set_interface_l2_tables'@%p to big endian", msg);
+  vapi_type_msg_header2_t_hton(&msg->header);
+  vapi_msg_classify_set_interface_l2_tables_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_classify_set_interface_l2_tables_ntoh(vapi_msg_classify_set_interface_l2_tables *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_classify_set_interface_l2_tables'@%p to host byte order", msg);
+  vapi_type_msg_header2_t_ntoh(&msg->header);
+  vapi_msg_classify_set_interface_l2_tables_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_classify_set_interface_l2_tables_msg_size(vapi_msg_classify_set_interface_l2_tables *msg)
+{
+  return sizeof(*msg);
+}
+
+static inline vapi_msg_classify_set_interface_l2_tables* vapi_alloc_classify_set_interface_l2_tables(struct vapi_ctx_s *ctx)
+{
+  vapi_msg_classify_set_interface_l2_tables *msg = NULL;
+  const size_t size = sizeof(vapi_msg_classify_set_interface_l2_tables);
+  /* cast here required to play nicely with C++ world ... */
+  msg = (vapi_msg_classify_set_interface_l2_tables*)vapi_msg_alloc(ctx, size);
+  if (!msg) {
+    return NULL;
+  }
+  msg->header.client_index = vapi_get_client_index(ctx);
+  msg->header.context = 0;
+  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_classify_set_interface_l2_tables);
+
+  return msg;
+}
+
+static inline vapi_error_e vapi_classify_set_interface_l2_tables(struct vapi_ctx_s *ctx,
+  vapi_msg_classify_set_interface_l2_tables *msg,
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
+                           void *callback_ctx,
+                           vapi_error_e rv,
+                           bool is_last,
+                           vapi_payload_classify_set_interface_l2_tables_reply *reply),
+  void *callback_ctx)
+{
+  if (!msg || !callback) {
+    return VAPI_EINVAL;
+  }
+  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
+    return VAPI_EAGAIN;
+  }
+  vapi_error_e rv;
+  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
+    return rv;
+  }
+  u32 req_context = vapi_gen_req_context(ctx);
+  msg->header.context = req_context;
+  vapi_msg_classify_set_interface_l2_tables_hton(msg);
+  if (VAPI_OK == (rv = vapi_send (ctx, msg))) {
+    vapi_store_request(ctx, req_context, false, (vapi_cb_t)callback, callback_ctx);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+    if (vapi_is_nonblocking(ctx)) {
+      rv = VAPI_OK;
+    } else {
+      rv = vapi_dispatch(ctx);
+    }
+  } else {
+    vapi_msg_classify_set_interface_l2_tables_ntoh(msg);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+  }
+  return rv;
+}
+
+
+static void __attribute__((constructor)) __vapi_constructor_classify_set_interface_l2_tables()
+{
+  static const char name[] = "classify_set_interface_l2_tables";
+  static const char name_with_crc[] = "classify_set_interface_l2_tables_5a6ddf65";
+  static vapi_message_desc_t __vapi_metadata_classify_set_interface_l2_tables = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header2_t, context),
+    offsetof(vapi_msg_classify_set_interface_l2_tables, payload),
+    sizeof(vapi_msg_classify_set_interface_l2_tables),
+    (generic_swap_fn_t)vapi_msg_classify_set_interface_l2_tables_hton,
+    (generic_swap_fn_t)vapi_msg_classify_set_interface_l2_tables_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_classify_set_interface_l2_tables = vapi_register_msg(&__vapi_metadata_classify_set_interface_l2_tables);
+  VAPI_DBG("Assigned msg id %d to classify_set_interface_l2_tables", vapi_msg_id_classify_set_interface_l2_tables);
+}
+#endif
+
+#ifndef defined_vapi_msg_input_acl_set_interface_reply
+#define defined_vapi_msg_input_acl_set_interface_reply
+typedef struct __attribute__ ((__packed__)) {
+  i32 retval; 
+} vapi_payload_input_acl_set_interface_reply;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header1_t header;
+  vapi_payload_input_acl_set_interface_reply payload;
+} vapi_msg_input_acl_set_interface_reply;
+
+static inline void vapi_msg_input_acl_set_interface_reply_payload_hton(vapi_payload_input_acl_set_interface_reply *payload)
+{
+  payload->retval = htobe32(payload->retval);
+}
+
+static inline void vapi_msg_input_acl_set_interface_reply_payload_ntoh(vapi_payload_input_acl_set_interface_reply *payload)
+{
+  payload->retval = be32toh(payload->retval);
+}
+
+static inline void vapi_msg_input_acl_set_interface_reply_hton(vapi_msg_input_acl_set_interface_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_input_acl_set_interface_reply'@%p to big endian", msg);
+  vapi_type_msg_header1_t_hton(&msg->header);
+  vapi_msg_input_acl_set_interface_reply_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_input_acl_set_interface_reply_ntoh(vapi_msg_input_acl_set_interface_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_input_acl_set_interface_reply'@%p to host byte order", msg);
+  vapi_type_msg_header1_t_ntoh(&msg->header);
+  vapi_msg_input_acl_set_interface_reply_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_input_acl_set_interface_reply_msg_size(vapi_msg_input_acl_set_interface_reply *msg)
+{
+  return sizeof(*msg);
+}
+
+static void __attribute__((constructor)) __vapi_constructor_input_acl_set_interface_reply()
+{
+  static const char name[] = "input_acl_set_interface_reply";
+  static const char name_with_crc[] = "input_acl_set_interface_reply_e8d4e804";
+  static vapi_message_desc_t __vapi_metadata_input_acl_set_interface_reply = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header1_t, context),
+    offsetof(vapi_msg_input_acl_set_interface_reply, payload),
+    sizeof(vapi_msg_input_acl_set_interface_reply),
+    (generic_swap_fn_t)vapi_msg_input_acl_set_interface_reply_hton,
+    (generic_swap_fn_t)vapi_msg_input_acl_set_interface_reply_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_input_acl_set_interface_reply = vapi_register_msg(&__vapi_metadata_input_acl_set_interface_reply);
+  VAPI_DBG("Assigned msg id %d to input_acl_set_interface_reply", vapi_msg_id_input_acl_set_interface_reply);
+}
+
+static inline void vapi_set_vapi_msg_input_acl_set_interface_reply_event_cb (
+  struct vapi_ctx_s *ctx, 
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_input_acl_set_interface_reply *payload),
+  void *callback_ctx)
+{
+  vapi_set_event_cb(ctx, vapi_msg_id_input_acl_set_interface_reply, (vapi_event_cb)callback, callback_ctx);
+};
+#endif
+
+#ifndef defined_vapi_msg_input_acl_set_interface
+#define defined_vapi_msg_input_acl_set_interface
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_interface_index sw_if_index;
+  u32 ip4_table_index;
+  u32 ip6_table_index;
+  u32 l2_table_index;
+  bool is_add; 
+} vapi_payload_input_acl_set_interface;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header2_t header;
+  vapi_payload_input_acl_set_interface payload;
+} vapi_msg_input_acl_set_interface;
+
+static inline void vapi_msg_input_acl_set_interface_payload_hton(vapi_payload_input_acl_set_interface *payload)
+{
+  payload->sw_if_index = htobe32(payload->sw_if_index);
+  payload->ip4_table_index = htobe32(payload->ip4_table_index);
+  payload->ip6_table_index = htobe32(payload->ip6_table_index);
+  payload->l2_table_index = htobe32(payload->l2_table_index);
+}
+
+static inline void vapi_msg_input_acl_set_interface_payload_ntoh(vapi_payload_input_acl_set_interface *payload)
+{
+  payload->sw_if_index = be32toh(payload->sw_if_index);
+  payload->ip4_table_index = be32toh(payload->ip4_table_index);
+  payload->ip6_table_index = be32toh(payload->ip6_table_index);
+  payload->l2_table_index = be32toh(payload->l2_table_index);
+}
+
+static inline void vapi_msg_input_acl_set_interface_hton(vapi_msg_input_acl_set_interface *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_input_acl_set_interface'@%p to big endian", msg);
+  vapi_type_msg_header2_t_hton(&msg->header);
+  vapi_msg_input_acl_set_interface_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_input_acl_set_interface_ntoh(vapi_msg_input_acl_set_interface *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_input_acl_set_interface'@%p to host byte order", msg);
+  vapi_type_msg_header2_t_ntoh(&msg->header);
+  vapi_msg_input_acl_set_interface_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_input_acl_set_interface_msg_size(vapi_msg_input_acl_set_interface *msg)
+{
+  return sizeof(*msg);
+}
+
+static inline vapi_msg_input_acl_set_interface* vapi_alloc_input_acl_set_interface(struct vapi_ctx_s *ctx)
+{
+  vapi_msg_input_acl_set_interface *msg = NULL;
+  const size_t size = sizeof(vapi_msg_input_acl_set_interface);
+  /* cast here required to play nicely with C++ world ... */
+  msg = (vapi_msg_input_acl_set_interface*)vapi_msg_alloc(ctx, size);
+  if (!msg) {
+    return NULL;
+  }
+  msg->header.client_index = vapi_get_client_index(ctx);
+  msg->header.context = 0;
+  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_input_acl_set_interface);
+
+  return msg;
+}
+
+static inline vapi_error_e vapi_input_acl_set_interface(struct vapi_ctx_s *ctx,
+  vapi_msg_input_acl_set_interface *msg,
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
+                           void *callback_ctx,
+                           vapi_error_e rv,
+                           bool is_last,
+                           vapi_payload_input_acl_set_interface_reply *reply),
+  void *callback_ctx)
+{
+  if (!msg || !callback) {
+    return VAPI_EINVAL;
+  }
+  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
+    return VAPI_EAGAIN;
+  }
+  vapi_error_e rv;
+  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
+    return rv;
+  }
+  u32 req_context = vapi_gen_req_context(ctx);
+  msg->header.context = req_context;
+  vapi_msg_input_acl_set_interface_hton(msg);
+  if (VAPI_OK == (rv = vapi_send (ctx, msg))) {
+    vapi_store_request(ctx, req_context, false, (vapi_cb_t)callback, callback_ctx);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+    if (vapi_is_nonblocking(ctx)) {
+      rv = VAPI_OK;
+    } else {
+      rv = vapi_dispatch(ctx);
+    }
+  } else {
+    vapi_msg_input_acl_set_interface_ntoh(msg);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+  }
+  return rv;
+}
+
+
+static void __attribute__((constructor)) __vapi_constructor_input_acl_set_interface()
+{
+  static const char name[] = "input_acl_set_interface";
+  static const char name_with_crc[] = "input_acl_set_interface_de7ad708";
+  static vapi_message_desc_t __vapi_metadata_input_acl_set_interface = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header2_t, context),
+    offsetof(vapi_msg_input_acl_set_interface, payload),
+    sizeof(vapi_msg_input_acl_set_interface),
+    (generic_swap_fn_t)vapi_msg_input_acl_set_interface_hton,
+    (generic_swap_fn_t)vapi_msg_input_acl_set_interface_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_input_acl_set_interface = vapi_register_msg(&__vapi_metadata_input_acl_set_interface);
+  VAPI_DBG("Assigned msg id %d to input_acl_set_interface", vapi_msg_id_input_acl_set_interface);
+}
+#endif
+
+#ifndef defined_vapi_msg_output_acl_set_interface_reply
+#define defined_vapi_msg_output_acl_set_interface_reply
+typedef struct __attribute__ ((__packed__)) {
+  i32 retval; 
+} vapi_payload_output_acl_set_interface_reply;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header1_t header;
+  vapi_payload_output_acl_set_interface_reply payload;
+} vapi_msg_output_acl_set_interface_reply;
+
+static inline void vapi_msg_output_acl_set_interface_reply_payload_hton(vapi_payload_output_acl_set_interface_reply *payload)
+{
+  payload->retval = htobe32(payload->retval);
+}
+
+static inline void vapi_msg_output_acl_set_interface_reply_payload_ntoh(vapi_payload_output_acl_set_interface_reply *payload)
+{
+  payload->retval = be32toh(payload->retval);
+}
+
+static inline void vapi_msg_output_acl_set_interface_reply_hton(vapi_msg_output_acl_set_interface_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_output_acl_set_interface_reply'@%p to big endian", msg);
+  vapi_type_msg_header1_t_hton(&msg->header);
+  vapi_msg_output_acl_set_interface_reply_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_output_acl_set_interface_reply_ntoh(vapi_msg_output_acl_set_interface_reply *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_output_acl_set_interface_reply'@%p to host byte order", msg);
+  vapi_type_msg_header1_t_ntoh(&msg->header);
+  vapi_msg_output_acl_set_interface_reply_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_output_acl_set_interface_reply_msg_size(vapi_msg_output_acl_set_interface_reply *msg)
+{
+  return sizeof(*msg);
+}
+
+static void __attribute__((constructor)) __vapi_constructor_output_acl_set_interface_reply()
+{
+  static const char name[] = "output_acl_set_interface_reply";
+  static const char name_with_crc[] = "output_acl_set_interface_reply_e8d4e804";
+  static vapi_message_desc_t __vapi_metadata_output_acl_set_interface_reply = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header1_t, context),
+    offsetof(vapi_msg_output_acl_set_interface_reply, payload),
+    sizeof(vapi_msg_output_acl_set_interface_reply),
+    (generic_swap_fn_t)vapi_msg_output_acl_set_interface_reply_hton,
+    (generic_swap_fn_t)vapi_msg_output_acl_set_interface_reply_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_output_acl_set_interface_reply = vapi_register_msg(&__vapi_metadata_output_acl_set_interface_reply);
+  VAPI_DBG("Assigned msg id %d to output_acl_set_interface_reply", vapi_msg_id_output_acl_set_interface_reply);
+}
+
+static inline void vapi_set_vapi_msg_output_acl_set_interface_reply_event_cb (
+  struct vapi_ctx_s *ctx, 
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx, void *callback_ctx, vapi_payload_output_acl_set_interface_reply *payload),
+  void *callback_ctx)
+{
+  vapi_set_event_cb(ctx, vapi_msg_id_output_acl_set_interface_reply, (vapi_event_cb)callback, callback_ctx);
+};
+#endif
+
+#ifndef defined_vapi_msg_output_acl_set_interface
+#define defined_vapi_msg_output_acl_set_interface
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_interface_index sw_if_index;
+  u32 ip4_table_index;
+  u32 ip6_table_index;
+  u32 l2_table_index;
+  bool is_add; 
+} vapi_payload_output_acl_set_interface;
+
+typedef struct __attribute__ ((__packed__)) {
+  vapi_type_msg_header2_t header;
+  vapi_payload_output_acl_set_interface payload;
+} vapi_msg_output_acl_set_interface;
+
+static inline void vapi_msg_output_acl_set_interface_payload_hton(vapi_payload_output_acl_set_interface *payload)
+{
+  payload->sw_if_index = htobe32(payload->sw_if_index);
+  payload->ip4_table_index = htobe32(payload->ip4_table_index);
+  payload->ip6_table_index = htobe32(payload->ip6_table_index);
+  payload->l2_table_index = htobe32(payload->l2_table_index);
+}
+
+static inline void vapi_msg_output_acl_set_interface_payload_ntoh(vapi_payload_output_acl_set_interface *payload)
+{
+  payload->sw_if_index = be32toh(payload->sw_if_index);
+  payload->ip4_table_index = be32toh(payload->ip4_table_index);
+  payload->ip6_table_index = be32toh(payload->ip6_table_index);
+  payload->l2_table_index = be32toh(payload->l2_table_index);
+}
+
+static inline void vapi_msg_output_acl_set_interface_hton(vapi_msg_output_acl_set_interface *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_output_acl_set_interface'@%p to big endian", msg);
+  vapi_type_msg_header2_t_hton(&msg->header);
+  vapi_msg_output_acl_set_interface_payload_hton(&msg->payload);
+}
+
+static inline void vapi_msg_output_acl_set_interface_ntoh(vapi_msg_output_acl_set_interface *msg)
+{
+  VAPI_DBG("Swapping `vapi_msg_output_acl_set_interface'@%p to host byte order", msg);
+  vapi_type_msg_header2_t_ntoh(&msg->header);
+  vapi_msg_output_acl_set_interface_payload_ntoh(&msg->payload);
+}
+
+static inline uword vapi_calc_output_acl_set_interface_msg_size(vapi_msg_output_acl_set_interface *msg)
+{
+  return sizeof(*msg);
+}
+
+static inline vapi_msg_output_acl_set_interface* vapi_alloc_output_acl_set_interface(struct vapi_ctx_s *ctx)
+{
+  vapi_msg_output_acl_set_interface *msg = NULL;
+  const size_t size = sizeof(vapi_msg_output_acl_set_interface);
+  /* cast here required to play nicely with C++ world ... */
+  msg = (vapi_msg_output_acl_set_interface*)vapi_msg_alloc(ctx, size);
+  if (!msg) {
+    return NULL;
+  }
+  msg->header.client_index = vapi_get_client_index(ctx);
+  msg->header.context = 0;
+  msg->header._vl_msg_id = vapi_lookup_vl_msg_id(ctx, vapi_msg_id_output_acl_set_interface);
+
+  return msg;
+}
+
+static inline vapi_error_e vapi_output_acl_set_interface(struct vapi_ctx_s *ctx,
+  vapi_msg_output_acl_set_interface *msg,
+  vapi_error_e (*callback)(struct vapi_ctx_s *ctx,
+                           void *callback_ctx,
+                           vapi_error_e rv,
+                           bool is_last,
+                           vapi_payload_output_acl_set_interface_reply *reply),
+  void *callback_ctx)
+{
+  if (!msg || !callback) {
+    return VAPI_EINVAL;
+  }
+  if (vapi_is_nonblocking(ctx) && vapi_requests_full(ctx)) {
+    return VAPI_EAGAIN;
+  }
+  vapi_error_e rv;
+  if (VAPI_OK != (rv = vapi_producer_lock (ctx))) {
+    return rv;
+  }
+  u32 req_context = vapi_gen_req_context(ctx);
+  msg->header.context = req_context;
+  vapi_msg_output_acl_set_interface_hton(msg);
+  if (VAPI_OK == (rv = vapi_send (ctx, msg))) {
+    vapi_store_request(ctx, req_context, false, (vapi_cb_t)callback, callback_ctx);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+    if (vapi_is_nonblocking(ctx)) {
+      rv = VAPI_OK;
+    } else {
+      rv = vapi_dispatch(ctx);
+    }
+  } else {
+    vapi_msg_output_acl_set_interface_ntoh(msg);
+    if (VAPI_OK != vapi_producer_unlock (ctx)) {
+      abort (); /* this really shouldn't happen */
+    }
+  }
+  return rv;
+}
+
+
+static void __attribute__((constructor)) __vapi_constructor_output_acl_set_interface()
+{
+  static const char name[] = "output_acl_set_interface";
+  static const char name_with_crc[] = "output_acl_set_interface_de7ad708";
+  static vapi_message_desc_t __vapi_metadata_output_acl_set_interface = {
+    name,
+    sizeof(name) - 1,
+    name_with_crc,
+    sizeof(name_with_crc) - 1,
+    true,
+    offsetof(vapi_type_msg_header2_t, context),
+    offsetof(vapi_msg_output_acl_set_interface, payload),
+    sizeof(vapi_msg_output_acl_set_interface),
+    (generic_swap_fn_t)vapi_msg_output_acl_set_interface_hton,
+    (generic_swap_fn_t)vapi_msg_output_acl_set_interface_ntoh,
+    VAPI_INVALID_MSG_ID,
+  };
+
+  vapi_msg_id_output_acl_set_interface = vapi_register_msg(&__vapi_metadata_output_acl_set_interface);
+  VAPI_DBG("Assigned msg id %d to output_acl_set_interface", vapi_msg_id_output_acl_set_interface);
 }
 #endif
 

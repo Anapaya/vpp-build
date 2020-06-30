@@ -1,5 +1,5 @@
 
-# Copyright (c) <current-year> <your-organization>
+# Copyright (c) 2019 Cisco and/or its affiliates.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at:
@@ -23,10 +23,6 @@ add_vpp_plugin(oddbuf
 
   API_FILES
   oddbuf.api
-
-  INSTALL_HEADERS
-  oddbuf_all_api_h.h
-  oddbuf_msg_enum.h
 
   API_TEST_SOURCES
   oddbuf_test.c
