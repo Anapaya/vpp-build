@@ -93,22 +93,6 @@ pkg_tar(
     visibility = ["//visibility:public"],
 )
 
-#load("@vpp_python_deps//:requirements.bzl", "requirement")
-
-#py_binary(
-#    name = "vppapigen",
-#    srcs = [
-#        "src/vpp/src/tools/vppapigen/vppapigen.py",
-#        "src/vpp/src/tools/vppapigen/vppapigen_c.py",
-#        "src/vpp/src/tools/vppapigen/vppapigen_json.py",
-#    ],
-#    deps = [
-#        requirement("ply"),
-#    ],
-#    python_version = "PY3",
-#    visibility = ["//visibility:public"],
-#)
-
 filegroup(
     name = "vppapigen",
     srcs = [
