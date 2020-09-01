@@ -23,6 +23,8 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y \
 
 ARG vpp_version
 RUN git clone --branch $vpp_version https://github.com/FDio/vpp.git /src/vpp
+COPY bfd_scion.patch /src
+RUN cd /src/vpp; git apply ../bfd_scion.patch
 RUN UNATTENDED=y make -C /src/vpp install-dep
 # DPDK MLX dependency
 RUN apt-get update && apt-get upgrade -y && apt-get install -y libmnl-dev
