@@ -1,4 +1,4 @@
-commit 66f84ae3bed855c615f5d3ecb705e972741d7fa0
+commit 107ae97c089d970da16fdb7ccbeb3c08e7a93618
 Author: Martin Sustrik <sustrik@anapaya.net>
 Date:   Wed Aug 12 13:09:18 2020 +0200
 
@@ -48,7 +48,7 @@ index 2a6c69b78..be487dd2c 100644
  typedef enum
  {
 diff --git a/src/vnet/bfd/bfd_cli.c b/src/vnet/bfd/bfd_cli.c
-index a6953bd26..07829cebc 100644
+index a6953bd26..e2340b41a 100644
 --- a/src/vnet/bfd/bfd_cli.c
 +++ b/src/vnet/bfd/bfd_cli.c
 @@ -43,6 +43,9 @@ format_bfd_session_cli (u8 * s, va_list * args)
@@ -56,13 +56,13 @@ index a6953bd26..07829cebc 100644
  		  format_ip6_address, &bs->udp.key.peer_addr.ip6);
        break;
 +    case BFD_TRANSPORT_PLUGIN:
-+      bs->plugin->format (bs, s);
++      s = bs->plugin->format (bs, s);
 +      break;
      }
    s = format (s, "%10s %-32s %20s %20s\n", "", "Session state",
  	      bfd_state_string (bs->local_state),
 diff --git a/src/vnet/bfd/bfd_main.c b/src/vnet/bfd/bfd_main.c
-index 4b8975732..58eded87b 100644
+index 4b8975732..6abe2ce79 100644
 --- a/src/vnet/bfd/bfd_main.c
 +++ b/src/vnet/bfd/bfd_main.c
 @@ -730,6 +730,10 @@ bfd_add_transport_layer (vlib_main_t * vm, u32 bi, bfd_session_t * bs)
@@ -126,18 +126,7 @@ index 4b8975732..58eded87b 100644
  	  (void) vlib_process_wait_for_event (vm);
  	}
        event_type = vlib_process_get_events (vm, &event_data);
-@@ -1405,6 +1424,10 @@ bfd_put_session (bfd_main_t * bm, bfd_session_t * bs)
- 
-   vlib_log_info (bm->log_class, "delete session: %U",
- 		 format_bfd_session_brief, bs);
-+  if (bs->transport == BFD_TRANSPORT_PLUGIN)
-+    {
-+      bs->plugin->delete_session (bs);
-+    }
-   bfd_notify_listeners (bm, BFD_LISTEN_EVENT_DELETE, bs);
-   if (bs->auth.curr_key)
-     {
-@@ -2285,6 +2308,31 @@ bfd_auth_del_key (u32 conf_key_id)
+@@ -2285,6 +2304,31 @@ bfd_auth_del_key (u32 conf_key_id)
  #endif
  }
  
@@ -170,7 +159,7 @@ index 4b8975732..58eded87b 100644
  
  /*
 diff --git a/src/vnet/bfd/bfd_main.h b/src/vnet/bfd/bfd_main.h
-index a7540004d..91588dafc 100644
+index a7540004d..0dcf32262 100644
 --- a/src/vnet/bfd/bfd_main.h
 +++ b/src/vnet/bfd/bfd_main.h
 @@ -23,6 +23,7 @@
@@ -181,7 +170,7 @@ index a7540004d..91588dafc 100644
  #include <vppinfra/os.h>
  #include <vppinfra/tw_timer_1t_3w_1024sl_ov.h>
  
-@@ -82,6 +83,16 @@ typedef enum
+@@ -82,6 +83,15 @@ typedef enum
  #undef F
  } bfd_hop_type_e;
  
@@ -191,14 +180,13 @@ index a7540004d..91588dafc 100644
 +  void (*send_session_details) (struct bfd_session_s *bs, vl_api_registration_t * reg, u32 context);
 +  int (*add_transport) (struct bfd_session_s *bs, vlib_main_t * vm, u32 bi, int is_echo);
 +  int (*transport) (struct bfd_session_s *bs, vlib_main_t * vm, u32 bi);
-+  void (*format) (struct bfd_session_s *bs, u8 *s);
-+  void (*delete_session) (struct bfd_session_s *bs);
++  u8 *(*format) (struct bfd_session_s *bs, u8 *s);
 +} bfd_plugin_session_t;
 +
  typedef struct bfd_session_s
  {
    /** index in bfd_main.sessions pool */
-@@ -239,6 +250,7 @@ typedef struct bfd_session_s
+@@ -239,6 +249,7 @@ typedef struct bfd_session_s
    union
    {
      bfd_udp_session_t udp;
@@ -206,7 +194,7 @@ index a7540004d..91588dafc 100644
    };
  } bfd_session_t;
  
-@@ -434,6 +446,11 @@ vnet_api_error_t bfd_session_set_params (bfd_main_t * bm, bfd_session_t * bs,
+@@ -434,6 +445,11 @@ vnet_api_error_t bfd_session_set_params (bfd_main_t * bm, bfd_session_t * bs,
  					 u32 desired_min_tx_usec,
  					 u32 required_min_rx_usec,
  					 u8 detect_mult);
