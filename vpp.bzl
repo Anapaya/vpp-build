@@ -63,6 +63,7 @@ def vpp_libs(release, path, version):
         visibility = ["//visibility:public"],
     )
 
+
 def mlx_libs(release, path, mlx4_glue_ver, mlx5_glue_ver):
     native.filegroup(
         name = "mlx_libs_"+release,
@@ -74,8 +75,9 @@ def mlx_libs(release, path, mlx4_glue_ver, mlx5_glue_ver):
     pkg_tar(
         name = "tar_mlx_libs_"+release,
         srcs = [
-            path+"/external/lib/librte_pmd_mlx4_glue.so."+mlx4_glue_ver,
-            path+"/external/lib/librte_pmd_mlx5_glue.so."+mlx5_glue_ver,
+            # FIXME
+            #path+"/external/lib/librte_pmd_mlx4_glue.so."+mlx4_glue_ver,
+            #path+"/external/lib/librte_pmd_mlx5_glue.so."+mlx5_glue_ver,
         ],
         extension = "tar.xz",
         visibility = ["//visibility:public"],
