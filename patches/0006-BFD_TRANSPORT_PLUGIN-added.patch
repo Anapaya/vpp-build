@@ -1,0 +1,253 @@
+From 05d77081dfbdde4717ddb5f9247c3aaa8700a101 Mon Sep 17 00:00:00 2001
+From: Martin Sustrik <sustrik@anapaya.net>
+Date: Thu, 25 Feb 2021 16:38:16 +0100
+Subject: [PATCH 6/6] BFD_TRANSPORT_PLUGIN added
+
+Change-Id: I96b759972f88d216a04f3ba2ed7ed25f6197774f
+---
+ src/vnet/adj/adj_bfd.c  |  5 +++++
+ src/vnet/bfd/bfd_api.c  |  2 ++
+ src/vnet/bfd/bfd_api.h  |  3 ++-
+ src/vnet/bfd/bfd_cli.c  |  3 +++
+ src/vnet/bfd/bfd_main.c | 43 +++++++++++++++++++++++++++++++++++++++++
+ src/vnet/bfd/bfd_main.h | 16 +++++++++++++++
+ src/vnet/bfd/bfd_udp.c  |  8 ++++++++
+ 7 files changed, 79 insertions(+), 1 deletion(-)
+
+diff --git a/src/vnet/adj/adj_bfd.c b/src/vnet/adj/adj_bfd.c
+index 2d787d41a..e02e60396 100644
+--- a/src/vnet/adj/adj_bfd.c
++++ b/src/vnet/adj/adj_bfd.c
+@@ -120,6 +120,11 @@ adj_bfd_notify (bfd_listen_event_e event,
+     adj_delegate_t *aed;
+     adj_index_t ai;
+ 
++    if (session->transport == BFD_TRANSPORT_PLUGIN)
++    {
++        return;
++    }
++
+     if (BFD_HOP_TYPE_SINGLE != session->hop_type)
+     {
+         /*
+diff --git a/src/vnet/bfd/bfd_api.c b/src/vnet/bfd/bfd_api.c
+index ba7783fd5..7d1dd7744 100644
+--- a/src/vnet/bfd/bfd_api.c
++++ b/src/vnet/bfd/bfd_api.c
+@@ -191,6 +191,8 @@ bfd_event (bfd_main_t * bm, bfd_session_t * bs)
+ 	  /* fallthrough */
+ 	  case BFD_TRANSPORT_UDP6:
+ 	    send_bfd_udp_session_details (vl_reg, 0, bs);
++	  case BFD_TRANSPORT_PLUGIN:
++	    bs->plugin->send_session_details(bs, vl_reg, 0);
+ 	  }
+       }
+   }
+diff --git a/src/vnet/bfd/bfd_api.h b/src/vnet/bfd/bfd_api.h
+index 2a6c69b78..be487dd2c 100644
+--- a/src/vnet/bfd/bfd_api.h
++++ b/src/vnet/bfd/bfd_api.h
+@@ -25,7 +25,8 @@
+ 
+ #define foreach_bfd_transport(F) \
+   F (UDP4, "ip4-rewrite")        \
+-  F (UDP6, "ip6-rewrite")
++  F (UDP6, "ip6-rewrite")        \
++  F (PLUGIN, "")
+ 
+ typedef enum
+ {
+diff --git a/src/vnet/bfd/bfd_cli.c b/src/vnet/bfd/bfd_cli.c
+index 1d100b077..ad0069bac 100644
+--- a/src/vnet/bfd/bfd_cli.c
++++ b/src/vnet/bfd/bfd_cli.c
+@@ -43,6 +43,9 @@ format_bfd_session_cli (u8 * s, va_list * args)
+ 		  format_ip6_address, &bs->udp.key.local_addr.ip6,
+ 		  format_ip6_address, &bs->udp.key.peer_addr.ip6);
+       break;
++    case BFD_TRANSPORT_PLUGIN:
++      s = bs->plugin->format (bs, s);
++      break;
+     }
+   s = format (s, "%10s %-32s %20s %20s\n", "", "Session state",
+ 	      bfd_state_string (bs->local_state),
+diff --git a/src/vnet/bfd/bfd_main.c b/src/vnet/bfd/bfd_main.c
+index 30d98f6ab..39613cac2 100644
+--- a/src/vnet/bfd/bfd_main.c
++++ b/src/vnet/bfd/bfd_main.c
+@@ -730,6 +730,10 @@ bfd_add_transport_layer (vlib_main_t * vm, u32 bi, bfd_session_t * bs)
+       BFD_DBG ("Transport bfd via udp6, bs_idx=%u", bs->bs_idx);
+       bfd_add_udp6_transport (vm, bi, bs, 0 /* is_echo */ );
+       break;
++    case BFD_TRANSPORT_PLUGIN:
++      BFD_DBG ("Transport bfd via plugin, bs_idx=%u", bs->bs_idx);
++      bs->plugin->add_transport (bs, vm, bi, 0 /* is_echo */ );
++      break;
+     }
+ }
+ 
+@@ -746,6 +750,10 @@ bfd_transport_control_frame (vlib_main_t * vm, u32 bi, bfd_session_t * bs)
+       BFD_DBG ("Transport bfd via udp6, bs_idx=%u", bs->bs_idx);
+       return bfd_transport_udp6 (vm, bi, bs);
+       break;
++    case BFD_TRANSPORT_PLUGIN:
++      BFD_DBG ("Transport bfd via plugin, bs_idx=%u", bs->bs_idx);
++      return bs->plugin->transport (bs, vm, bi);
++      break;
+     }
+   return 0;
+ }
+@@ -763,6 +771,10 @@ bfd_echo_add_transport_layer (vlib_main_t * vm, u32 bi, bfd_session_t * bs)
+       BFD_DBG ("Transport bfd echo via udp6, bs_idx=%u", bs->bs_idx);
+       return bfd_add_udp6_transport (vm, bi, bs, 1 /* is_echo */ );
+       break;
++    case BFD_TRANSPORT_PLUGIN:
++      BFD_DBG ("Transport bfd echo via plugin, bs_idx=%u", bs->bs_idx);
++      bs->plugin->add_transport (bs, vm, bi, 1 /* is_echo */ );
++      break;
+     }
+   return 0;
+ }
+@@ -780,6 +792,10 @@ bfd_transport_echo (vlib_main_t * vm, u32 bi, bfd_session_t * bs)
+       BFD_DBG ("Transport bfd echo via udp6, bs_idx=%u", bs->bs_idx);
+       return bfd_transport_udp6 (vm, bi, bs);
+       break;
++    case BFD_TRANSPORT_PLUGIN:
++      BFD_DBG ("Transport bfd echo via plugin, bs_idx=%u", bs->bs_idx);
++      bs->plugin->transport (bs, vm, bi);
++      break;
+     }
+   return 0;
+ }
+@@ -867,6 +883,8 @@ bfd_is_echo_possible (bfd_session_t * bs)
+ 	  return bfd_udp_is_echo_available (BFD_TRANSPORT_UDP4);
+ 	case BFD_TRANSPORT_UDP6:
+ 	  return bfd_udp_is_echo_available (BFD_TRANSPORT_UDP6);
++	case BFD_TRANSPORT_PLUGIN:
++	  return bs->plugin->is_echo_available (bs);
+ 	}
+     }
+   return 0;
+@@ -2280,6 +2298,31 @@ bfd_auth_del_key (u32 conf_key_id)
+ #endif
+ }
+ 
++vnet_api_error_t
++bfd_add_plugin_session (vlib_main_t * vm, bfd_main_t * bm,
++			u32 sw_if_index, u32 desired_min_tx_usec,
++			u32 required_min_rx_usec, u8 detect_mult,
++			bfd_plugin_session_t *bps,
++			bfd_session_t ** bs_out)
++{
++  bfd_session_t *bs = bfd_get_session (bm, BFD_TRANSPORT_PLUGIN);
++  if (!bs)
++    {
++      return VNET_API_ERROR_BFD_EAGAIN;
++    }
++  bs->plugin = bps;
++  *bs_out = bs;
++  vnet_api_error_t err = bfd_session_set_params (bm, bs, desired_min_tx_usec,
++						 required_min_rx_usec, detect_mult);
++  if (err)
++    {
++      bfd_put_session (bm, bs);
++      return err;
++    }
++  bfd_session_start (bm, bs);
++  return 0;
++}
++
+ bfd_main_t bfd_main;
+ 
+ /*
+diff --git a/src/vnet/bfd/bfd_main.h b/src/vnet/bfd/bfd_main.h
+index a7540004d..0dcf32262 100644
+--- a/src/vnet/bfd/bfd_main.h
++++ b/src/vnet/bfd/bfd_main.h
+@@ -23,6 +23,7 @@
+ #include <vnet/bfd/bfd_protocol.h>
+ #include <vnet/bfd/bfd_udp.h>
+ #include <vlib/log.h>
++#include <vlibapi/api_common.h>
+ #include <vppinfra/os.h>
+ #include <vppinfra/tw_timer_1t_3w_1024sl_ov.h>
+ 
+@@ -82,6 +83,15 @@ typedef enum
+ #undef F
+ } bfd_hop_type_e;
+ 
++typedef struct bfd_plugin_session_s
++{
++  int (*is_echo_available) (struct bfd_session_s *bs);
++  void (*send_session_details) (struct bfd_session_s *bs, vl_api_registration_t * reg, u32 context);
++  int (*add_transport) (struct bfd_session_s *bs, vlib_main_t * vm, u32 bi, int is_echo);
++  int (*transport) (struct bfd_session_s *bs, vlib_main_t * vm, u32 bi);
++  u8 *(*format) (struct bfd_session_s *bs, u8 *s);
++} bfd_plugin_session_t;
++
+ typedef struct bfd_session_s
+ {
+   /** index in bfd_main.sessions pool */
+@@ -239,6 +249,7 @@ typedef struct bfd_session_s
+   union
+   {
+     bfd_udp_session_t udp;
++    bfd_plugin_session_t *plugin;
+   };
+ } bfd_session_t;
+ 
+@@ -434,6 +445,11 @@ vnet_api_error_t bfd_session_set_params (bfd_main_t * bm, bfd_session_t * bs,
+ 					 u32 desired_min_tx_usec,
+ 					 u32 required_min_rx_usec,
+ 					 u8 detect_mult);
++vnet_api_error_t bfd_add_plugin_session (vlib_main_t * vm, bfd_main_t * bm,
++					 u32 sw_if_index, u32 desired_min_tx_usec,
++					 u32 required_min_rx_usec, u8 detect_mult,
++					 bfd_plugin_session_t *bps,
++					 bfd_session_t ** bs_out);
+ 
+ u32 bfd_nsec_to_usec (u64 nsec);
+ const char *bfd_poll_state_string (bfd_poll_state_e state);
+diff --git a/src/vnet/bfd/bfd_udp.c b/src/vnet/bfd/bfd_udp.c
+index 1facb7310..50f72d8c1 100644
+--- a/src/vnet/bfd/bfd_udp.c
++++ b/src/vnet/bfd/bfd_udp.c
+@@ -403,6 +403,8 @@ bfd_udp_calc_next_node (const struct bfd_session_s *bs, u32 * next_node)
+ 	case BFD_TRANSPORT_UDP6:
+ 	  *next_node = bfd_udp_main.ip6_ndp_idx;
+ 	  return 1;
++	default:
++	  ASSERT (0);
+ 	}
+       break;
+     case IP_LOOKUP_NEXT_REWRITE:
+@@ -414,6 +416,8 @@ bfd_udp_calc_next_node (const struct bfd_session_s *bs, u32 * next_node)
+ 	case BFD_TRANSPORT_UDP6:
+ 	  *next_node = bfd_udp_main.ip6_rewrite_idx;
+ 	  return 1;
++	default:
++	  ASSERT (0);
+ 	}
+       break;
+     case IP_LOOKUP_NEXT_MIDCHAIN:
+@@ -425,6 +429,8 @@ bfd_udp_calc_next_node (const struct bfd_session_s *bs, u32 * next_node)
+ 	case BFD_TRANSPORT_UDP6:
+ 	  *next_node = bfd_udp_main.ip6_midchain_idx;
+ 	  return 1;
++	default:
++	  ASSERT (0);
+ 	}
+       break;
+     default:
+@@ -734,6 +740,8 @@ bfd_udp_del_session_internal (vlib_main_t * vm, bfd_session_t * bs)
+ 	  udp_unregister_dst_port (vm, UDP_DST_PORT_bfd_echo6, 0);
+ 	}
+       break;
++    default:
++      ASSERT (0);
+     }
+   bfd_put_session (bum->bfd_main, bs);
+ }
+-- 
+2.17.1
+

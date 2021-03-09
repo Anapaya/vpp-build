@@ -1,0 +1,38 @@
+From 095aa625b4e021eae7ffc86b98446c3b2a130ca8 Mon Sep 17 00:00:00 2001
+From: Matthew Smith <mgsmith@netgate.com>
+Date: Tue, 16 Feb 2021 10:02:46 -0600
+Subject: [PATCH 4/6] linux-cp: fix coverity defect
+
+Type: fix
+
+If no host interface name is passed to the CLI command which creates
+an interface pair, NULL gets passed to lcp_itf_pair_create() and a
+seg fault occurs. Check whether a host interface name was provided
+and fail gracefully if none was given.
+
+Change-Id: I82886f4c2ee710e206c751c34a74399112e9062c
+Signed-off-by: Matthew Smith <mgsmith@netgate.com>
+---
+ src/plugins/linux-cp/lcp_cli.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/src/plugins/linux-cp/lcp_cli.c b/src/plugins/linux-cp/lcp_cli.c
+index 3b0598c1b..0231f67f8 100644
+--- a/src/plugins/linux-cp/lcp_cli.c
++++ b/src/plugins/linux-cp/lcp_cli.c
+@@ -72,6 +72,12 @@ lcp_itf_pair_create_command_fn (vlib_main_t *vm, unformat_input_t *input,
+ 
+   unformat_free (line_input);
+ 
++  if (!host_if_name)
++    {
++      vec_free (ns);
++      return clib_error_return (0, "host interface name required");
++    }
++
+   if (sw_if_index == ~0)
+     {
+       vec_free (host_if_name);
+-- 
+2.17.1
+

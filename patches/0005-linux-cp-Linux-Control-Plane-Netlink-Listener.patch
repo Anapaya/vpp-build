@@ -1,0 +1,1794 @@
+From d96d8b2e63a3b67e6f1efbab789f56c7abfe2de3 Mon Sep 17 00:00:00 2001
+From: Neale Ranns <neale@graphiant.com>
+Date: Fri, 5 Feb 2021 09:04:35 +0000
+Subject: [PATCH 5/6] linux-cp: Linux Control Plane Netlink Listener
+
+Type: feature
+
+please see FEATURE.yaml for details.
+
+Signed-off-by: Neale Ranns <nranns@cisco.com>
+Signed-off-by: Matthew Smith <mgsmith@netgate.com>
+Signed-off-by: Jon Loeliger <jdl@netgate.com>
+Signed-off-by: Pim van Pelt <pim@ipng.nl>
+Signed-off-by: Neale Ranns <neale@graphiant.com>
+Change-Id: I6255fd9953d0b03e6b4fe75b67a6845a7c206f74
+---
+ Makefile                            |    4 +-
+ src/plugins/linux-cp/CMakeLists.txt |    9 +
+ src/plugins/linux-cp/FEATURE.yaml   |   11 +-
+ src/plugins/linux-cp/lcp.rst        |    5 +-
+ src/plugins/linux-cp/lcp_api.c      |    3 +-
+ src/plugins/linux-cp/lcp_nl.c       |  477 ++++++++++++
+ src/plugins/linux-cp/lcp_nl.h       |  113 +++
+ src/plugins/linux-cp/lcp_routing.c  | 1049 +++++++++++++++++++++++++++
+ 8 files changed, 1657 insertions(+), 14 deletions(-)
+ create mode 100644 src/plugins/linux-cp/lcp_nl.c
+ create mode 100644 src/plugins/linux-cp/lcp_nl.h
+ create mode 100644 src/plugins/linux-cp/lcp_routing.c
+
+diff --git a/Makefile b/Makefile
+index c51a5100a..ea1288a31 100644
+--- a/Makefile
++++ b/Makefile
+@@ -70,7 +70,7 @@ DEB_DEPENDS += libboost-all-dev libffi-dev python3-ply libmbedtls-dev
+ DEB_DEPENDS += cmake ninja-build uuid-dev python3-jsonschema python3-yaml
+ DEB_DEPENDS += python3-venv  # ensurepip
+ DEB_DEPENDS += python3-dev   # needed for python3 -m pip install psutil
+-DEB_DEPENDS += libnl-3-dev libnl-route-3-dev
++DEB_DEPENDS += libnl-3-dev libnl-route-3-dev libmnl-dev
+ # python3.6 on 16.04 requires python36-dev
+ 
+ LIBFFI=libffi6 # works on all but 20.04 and debian-testing
+@@ -111,7 +111,7 @@ RPM_DEPENDS += mbedtls-devel
+ RPM_DEPENDS += ccache
+ RPM_DEPENDS += xmlto
+ RPM_DEPENDS += elfutils-libelf-devel
+-RPM_DEPENDS += libnl3-devel
++RPM_DEPENDS += libnl3-devel libmnl-devel
+ 
+ ifeq ($(OS_ID),fedora)
+ 	RPM_DEPENDS += dnf-utils
+diff --git a/src/plugins/linux-cp/CMakeLists.txt b/src/plugins/linux-cp/CMakeLists.txt
+index 6b6ccb3d0..d49e9658f 100644
+--- a/src/plugins/linux-cp/CMakeLists.txt
++++ b/src/plugins/linux-cp/CMakeLists.txt
+@@ -59,3 +59,12 @@ add_vpp_plugin(linux_cp_unittest
+   LINK_LIBRARIES
+   lcp
+ )
++
++add_vpp_plugin(linux_nl
++  SOURCES
++  lcp_routing.c
++  lcp_nl.c
++
++  LINK_LIBRARIES
++  lcp
++)
+diff --git a/src/plugins/linux-cp/FEATURE.yaml b/src/plugins/linux-cp/FEATURE.yaml
+index 088b0606f..cf99b7aa5 100644
+--- a/src/plugins/linux-cp/FEATURE.yaml
++++ b/src/plugins/linux-cp/FEATURE.yaml
+@@ -3,10 +3,10 @@ name: Linux Control Plane (integration)
+ maintainer: Neale Ranns <neale@grahpiant.com>
+ 
+ description: |-
+-        This plugin provides the beginnings of an integration with the
+-        Linux network stack.
+-        The plugin provides the capability to 'mirror' VPP interfaces in
+-        the Linux kernel. This means that for any interface in VPP the user
++        These plugins provide an integration with the Linux network stack.
++
++        The "linux_cp" plugin provides the capability to 'mirror' VPP interfaces
++        in the Linux kernel. This means that for any interface in VPP the user
+         can create a corresponding TAP or TUN device in the Linux kernel
+         and have VPP plumb them together.
+         The plumbing mechanics is different in each direction.
+@@ -17,8 +17,7 @@ description: |-
+         In the TX direction, packets received by VPP an the mirror Tap/Tun
+         are cross-connected to the VPP interfaces. For IP packets, IP output
+         features are applied.
+-        This is the beginnings of integration, because there needs to be
+-        an external agent that will configure (and synchronize) the IP
++        The "linux_nl" plugin listens to netlink messages and synchronizes the IP
+         configuration of the paired interfaces.
+ 
+ state: experimental
+diff --git a/src/plugins/linux-cp/lcp.rst b/src/plugins/linux-cp/lcp.rst
+index 6d81901cf..0b6fe8a9a 100644
+--- a/src/plugins/linux-cp/lcp.rst
++++ b/src/plugins/linux-cp/lcp.rst
+@@ -41,10 +41,7 @@ interfaces. Any configuration that is made on these Linux interfaces,
+ also needs to be applied on the corresponding physical interface in
+ VPP.
+ 
+-This is functionality is not provided in this plugin, but it can be
+-achieved in various ways, for example by listening to the netlink
+-messages and applying the config. As a result all e.g. routes
+-programmed in Linux, will also be present in VPP's FIB.
++This is functionality is provided by the "linux_nl" plugin.
+ 
+ Linux will own the [ARP/ND] nieghbor tables (which will be copied via
+ netlink to VPP also). This means that Linux will send packets with the
+diff --git a/src/plugins/linux-cp/lcp_api.c b/src/plugins/linux-cp/lcp_api.c
+index 409aa7224..e5646732e 100644
+--- a/src/plugins/linux-cp/lcp_api.c
++++ b/src/plugins/linux-cp/lcp_api.c
+@@ -155,7 +155,6 @@ vl_api_lcp_default_ns_set_t_handler (vl_api_lcp_default_ns_set_t *mp)
+ static void
+ vl_api_lcp_default_ns_get_t_handler (vl_api_lcp_default_ns_get_t *mp)
+ {
+-  lcp_main_t *lcpm = &lcp_main;
+   vl_api_lcp_default_ns_get_reply_t *rmp;
+   vl_api_registration_t *reg;
+   char *ns;
+@@ -166,7 +165,7 @@ vl_api_lcp_default_ns_get_t_handler (vl_api_lcp_default_ns_get_t *mp)
+ 
+   rmp = vl_msg_api_alloc (sizeof (*rmp));
+   clib_memset (rmp, 0, sizeof (*rmp));
+-  rmp->_vl_msg_id = (VL_API_LCP_DEFAULT_NS_GET_REPLY + lcpm->msg_id_base);
++  rmp->_vl_msg_id = (VL_API_LCP_DEFAULT_NS_GET_REPLY);
+   rmp->context = mp->context;
+ 
+   ns = (char *) lcp_get_default_ns ();
+diff --git a/src/plugins/linux-cp/lcp_nl.c b/src/plugins/linux-cp/lcp_nl.c
+new file mode 100644
+index 000000000..2ee7344b0
+--- /dev/null
++++ b/src/plugins/linux-cp/lcp_nl.c
+@@ -0,0 +1,477 @@
++/*
++ * Copyright (c) 2019 Cisco and/or its affiliates.
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at:
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#define _GNU_SOURCE
++#include <sched.h>
++#include <fcntl.h>
++
++#include <linux-cp/lcp_nl.h>
++
++#include <netlink/route/rule.h>
++#include <netlink/msg.h>
++#include <netlink/netlink.h>
++#include <netlink/socket.h>
++#include <netlink/route/link.h>
++#include <netlink/route/route.h>
++#include <netlink/route/neighbour.h>
++#include <netlink/route/addr.h>
++
++#include <vlib/vlib.h>
++#include <vlib/unix/unix.h>
++#include <vppinfra/error.h>
++
++#include <vnet/fib/fib_table.h>
++
++#include <libmnl/libmnl.h>
++
++#include <plugins/linux-cp/lcp_interface.h>
++
++typedef enum nl_event_type_t_
++{
++  NL_EVENT_READ,
++} nl_event_type_t;
++
++typedef struct nl_main
++{
++
++  struct nl_sock *sk_route;
++  vlib_log_class_t nl_logger;
++  nl_vft_t *nl_vfts;
++  struct nl_cache *nl_caches[LCP_NL_N_OBJS];
++  nl_msg_info_t *nl_msg_queue;
++
++  u32 rx_buf_size;
++  u32 tx_buf_size;
++  u32 batch_size;
++  u32 batch_delay_ms;
++
++} nl_main_t;
++
++#define NL_RX_BUF_SIZE_DEF    (1 << 25) /* 64 MB */
++#define NL_TX_BUF_SIZE_DEF    (1 << 18) /* 256 kB */
++#define NL_BATCH_SIZE_DEF     (1 << 11) /* 2048 */
++#define NL_BATCH_DELAY_MS_DEF 50	/* 50 ms, max 20 batch/s */
++
++static nl_main_t nl_main = {
++  .rx_buf_size = NL_RX_BUF_SIZE_DEF,
++  .tx_buf_size = NL_TX_BUF_SIZE_DEF,
++  .batch_size = NL_BATCH_SIZE_DEF,
++  .batch_delay_ms = NL_BATCH_DELAY_MS_DEF,
++};
++
++/* #define foreach_nl_nft_proto  \ */
++/*   _(IP4, "ip", AF_INT)  \ */
++/*   _(IP6, "ip6", NFPROTO_IPV6) */
++
++/* typedef enum nl_nft_proto_t_ */
++/* { */
++/* #define _(a,b,c) NL_NFT_PROTO_##a = c, */
++/*   foreach_nl_nft_proto */
++/* #undef _ */
++/* } nl_nft_proto_t; */
++
++#define FOREACH_VFT(__func, __arg)                                            \
++  {                                                                           \
++    nl_main_t *nm = &nl_main;                                                 \
++    nl_vft_t *__nv;                                                           \
++    vec_foreach (__nv, nm->nl_vfts)                                           \
++      {                                                                       \
++	if (!__nv->__func.cb)                                                 \
++	  continue;                                                           \
++                                                                              \
++	if (!__nv->__func.is_mp_safe)                                         \
++	  vlib_worker_thread_barrier_sync (vlib_get_main ());                 \
++                                                                              \
++	__nv->__func.cb (__arg);                                              \
++                                                                              \
++	if (!__nv->__func.is_mp_safe)                                         \
++	  vlib_worker_thread_barrier_release (vlib_get_main ());              \
++      }                                                                       \
++  }
++
++#define FOREACH_VFT_CTX(__func, __arg, __ctx)                                 \
++  {                                                                           \
++    nl_main_t *nm = &nl_main;                                                 \
++    nl_vft_t *__nv;                                                           \
++    vec_foreach (__nv, nm->nl_vfts)                                           \
++      {                                                                       \
++	if (!__nv->__func.cb)                                                 \
++	  continue;                                                           \
++                                                                              \
++	if (!__nv->__func.is_mp_safe)                                         \
++	  vlib_worker_thread_barrier_sync (vlib_get_main ());                 \
++                                                                              \
++	__nv->__func.cb (__arg, __ctx);                                       \
++                                                                              \
++	if (!__nv->__func.is_mp_safe)                                         \
++	  vlib_worker_thread_barrier_release (vlib_get_main ());              \
++      }                                                                       \
++  }
++
++void
++nl_register_vft (const nl_vft_t *nv)
++{
++  nl_main_t *nm = &nl_main;
++
++  vec_add1 (nm->nl_vfts, *nv);
++}
++
++#define NL_DBG(...)   vlib_log_debug (nl_main.nl_logger, __VA_ARGS__);
++#define NL_INFO(...)  vlib_log_notice (nl_main.nl_logger, __VA_ARGS__);
++#define NL_ERROR(...) vlib_log_err (nl_main.nl_logger, __VA_ARGS__);
++
++static void
++nl_route_del (struct rtnl_route *rr, void *arg)
++{
++  FOREACH_VFT (nvl_rt_route_del, rr);
++}
++
++static void
++nl_route_add (struct rtnl_route *rr, void *arg)
++{
++  FOREACH_VFT (nvl_rt_route_add, rr);
++}
++
++static void
++nl_neigh_del (struct rtnl_neigh *rn, void *arg)
++{
++  FOREACH_VFT (nvl_rt_neigh_del, rn);
++}
++
++static void
++nl_neigh_add (struct rtnl_neigh *rn, void *arg)
++{
++  FOREACH_VFT (nvl_rt_neigh_add, rn);
++}
++
++static void
++nl_link_addr_del (struct rtnl_addr *rla, void *arg)
++{
++  FOREACH_VFT (nvl_rt_addr_del, rla);
++}
++
++static void
++nl_link_addr_add (struct rtnl_addr *rla, void *arg)
++{
++  FOREACH_VFT (nvl_rt_addr_add, rla);
++}
++
++static void
++nl_link_del (struct rtnl_link *rl, void *arg)
++{
++  FOREACH_VFT_CTX (nvl_rt_link_del, rl, arg);
++}
++
++static void
++nl_link_add (struct rtnl_link *rl, void *arg)
++{
++  FOREACH_VFT_CTX (nvl_rt_link_add, rl, arg);
++}
++
++static void
++nl_route_dispatch (struct nl_object *obj, void *arg)
++{
++  /* nothing can be done without interface mappings */
++  if (!lcp_itf_num_pairs ())
++    return;
++
++  switch (nl_object_get_msgtype (obj))
++    {
++    case RTM_NEWROUTE:
++      nl_route_add ((struct rtnl_route *) obj, arg);
++      break;
++    case RTM_DELROUTE:
++      nl_route_del ((struct rtnl_route *) obj, arg);
++      break;
++    case RTM_NEWNEIGH:
++      nl_neigh_add ((struct rtnl_neigh *) obj, arg);
++      break;
++    case RTM_DELNEIGH:
++      nl_neigh_del ((struct rtnl_neigh *) obj, arg);
++      break;
++    case RTM_NEWADDR:
++      nl_link_addr_add ((struct rtnl_addr *) obj, arg);
++      break;
++    case RTM_DELADDR:
++      nl_link_addr_del ((struct rtnl_addr *) obj, arg);
++      break;
++    case RTM_NEWLINK:
++      nl_link_add ((struct rtnl_link *) obj, arg);
++      break;
++    case RTM_DELLINK:
++      nl_link_del ((struct rtnl_link *) obj, arg);
++      break;
++    default:
++      NL_INFO ("unhandled: %s", nl_object_get_type (obj));
++      break;
++    }
++}
++
++static int
++nl_route_process_msgs (void)
++{
++  nl_main_t *nm = &nl_main;
++  nl_msg_info_t *msg_info;
++  int err, n_msgs = 0;
++
++  /* process a batch of messages. break if we hit our limit */
++  vec_foreach (msg_info, nm->nl_msg_queue)
++    {
++      if ((err = nl_msg_parse (msg_info->msg, nl_route_dispatch, msg_info)) <
++	  0)
++	NL_ERROR ("Unable to parse object: %s", nl_geterror (err));
++      nlmsg_free (msg_info->msg);
++      if (++n_msgs >= nm->batch_size)
++	break;
++    }
++
++  /* remove the messages we processed from the head of the queue */
++  if (n_msgs)
++    vec_delete (nm->nl_msg_queue, n_msgs, 0);
++
++  NL_INFO ("Processed %u messages", n_msgs);
++
++  return n_msgs;
++}
++
++#define DAY_F64 (1.0 * (24 * 60 * 60))
++
++static uword
++nl_route_process (vlib_main_t *vm, vlib_node_runtime_t *node,
++		  vlib_frame_t *frame)
++{
++  nl_main_t *nm = &nl_main;
++  uword event_type;
++  uword *event_data = 0;
++  f64 wait_time = DAY_F64;
++
++  while (1)
++    {
++      /* If we process a batch of messages and stop because we reached the
++       * batch size limit, we want to wake up after the batch delay and
++       * process more. Otherwise we just want to wait for a read event.
++       */
++      vlib_process_wait_for_event_or_clock (vm, wait_time);
++      event_type = vlib_process_get_events (vm, &event_data);
++
++      switch (event_type)
++	{
++	/* process batch of queued messages on timeout or read event signal */
++	case ~0:
++	case NL_EVENT_READ:
++	  nl_route_process_msgs ();
++	  wait_time = (vec_len (nm->nl_msg_queue) != 0) ?
++			nm->batch_delay_ms * 1e-3 :
++			DAY_F64;
++	  break;
++	default:
++	  NL_ERROR ("Unknown event type: %u", (u32) event_type);
++	}
++
++      vec_reset_length (event_data);
++    }
++  return frame->n_vectors;
++}
++
++VLIB_REGISTER_NODE (nl_route_process_node, static) = {
++  .function = nl_route_process,
++  .name = "nl-route-process",
++  .type = VLIB_NODE_TYPE_PROCESS,
++};
++
++static int
++nl_route_cb (struct nl_msg *msg, void *arg)
++{
++  nl_main_t *nm = &nl_main;
++  nl_msg_info_t *msg_info = 0;
++
++  /* delay processing - increment ref count and queue for later */
++  vec_add2 (nm->nl_msg_queue, msg_info, 1);
++
++  /* store a timestamp for the message */
++  msg_info->ts = vlib_time_now (vlib_get_main ());
++  msg_info->msg = msg;
++  nlmsg_get (msg);
++
++  /* notify process node */
++  vlib_process_signal_event (vlib_get_main (), nl_route_process_node.index,
++			     NL_EVENT_READ, 0);
++
++  return 0;
++}
++
++int
++lcp_nl_drain_messages (void)
++{
++  int err;
++  nl_main_t *nm = &nl_main;
++
++  while ((err = nl_recvmsgs_default (nm->sk_route)) > -1)
++    ;
++
++  return err;
++}
++
++static clib_error_t *
++nl_route_read_cb (struct clib_file *f)
++{
++  int err;
++  err = lcp_nl_drain_messages ();
++  if (err < 0 && err != -NLE_AGAIN)
++    NL_ERROR ("netlink drain: %s (%d)", nl_geterror (err), err);
++
++  return 0;
++}
++
++struct nl_cache *
++lcp_nl_get_cache (lcp_nl_obj_t t)
++{
++  nl_main_t *nm = &nl_main;
++
++  return nm->nl_caches[t];
++}
++
++/* Set the RX buffer size to be used on the netlink socket */
++void
++lcp_nl_set_buffer_size (u32 buf_size)
++{
++  nl_main_t *nm = &nl_main;
++
++  nm->rx_buf_size = buf_size;
++
++  if (nm->sk_route)
++    nl_socket_set_buffer_size (nm->sk_route, nm->rx_buf_size, nm->tx_buf_size);
++}
++
++/* Set the batch size - maximum netlink messages to process at one time */
++void
++lcp_nl_set_batch_size (u32 batch_size)
++{
++  nl_main_t *nm = &nl_main;
++
++  nm->batch_size = batch_size;
++}
++
++/* Set the batch delay - how long to wait in ms between processing batches */
++void
++lcp_nl_set_batch_delay (u32 batch_delay_ms)
++{
++  nl_main_t *nm = &nl_main;
++
++  nm->batch_delay_ms = batch_delay_ms;
++}
++
++static clib_error_t *
++lcp_itf_pair_config (vlib_main_t *vm, unformat_input_t *input)
++{
++  u32 buf_size, batch_size, batch_delay_ms;
++
++  while (unformat_check_input (input) != UNFORMAT_END_OF_INPUT)
++    {
++      if (unformat (input, "nl-rx-buffer-size %u", &buf_size))
++	lcp_nl_set_buffer_size (buf_size);
++      else if (unformat (input, "nl-batch-size %u", &batch_size))
++	lcp_nl_set_batch_size (batch_size);
++      else if (unformat (input, "nl-batch-delay-ms %u", &batch_delay_ms))
++	lcp_nl_set_batch_delay (batch_delay_ms);
++      else
++	return clib_error_return (0, "invalid netlink option: %U",
++				  format_unformat_error, input);
++    }
++
++  return NULL;
++}
++
++VLIB_CONFIG_FUNCTION (lcp_itf_pair_config, "linux-nl");
++
++#include <vnet/plugin/plugin.h>
++clib_error_t *
++lcp_nl_init (vlib_main_t *vm)
++{
++  int dest_ns_fd, curr_ns_fd;
++  nl_main_t *nm = &nl_main;
++
++  nm->nl_logger = vlib_log_register_class ("nl", "nl");
++
++  /* Allocate a new socket for both routes and acls
++   * Notifications do not use sequence numbers, disable sequence number
++   * checking.
++   * Define a callback function, which will be called for each notification
++   * received
++   */
++  nm->sk_route = nl_socket_alloc ();
++  nl_socket_disable_seq_check (nm->sk_route);
++
++  dest_ns_fd = lcp_get_default_ns_fd ();
++  if (dest_ns_fd)
++    {
++      curr_ns_fd = open ("/proc/self/ns/net", O_RDONLY);
++      setns (dest_ns_fd, CLONE_NEWNET);
++    }
++
++  nl_connect (nm->sk_route, NETLINK_ROUTE);
++
++  if (dest_ns_fd)
++    {
++      setns (curr_ns_fd, CLONE_NEWNET);
++      close (curr_ns_fd);
++    }
++
++  /* Subscribe to all the 'routing' notifications on the route socket */
++  nl_socket_add_memberships (nm->sk_route, RTNLGRP_LINK, RTNLGRP_IPV6_IFADDR,
++			     RTNLGRP_IPV4_IFADDR, RTNLGRP_IPV4_ROUTE,
++			     RTNLGRP_IPV6_ROUTE, RTNLGRP_NEIGH, RTNLGRP_NOTIFY,
++#ifdef RTNLGRP_MPLS_ROUTE /* not defined on CentOS/RHEL 7 */
++			     RTNLGRP_MPLS_ROUTE,
++#endif
++			     RTNLGRP_IPV4_RULE, RTNLGRP_IPV6_RULE, 0);
++
++  /* Set socket in nonblocking mode and increase buffer sizes */
++  nl_socket_set_nonblocking (nm->sk_route);
++  nl_socket_set_buffer_size (nm->sk_route, nm->rx_buf_size, nm->tx_buf_size);
++
++  clib_file_t rt_file = {
++    .read_function = nl_route_read_cb,
++    .file_descriptor = nl_socket_get_fd (nm->sk_route),
++    .description = format (0, "linux-cp netlink route socket"),
++  };
++
++  clib_file_add (&file_main, &rt_file);
++
++  nl_socket_modify_cb (nm->sk_route, NL_CB_VALID, NL_CB_CUSTOM, nl_route_cb,
++		       NULL);
++
++  return (NULL);
++}
++
++VLIB_INIT_FUNCTION (lcp_nl_init) = {
++  .runs_after = VLIB_INITS ("lcp_itf_pair_init", "tuntap_init",
++			    "ip_neighbor_init"),
++};
++
++#include <vpp/app/version.h>
++VLIB_PLUGIN_REGISTER () = {
++  .version = VPP_BUILD_VER,
++  .description = "linux Control Plane - Netlink listener",
++  .default_disabled = 1,
++};
++
++/*
++ * fd.io coding-style-patch-verification: ON
++ *
++ * Local Variables:
++ * eval: (c-set-style "gnu")
++ * End:
++ */
+diff --git a/src/plugins/linux-cp/lcp_nl.h b/src/plugins/linux-cp/lcp_nl.h
+new file mode 100644
+index 000000000..0016da7bb
+--- /dev/null
++++ b/src/plugins/linux-cp/lcp_nl.h
+@@ -0,0 +1,113 @@
++/*
++ * Copyright (c) 2019 Cisco and/or its affiliates.
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at:
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#include <vlib/vlib.h>
++
++#include <netlink/route/link.h>
++#include <netlink/route/route.h>
++#include <netlink/route/neighbour.h>
++#include <netlink/route/addr.h>
++
++typedef void (*nl_rt_link_cb_t) (struct rtnl_link *rl, void *ctx);
++typedef void (*nl_rt_addr_cb_t) (struct rtnl_addr *ra);
++typedef void (*nl_rt_neigh_cb_t) (struct rtnl_neigh *rr);
++typedef void (*nl_rt_route_cb_t) (struct rtnl_route *rn);
++
++#define NL_RT_COMMON uword is_mp_safe
++
++typedef struct nl_rt_link_t_
++{
++  NL_RT_COMMON;
++
++  nl_rt_link_cb_t cb;
++} nl_rt_link_t;
++
++typedef struct nl_rt_addr_t_
++{
++  NL_RT_COMMON;
++
++  nl_rt_addr_cb_t cb;
++} nl_rt_addr_t;
++
++typedef struct nl_rt_neigh_t_
++{
++  NL_RT_COMMON;
++
++  nl_rt_neigh_cb_t cb;
++} nl_rt_neigh_t;
++
++typedef struct nl_rt_route_t_
++{
++  NL_RT_COMMON;
++
++  nl_rt_route_cb_t cb;
++} nl_rt_route_t;
++
++#undef NL_RT_COMMON
++
++typedef struct nl_vft_t_
++{
++  nl_rt_link_t nvl_rt_link_add;
++  nl_rt_link_t nvl_rt_link_del;
++  nl_rt_addr_t nvl_rt_addr_add;
++  nl_rt_addr_t nvl_rt_addr_del;
++  nl_rt_neigh_t nvl_rt_neigh_add;
++  nl_rt_neigh_t nvl_rt_neigh_del;
++  nl_rt_route_t nvl_rt_route_add;
++  nl_rt_route_t nvl_rt_route_del;
++} nl_vft_t;
++
++extern void nl_register_vft (const nl_vft_t *nv);
++
++typedef enum lcp_nl_obj_t_
++{
++  LCP_NL_LINK,
++  LCP_NL_ADDR,
++  LCP_NL_NEIGH,
++  LCP_NL_ROUTE,
++} lcp_nl_obj_t;
++
++/* struct type to hold context on the netlink message being processed.
++ *
++ * At creation of a pair, a tap/tun is created and configured to match its
++ * corresponding hardware interface (MAC address, link state, MTU). Netlink
++ * messages are sent announcing the creation and subsequent configuration.
++ * We do not need to (and should not) act on those messages since applying
++ * those same configurations again is unnecessary and can be disruptive. So
++ * a timestamp for a message is stored and can be compared against the time
++ * the interface came under linux-cp management in order to figure out
++ * whether we should apply any configuration.
++ */
++typedef struct nl_msg_info
++{
++  struct nl_msg *msg;
++  f64 ts;
++} nl_msg_info_t;
++
++#define LCP_NL_N_OBJS (LCP_NL_ROUTE + 1)
++
++extern struct nl_cache *lcp_nl_get_cache (lcp_nl_obj_t t);
++extern int lcp_nl_drain_messages (void);
++extern void lcp_nl_set_buffer_size (u32 buf_size);
++extern void lcp_nl_set_batch_size (u32 batch_size);
++extern void lcp_nl_set_batch_delay (u32 batch_delay_ms);
++
++/*
++ * fd.io coding-style-patch-verification: ON
++ *
++ * Local Variables:
++ * eval: (c-set-style "gnu")
++ * End:
++ */
+diff --git a/src/plugins/linux-cp/lcp_routing.c b/src/plugins/linux-cp/lcp_routing.c
+new file mode 100644
+index 000000000..df44b3ab5
+--- /dev/null
++++ b/src/plugins/linux-cp/lcp_routing.c
+@@ -0,0 +1,1049 @@
++/*
++ * Copyright (c) 2019 Cisco and/or its affiliates.
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at:
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#include <sys/socket.h>
++#include <linux/if.h>
++
++//#include <vlib/vlib.h>
++#include <vlib/unix/plugin.h>
++#include <linux-cp/lcp_nl.h>
++#include <linux-cp/lcp_interface.h>
++
++#include <netlink/msg.h>
++#include <netlink/netlink.h>
++#include <netlink/socket.h>
++#include <netlink/route/link.h>
++#include <netlink/route/route.h>
++#include <netlink/route/neighbour.h>
++#include <netlink/route/addr.h>
++#include <netlink/route/link/vlan.h>
++
++#include <vnet/fib/fib_table.h>
++#include <vnet/mfib/mfib_table.h>
++#include <vnet/ip/ip6_ll_table.h>
++#include <vnet/ip-neighbor/ip_neighbor.h>
++#include <vnet/ip/ip6_link.h>
++
++typedef struct lcp_router_table_t_
++{
++  uint32_t nlt_id;
++  fib_protocol_t nlt_proto;
++  u32 nlt_fib_index;
++  u32 nlt_mfib_index;
++  u32 nlt_refs;
++} lcp_router_table_t;
++
++static uword *lcp_router_table_db[FIB_PROTOCOL_MAX];
++static lcp_router_table_t *lcp_router_table_pool;
++static vlib_log_class_t lcp_router_logger;
++
++const static fib_prefix_t pfx_all1s = {
++  .fp_addr = {
++    .ip4 = {
++      .as_u32 = 0xffffffff,
++    }
++  },
++  .fp_proto = FIB_PROTOCOL_IP4,
++  .fp_len = 32,
++};
++
++static fib_source_t lcp_rt_fib_src;
++static fib_source_t lcp_rt_fib_src_dynamic;
++
++#define LCP_ROUTER_DBG(...) vlib_log_debug (lcp_router_logger, __VA_ARGS__);
++
++#define LCP_ROUTER_INFO(...) vlib_log_notice (lcp_router_logger, __VA_ARGS__);
++
++#define LCP_ROUTER_ERROR(...) vlib_log_err (lcp_router_logger, __VA_ARGS__);
++
++static const mfib_prefix_t ip4_specials[] = {
++  /* ALL prefixes are in network order */
++  {
++   /* (*,224.0.0.0)/24 - all local subnet */
++   .fp_grp_addr = {
++		   .ip4.data_u32 = 0x000000e0,
++		   },
++   .fp_len = 24,
++   .fp_proto = FIB_PROTOCOL_IP4,
++   },
++};
++
++static const mfib_prefix_t ip6_specials[] = {
++  /* ALL prefixes are in network order */
++  {
++   /* (*,ff00::)/8 - all local subnet */
++   .fp_grp_addr = {
++		   .ip6.as_u64[0] = 0x00000000000000ff,
++		   },
++   .fp_len = 8,
++   .fp_proto = FIB_PROTOCOL_IP6,
++   },
++};
++
++/* VIF to PHY DB of managed interfaces */
++static uword *lcp_routing_itf_db;
++
++static u32
++lcp_router_intf_h2p (u32 host)
++{
++  lcp_itf_pair_t *lip;
++  index_t lipi;
++  uword *p;
++
++  /*
++   * first check the linux side created interface (i.e. vlans, tunnels etc)
++   */
++  p = hash_get (lcp_routing_itf_db, host);
++
++  if (p)
++    return p[0];
++
++  /*
++   * then check the paired phys
++   */
++  lipi = lcp_itf_pair_find_by_vif (host);
++
++  if (INDEX_INVALID == lipi)
++    return (~0);
++
++  lip = lcp_itf_pair_get (lipi);
++
++  return lip->lip_phy_sw_if_index;
++}
++
++/*
++ * Check timestamps on netlink message and interface pair to decide whether
++ * the message should be applied. See the declaration of nl_msg_info_t for
++ * an explanation on why this is necessary.
++ * If timestamps are good (message ts is newer than intf pair ts), return 0.
++ * Else, return -1.
++ */
++static int
++lcp_router_lip_ts_check (nl_msg_info_t *msg_info, lcp_itf_pair_t *lip)
++{
++  if (msg_info->ts > lip->lip_create_ts)
++    return 0;
++
++  LCP_ROUTER_INFO ("Early message received for %U",
++		   format_vnet_sw_if_index_name, vnet_get_main (),
++		   lip->lip_phy_sw_if_index);
++  return -1;
++}
++
++static void
++lcp_router_link_del (struct rtnl_link *rl, void *ctx)
++{
++  index_t lipi;
++
++  if (!lcp_auto_intf ())
++    return;
++
++  lipi = lcp_itf_pair_find_by_vif (rtnl_link_get_ifindex (rl));
++
++  if (INDEX_INVALID != lipi)
++    {
++      lcp_itf_pair_t *lip;
++
++      lip = lcp_itf_pair_get (lipi);
++
++      if (lcp_router_lip_ts_check ((nl_msg_info_t *) ctx, lip))
++	return;
++
++      LCP_ROUTER_INFO ("delete link: %s - %U", rtnl_link_get_type (rl),
++		       format_vnet_sw_if_index_name, vnet_get_main (),
++		       lip->lip_phy_sw_if_index);
++      lcp_itf_pair_delete (lip->lip_phy_sw_if_index);
++
++      if (rtnl_link_is_vlan (rl))
++	{
++	  LCP_ROUTER_INFO ("delete vlan: %s -> %U", rtnl_link_get_name (rl),
++			   format_vnet_sw_if_index_name, vnet_get_main (),
++			   lip->lip_phy_sw_if_index);
++	  vnet_delete_sub_interface (lip->lip_phy_sw_if_index);
++	  vnet_delete_sub_interface (lip->lip_host_sw_if_index);
++	}
++    }
++  else
++    LCP_ROUTER_INFO ("ignore link del: %s - %s", rtnl_link_get_type (rl),
++		     rtnl_link_get_name (rl));
++}
++
++static void
++lcp_router_ip4_mroutes_add_del (u32 sw_if_index, u8 is_add)
++{
++  const fib_route_path_t path = {
++    .frp_proto = DPO_PROTO_IP4,
++    .frp_addr = zero_addr,
++    .frp_sw_if_index = sw_if_index,
++    .frp_fib_index = ~0,
++    .frp_weight = 1,
++    .frp_mitf_flags = MFIB_ITF_FLAG_ACCEPT,
++  };
++  u32 mfib_index;
++  int ii;
++
++  mfib_index =
++    mfib_table_get_index_for_sw_if_index (FIB_PROTOCOL_IP4, sw_if_index);
++
++  for (ii = 0; ii < ARRAY_LEN (ip4_specials); ii++)
++    {
++      if (is_add)
++	{
++	  mfib_table_entry_path_update (mfib_index, &ip4_specials[ii],
++					MFIB_SOURCE_PLUGIN_LOW, &path);
++	}
++      else
++	{
++	  mfib_table_entry_path_remove (mfib_index, &ip4_specials[ii],
++					MFIB_SOURCE_PLUGIN_LOW, &path);
++	}
++    }
++}
++
++static void
++lcp_router_ip6_mroutes_add_del (u32 sw_if_index, u8 is_add)
++{
++  const fib_route_path_t path = {
++    .frp_proto = DPO_PROTO_IP6,
++    .frp_addr = zero_addr,
++    .frp_sw_if_index = sw_if_index,
++    .frp_fib_index = ~0,
++    .frp_weight = 1,
++    .frp_mitf_flags = MFIB_ITF_FLAG_ACCEPT,
++  };
++  u32 mfib_index;
++  int ii;
++
++  mfib_index =
++    mfib_table_get_index_for_sw_if_index (FIB_PROTOCOL_IP6, sw_if_index);
++
++  for (ii = 0; ii < ARRAY_LEN (ip6_specials); ii++)
++    {
++      if (is_add)
++	{
++	  mfib_table_entry_path_update (mfib_index, &ip6_specials[ii],
++					MFIB_SOURCE_PLUGIN_LOW, &path);
++	}
++      else
++	{
++	  mfib_table_entry_path_remove (mfib_index, &ip6_specials[ii],
++					MFIB_SOURCE_PLUGIN_LOW, &path);
++	}
++    }
++}
++
++static void
++lcp_router_link_mtu (struct rtnl_link *rl, u32 sw_if_index)
++{
++  vnet_main_t *vnm = vnet_get_main ();
++  u32 mtu;
++  vnet_sw_interface_t *sw;
++  vnet_hw_interface_t *hw;
++
++  mtu = rtnl_link_get_mtu (rl);
++  if (!mtu)
++    return;
++
++  sw = vnet_get_sw_interface (vnm, sw_if_index);
++  hw = vnet_get_sup_hw_interface (vnm, sw_if_index);
++
++  /* If HW interface, try to change hw link */
++  if ((sw->type == sw->sup_sw_if_index) &&
++      (hw->hw_class_index == ethernet_hw_interface_class.index))
++    vnet_hw_interface_set_mtu (vnm, hw->hw_if_index, mtu);
++  else
++    vnet_sw_interface_set_mtu (vnm, sw->sw_if_index, mtu);
++}
++
++static void
++lcp_router_link_addr (struct rtnl_link *rl, u32 sw_if_index)
++{
++  vnet_main_t *vnm = vnet_get_main ();
++  struct nl_addr *mac_addr;
++  vnet_sw_interface_t *sw;
++  vnet_hw_interface_t *hw;
++  void *mac_addr_bytes;
++
++  mac_addr = rtnl_link_get_addr (rl);
++  if (!mac_addr || (nl_addr_get_family (mac_addr) != AF_LLC))
++    return;
++
++  sw = vnet_get_sw_interface (vnm, sw_if_index);
++
++  /* can only change address on hw interface */
++  if (sw->sw_if_index != sw->sup_sw_if_index)
++    return;
++
++  hw = vnet_get_sup_hw_interface (vnm, sw_if_index);
++  if (!vec_len (hw->hw_address))
++    return;
++
++  mac_addr_bytes = nl_addr_get_binary_addr (mac_addr);
++  if (!clib_memcmp (mac_addr_bytes, hw->hw_address,
++		    nl_addr_get_len (mac_addr)))
++    return;
++
++  vnet_hw_interface_change_mac_address (vnm, hw->hw_if_index, mac_addr_bytes);
++}
++
++static void
++lcp_router_link_add (struct rtnl_link *rl, void *ctx)
++{
++  index_t lipi;
++  int up;
++  vnet_main_t *vnm = vnet_get_main ();
++
++  lipi = lcp_itf_pair_find_by_vif (rtnl_link_get_ifindex (rl));
++  up = IFF_UP & rtnl_link_get_flags (rl);
++
++  if (INDEX_INVALID != lipi)
++    {
++      lcp_itf_pair_t *lip;
++
++      lip = lcp_itf_pair_get (lipi);
++      if (!vnet_get_sw_interface (vnm, lip->lip_phy_sw_if_index))
++	return;
++
++      if (lcp_router_lip_ts_check ((nl_msg_info_t *) ctx, lip))
++	return;
++
++      if (up)
++	{
++	  vnet_sw_interface_admin_up (vnet_get_main (),
++				      lip->lip_phy_sw_if_index);
++	}
++      else
++	{
++	  vnet_sw_interface_admin_down (vnet_get_main (),
++					lip->lip_phy_sw_if_index);
++	}
++      LCP_ROUTER_DBG ("link: %s (%d) -> %U/%U %s", rtnl_link_get_name (rl),
++		      rtnl_link_get_ifindex (rl), format_vnet_sw_if_index_name,
++		      vnm, lip->lip_phy_sw_if_index,
++		      format_vnet_sw_if_index_name, vnm,
++		      lip->lip_host_sw_if_index, (up ? "up" : "down"));
++
++      lcp_router_link_mtu (rl, lip->lip_phy_sw_if_index);
++      lcp_router_link_addr (rl, lip->lip_phy_sw_if_index);
++    }
++  else if (lcp_auto_intf () && rtnl_link_is_vlan (rl))
++    {
++      /* Find the pair based on the parent VIF */
++      lipi = lcp_itf_pair_find_by_vif (rtnl_link_get_link (rl));
++
++      if (INDEX_INVALID != lipi)
++	{
++	  u32 sub_phy_sw_if_index, sub_host_sw_if_index;
++	  const lcp_itf_pair_t *lip;
++	  int vlan;
++	  u8 *ns = 0; /* FIXME */
++
++	  lip = lcp_itf_pair_get (lipi);
++
++	  vlan = rtnl_link_vlan_get_id (rl);
++
++	  /* create the vlan interface on the parent phy */
++	  if (vnet_create_sub_interface (lip->lip_phy_sw_if_index, vlan, 18, 0,
++					 vlan, &sub_phy_sw_if_index))
++	    {
++	      LCP_ROUTER_INFO ("failed create phy vlan: %s on %U",
++			       rtnl_link_get_name (rl),
++			       format_vnet_sw_if_index_name, vnet_get_main (),
++			       lip->lip_phy_sw_if_index);
++	      return;
++	    }
++	  /* create the vlan interface on the parent host */
++	  if (vnet_create_sub_interface (lip->lip_host_sw_if_index, vlan, 18,
++					 0, vlan, &sub_host_sw_if_index))
++	    {
++	      LCP_ROUTER_INFO ("failed create vlan: %s on %U",
++			       rtnl_link_get_name (rl),
++			       format_vnet_sw_if_index_name, vnet_get_main (),
++			       lip->lip_host_sw_if_index);
++	      return;
++	    }
++
++	  char *if_name;
++	  u8 *if_namev = 0;
++
++	  LCP_ROUTER_INFO (
++	    "create vlan: %s -> (%U, %U) : (%U, %U)", rtnl_link_get_name (rl),
++	    format_vnet_sw_if_index_name, vnet_get_main (),
++	    lip->lip_phy_sw_if_index, format_vnet_sw_if_index_name,
++	    vnet_get_main (), sub_phy_sw_if_index,
++	    format_vnet_sw_if_index_name, vnet_get_main (),
++	    lip->lip_host_sw_if_index, format_vnet_sw_if_index_name,
++	    vnet_get_main (), sub_host_sw_if_index);
++
++	  if ((if_name = rtnl_link_get_name (rl)) != NULL)
++	    vec_validate_init_c_string (if_namev, if_name,
++					strnlen (if_name, IFNAMSIZ));
++	  lcp_itf_pair_add (sub_host_sw_if_index, sub_phy_sw_if_index,
++			    if_namev, rtnl_link_get_ifindex (rl),
++			    lip->lip_host_type, ns);
++	  if (up)
++	    vnet_sw_interface_admin_up (vnet_get_main (), sub_phy_sw_if_index);
++	  vnet_sw_interface_admin_up (vnet_get_main (), sub_host_sw_if_index);
++
++	  vec_free (if_namev);
++	}
++      else
++	{
++	  LCP_ROUTER_INFO ("ignore parent-link add: %s - %s",
++			   rtnl_link_get_type (rl), rtnl_link_get_name (rl));
++	}
++    }
++  else
++    LCP_ROUTER_INFO ("ignore link add: %s - %s", rtnl_link_get_type (rl),
++		     rtnl_link_get_name (rl));
++}
++
++static fib_protocol_t
++lcp_router_proto_k2f (uint32_t k)
++{
++  if (AF_INET6 == k)
++    return (FIB_PROTOCOL_IP6);
++  return (FIB_PROTOCOL_IP4);
++}
++
++static void
++lcp_router_mk_addr (const struct nl_addr *rna, ip_address_t *ia)
++{
++  fib_protocol_t fproto;
++
++  ip_address_reset (ia);
++  fproto = lcp_router_proto_k2f (nl_addr_get_family (rna));
++
++  ip_address_set (ia, nl_addr_get_binary_addr (rna),
++		  FIB_PROTOCOL_IP4 == fproto ? AF_IP4 : AF_IP6);
++}
++
++static fib_protocol_t
++lcp_router_mk_addr46 (const struct nl_addr *rna, ip46_address_t *ia)
++{
++  fib_protocol_t fproto;
++
++  fproto = lcp_router_proto_k2f (nl_addr_get_family (rna));
++  if (FIB_PROTOCOL_IP4 == fproto)
++    {
++      ip46_address_reset (ia);
++      memcpy (&ia->ip4, nl_addr_get_binary_addr (rna), nl_addr_get_len (rna));
++    }
++  else
++    memcpy (&ia->ip6, nl_addr_get_binary_addr (rna), nl_addr_get_len (rna));
++
++  return (fproto);
++}
++
++static void
++lcp_router_link_addr_add_del (struct rtnl_addr *rla, int is_del)
++{
++  u32 sw_if_index;
++
++  sw_if_index = lcp_router_intf_h2p (rtnl_addr_get_ifindex (rla));
++
++  if (~0 != sw_if_index)
++    {
++      ip_address_t nh;
++
++      lcp_router_mk_addr (rtnl_addr_get_local (rla), &nh);
++
++      if (AF_IP4 == ip_addr_version (&nh))
++	{
++	  ip4_add_del_interface_address (
++	    vlib_get_main (), sw_if_index, &ip_addr_v4 (&nh),
++	    rtnl_addr_get_prefixlen (rla), is_del);
++	  lcp_router_ip4_mroutes_add_del (sw_if_index, !is_del);
++	}
++      else if (AF_IP6 == ip_addr_version (&nh))
++	{
++	  if (ip6_address_is_link_local_unicast (&ip_addr_v6 (&nh)))
++	    if (is_del)
++	      ip6_link_disable (sw_if_index);
++	    else
++	      {
++		if (!ip6_link_is_enabled (sw_if_index))
++		  ip6_link_enable (sw_if_index, NULL);
++		ip6_link_set_local_address (sw_if_index, &ip_addr_v6 (&nh));
++	      }
++	  else
++	    ip6_add_del_interface_address (
++	      vlib_get_main (), sw_if_index, &ip_addr_v6 (&nh),
++	      rtnl_addr_get_prefixlen (rla), is_del);
++	  lcp_router_ip6_mroutes_add_del (sw_if_index, !is_del);
++	}
++
++      LCP_ROUTER_DBG ("link-addr: %U %U/%d", format_vnet_sw_if_index_name,
++		      vnet_get_main (), sw_if_index, format_ip_address, &nh,
++		      rtnl_addr_get_prefixlen (rla));
++    }
++}
++
++static void
++lcp_router_link_addr_del (struct rtnl_addr *la)
++{
++  lcp_router_link_addr_add_del (la, 1);
++}
++
++static void
++lcp_router_link_addr_add (struct rtnl_addr *la)
++{
++  lcp_router_link_addr_add_del (la, 0);
++}
++
++static void
++lcp_router_mk_mac_addr (const struct nl_addr *rna, mac_address_t *mac)
++{
++  mac_address_from_bytes (mac, nl_addr_get_binary_addr (rna));
++}
++
++static void
++lcp_router_neigh_del (struct rtnl_neigh *rn)
++{
++  u32 sw_if_index;
++
++  sw_if_index = lcp_router_intf_h2p (rtnl_neigh_get_ifindex (rn));
++
++  if (~0 != sw_if_index)
++    {
++      ip_address_t nh;
++      int rv;
++
++      lcp_router_mk_addr (rtnl_neigh_get_dst (rn), &nh);
++
++      rv = ip_neighbor_del (&nh, sw_if_index);
++
++      if (rv)
++	{
++	  LCP_ROUTER_ERROR (
++	    "Failed to delete neighbor: %U %U", format_ip_address, &nh,
++	    format_vnet_sw_if_index_name, vnet_get_main (), sw_if_index);
++	}
++      else
++	{
++	  LCP_ROUTER_DBG ("neighbor del: %U %U", format_ip_address, &nh,
++			  format_vnet_sw_if_index_name, vnet_get_main (),
++			  sw_if_index);
++	}
++    }
++  else
++    LCP_ROUTER_INFO ("ignore neighbour del on: %d",
++		     rtnl_neigh_get_ifindex (rn));
++}
++
++#ifndef NUD_VALID
++#define NUD_VALID                                                             \
++  (NUD_PERMANENT | NUD_NOARP | NUD_REACHABLE | NUD_PROBE | NUD_STALE |        \
++   NUD_DELAY)
++#endif
++
++static void
++lcp_router_neigh_add (struct rtnl_neigh *rn)
++{
++  u32 sw_if_index;
++
++  sw_if_index = lcp_router_intf_h2p (rtnl_neigh_get_ifindex (rn));
++
++  if (~0 != sw_if_index)
++    {
++      struct nl_addr *ll;
++      ip_address_t nh;
++      int state;
++
++      lcp_router_mk_addr (rtnl_neigh_get_dst (rn), &nh);
++      ll = rtnl_neigh_get_lladdr (rn);
++      state = rtnl_neigh_get_state (rn);
++
++      if (ll && (state & NUD_VALID))
++	{
++	  mac_address_t mac;
++	  ip_neighbor_flags_t flags;
++	  int rv;
++
++	  lcp_router_mk_mac_addr (ll, &mac);
++
++	  if (state & (NUD_NOARP | NUD_PERMANENT))
++	    flags = IP_NEIGHBOR_FLAG_STATIC;
++	  else
++	    flags = IP_NEIGHBOR_FLAG_DYNAMIC;
++
++	  rv = ip_neighbor_add (&nh, &mac, sw_if_index, flags, NULL);
++
++	  if (rv)
++	    {
++	      LCP_ROUTER_ERROR (
++		"Failed to create neighbor: %U %U", format_ip_address, &nh,
++		format_vnet_sw_if_index_name, vnet_get_main (), sw_if_index);
++	    }
++	  else
++	    {
++	      LCP_ROUTER_DBG ("neighbor add: %U %U", format_ip_address, &nh,
++			      format_vnet_sw_if_index_name, vnet_get_main (),
++			      sw_if_index);
++	    }
++	}
++      else
++	/* It's a delete */
++	lcp_router_neigh_del (rn);
++    }
++  else
++    LCP_ROUTER_INFO ("ignore neighbour add on: %d",
++		     rtnl_neigh_get_ifindex (rn));
++}
++
++static lcp_router_table_t *
++lcp_router_table_find (uint32_t id, fib_protocol_t fproto)
++{
++  uword *p;
++
++  p = hash_get (lcp_router_table_db[fproto], id);
++
++  if (p)
++    return pool_elt_at_index (lcp_router_table_pool, p[0]);
++
++  return (NULL);
++}
++
++static uint32_t
++lcp_router_table_k2f (uint32_t k)
++{
++  // the kernel's table ID 255 is the default table
++  if (k == 255 || k == 254)
++    return 0;
++  return k;
++}
++
++static lcp_router_table_t *
++lcp_router_table_add_or_lock (uint32_t id, fib_protocol_t fproto)
++{
++  lcp_router_table_t *nlt;
++
++  id = lcp_router_table_k2f (id);
++  nlt = lcp_router_table_find (id, fproto);
++
++  if (NULL == nlt)
++    {
++      pool_get_zero (lcp_router_table_pool, nlt);
++
++      nlt->nlt_id = id;
++      nlt->nlt_proto = fproto;
++
++      nlt->nlt_fib_index = fib_table_find_or_create_and_lock (
++	nlt->nlt_proto, nlt->nlt_id, lcp_rt_fib_src);
++      nlt->nlt_mfib_index = mfib_table_find_or_create_and_lock (
++	nlt->nlt_proto, nlt->nlt_id, MFIB_SOURCE_PLUGIN_LOW);
++
++      hash_set (lcp_router_table_db[fproto], nlt->nlt_id,
++		nlt - lcp_router_table_pool);
++
++      if (FIB_PROTOCOL_IP4 == fproto)
++	{
++	  /* Set the all 1s address in this table to punt */
++	  fib_table_entry_special_add (nlt->nlt_fib_index, &pfx_all1s,
++				       lcp_rt_fib_src, FIB_ENTRY_FLAG_LOCAL);
++
++	  const fib_route_path_t path = {
++	    .frp_proto = DPO_PROTO_IP4,
++	    .frp_addr = zero_addr,
++	    .frp_sw_if_index = ~0,
++	    .frp_fib_index = ~0,
++	    .frp_weight = 1,
++	    .frp_mitf_flags = MFIB_ITF_FLAG_FORWARD,
++	    .frp_flags = FIB_ROUTE_PATH_LOCAL,
++	  };
++	  int ii;
++
++	  for (ii = 0; ii < ARRAY_LEN (ip4_specials); ii++)
++	    {
++	      mfib_table_entry_path_update (nlt->nlt_mfib_index,
++					    &ip4_specials[ii],
++					    MFIB_SOURCE_PLUGIN_LOW, &path);
++	    }
++	}
++      else if (FIB_PROTOCOL_IP6 == fproto)
++	{
++	  const fib_route_path_t path = {
++	    .frp_proto = DPO_PROTO_IP6,
++	    .frp_addr = zero_addr,
++	    .frp_sw_if_index = ~0,
++	    .frp_fib_index = ~0,
++	    .frp_weight = 1,
++	    .frp_mitf_flags = MFIB_ITF_FLAG_FORWARD,
++	    .frp_flags = FIB_ROUTE_PATH_LOCAL,
++	  };
++	  int ii;
++
++	  for (ii = 0; ii < ARRAY_LEN (ip6_specials); ii++)
++	    {
++	      mfib_table_entry_path_update (nlt->nlt_mfib_index,
++					    &ip6_specials[ii],
++					    MFIB_SOURCE_PLUGIN_LOW, &path);
++	    }
++	}
++    }
++
++  nlt->nlt_refs++;
++
++  return (nlt);
++}
++
++static void
++lcp_router_table_unlock (lcp_router_table_t *nlt)
++{
++  nlt->nlt_refs--;
++
++  if (0 == nlt->nlt_refs)
++    {
++      if (FIB_PROTOCOL_IP4 == nlt->nlt_proto)
++	{
++	  /* Set the all 1s address in this table to punt */
++	  fib_table_entry_special_remove (nlt->nlt_fib_index, &pfx_all1s,
++					  lcp_rt_fib_src);
++	}
++
++      fib_table_unlock (nlt->nlt_fib_index, nlt->nlt_proto, lcp_rt_fib_src);
++
++      hash_unset (lcp_router_table_db[nlt->nlt_proto], nlt->nlt_id);
++      pool_put (lcp_router_table_pool, nlt);
++    }
++}
++
++static void
++lcp_router_route_mk_prefix (struct rtnl_route *r, fib_prefix_t *p)
++{
++  const struct nl_addr *addr = rtnl_route_get_dst (r);
++
++  p->fp_len = nl_addr_get_prefixlen (addr);
++  p->fp_proto = lcp_router_mk_addr46 (addr, &p->fp_addr);
++}
++
++static void
++lcp_router_route_mk_mprefix (struct rtnl_route *r, mfib_prefix_t *p)
++{
++  const struct nl_addr *addr;
++
++  addr = rtnl_route_get_dst (r);
++
++  p->fp_len = nl_addr_get_prefixlen (addr);
++  p->fp_proto = lcp_router_mk_addr46 (addr, &p->fp_grp_addr);
++
++  addr = rtnl_route_get_src (r);
++  if (addr)
++    p->fp_proto = lcp_router_mk_addr46 (addr, &p->fp_src_addr);
++}
++
++typedef struct lcp_router_route_path_parse_t_
++{
++  fib_route_path_t *paths;
++  fib_protocol_t route_proto;
++  bool is_mcast;
++  fib_route_path_flags_t type_flags;
++  u8 preference;
++} lcp_router_route_path_parse_t;
++
++static void
++lcp_router_route_path_parse (struct rtnl_nexthop *rnh, void *arg)
++{
++  lcp_router_route_path_parse_t *ctx = arg;
++  fib_route_path_t *path;
++  u32 sw_if_index;
++
++  sw_if_index = lcp_router_intf_h2p (rtnl_route_nh_get_ifindex (rnh));
++
++  if (~0 != sw_if_index)
++    {
++      fib_protocol_t fproto;
++      struct nl_addr *addr;
++
++      vec_add2 (ctx->paths, path, 1);
++
++      path->frp_flags = FIB_ROUTE_PATH_FLAG_NONE | ctx->type_flags;
++      path->frp_sw_if_index = sw_if_index;
++      path->frp_weight = rtnl_route_nh_get_weight (rnh);
++      path->frp_preference = ctx->preference;
++
++      addr = rtnl_route_nh_get_gateway (rnh);
++
++      if (addr)
++	fproto = lcp_router_mk_addr46 (rtnl_route_nh_get_gateway (rnh),
++				       &path->frp_addr);
++      else
++	fproto = ctx->route_proto;
++
++      path->frp_proto = fib_proto_to_dpo (fproto);
++
++      if (ctx->is_mcast)
++	path->frp_mitf_flags = MFIB_ITF_FLAG_FORWARD;
++
++      LCP_ROUTER_DBG (" path:[%U]", format_fib_route_path, path);
++    }
++}
++
++/*
++ * blackhole, unreachable, prohibit will not have a next hop in an
++ * RTM_NEWROUTE. Add a path for them.
++ */
++static void
++lcp_router_route_path_add_special (struct rtnl_route *rr,
++				   lcp_router_route_path_parse_t *ctx)
++{
++  fib_route_path_t *path;
++
++  if (rtnl_route_get_type (rr) < RTN_BLACKHOLE)
++    return;
++
++  /* if it already has a path, it does not need us to add one */
++  if (vec_len (ctx->paths) > 0)
++    return;
++
++  vec_add2 (ctx->paths, path, 1);
++
++  path->frp_flags = FIB_ROUTE_PATH_FLAG_NONE | ctx->type_flags;
++  path->frp_sw_if_index = ~0;
++  path->frp_proto = fib_proto_to_dpo (ctx->route_proto);
++  path->frp_preference = ctx->preference;
++
++  LCP_ROUTER_DBG (" path:[%U]", format_fib_route_path, path);
++}
++
++/*
++ * Map of supported route types. Some types are omitted:
++ * RTN_LOCAL - interface address addition creates these automatically
++ * RTN_BROADCAST - same as RTN_LOCAL
++ * RTN_UNSPEC, RTN_ANYCAST, RTN_THROW, RTN_NAT, RTN_XRESOLVE -
++ *   There's not a VPP equivalent for these currently.
++ */
++static const u8 lcp_router_route_type_valid[__RTN_MAX] = {
++  [RTN_UNICAST] = 1,	 [RTN_MULTICAST] = 1, [RTN_BLACKHOLE] = 1,
++  [RTN_UNREACHABLE] = 1, [RTN_PROHIBIT] = 1,
++};
++
++/* Map of fib entry flags by route type */
++static const fib_entry_flag_t lcp_router_route_type_feflags[__RTN_MAX] = {
++  [RTN_LOCAL] = FIB_ENTRY_FLAG_LOCAL | FIB_ENTRY_FLAG_CONNECTED,
++  [RTN_BROADCAST] = FIB_ENTRY_FLAG_DROP | FIB_ENTRY_FLAG_LOOSE_URPF_EXEMPT,
++  [RTN_BLACKHOLE] = FIB_ENTRY_FLAG_DROP,
++};
++
++/* Map of fib route path flags by route type */
++static const fib_route_path_flags_t
++  lcp_router_route_type_frpflags[__RTN_MAX] = {
++    [RTN_UNREACHABLE] = FIB_ROUTE_PATH_ICMP_UNREACH,
++    [RTN_PROHIBIT] = FIB_ROUTE_PATH_ICMP_PROHIBIT,
++    [RTN_BLACKHOLE] = FIB_ROUTE_PATH_DROP,
++  };
++
++static inline fib_source_t
++lcp_router_proto_fib_source (u8 rt_proto)
++{
++  return (rt_proto <= RTPROT_STATIC) ? lcp_rt_fib_src : lcp_rt_fib_src_dynamic;
++}
++
++static fib_entry_flag_t
++lcp_router_route_mk_entry_flags (uint8_t rtype, int table_id, uint8_t rproto)
++{
++  fib_entry_flag_t fef = FIB_ENTRY_FLAG_NONE;
++
++  fef |= lcp_router_route_type_feflags[rtype];
++  if ((rproto == RTPROT_KERNEL) || PREDICT_FALSE (255 == table_id))
++    /* kernel proto is interface prefixes, 255 is linux's 'local' table */
++    fef |= FIB_ENTRY_FLAG_ATTACHED | FIB_ENTRY_FLAG_CONNECTED;
++
++  return (fef);
++}
++
++static void
++lcp_router_route_del (struct rtnl_route *rr)
++{
++  fib_entry_flag_t entry_flags;
++  uint32_t table_id;
++  fib_prefix_t pfx;
++  lcp_router_table_t *nlt;
++  uint8_t rtype, rproto;
++
++  rtype = rtnl_route_get_type (rr);
++  table_id = rtnl_route_get_table (rr);
++  rproto = rtnl_route_get_protocol (rr);
++
++  /* skip unsupported route types and local table */
++  if (!lcp_router_route_type_valid[rtype] || (table_id == 255))
++    return;
++
++  lcp_router_route_mk_prefix (rr, &pfx);
++  entry_flags = lcp_router_route_mk_entry_flags (rtype, table_id, rproto);
++  nlt = lcp_router_table_find (lcp_router_table_k2f (table_id), pfx.fp_proto);
++
++  LCP_ROUTER_DBG ("route del: %d:%U %U", rtnl_route_get_table (rr),
++		  format_fib_prefix, &pfx, format_fib_entry_flags,
++		  entry_flags);
++
++  if (NULL == nlt)
++    return;
++
++  lcp_router_route_path_parse_t np = {
++    .route_proto = pfx.fp_proto,
++    .type_flags = lcp_router_route_type_frpflags[rtype],
++  };
++
++  rtnl_route_foreach_nexthop (rr, lcp_router_route_path_parse, &np);
++  lcp_router_route_path_add_special (rr, &np);
++
++  if (0 != vec_len (np.paths))
++    {
++      fib_source_t fib_src;
++
++      fib_src = lcp_router_proto_fib_source (rproto);
++
++      if (pfx.fp_proto == FIB_PROTOCOL_IP6)
++	fib_table_entry_delete (nlt->nlt_fib_index, &pfx, fib_src);
++      else
++	fib_table_entry_path_remove2 (nlt->nlt_fib_index, &pfx, fib_src,
++				      np.paths);
++    }
++
++  vec_free (np.paths);
++
++  lcp_router_table_unlock (nlt);
++}
++
++static void
++lcp_router_route_add (struct rtnl_route *rr)
++{
++  fib_entry_flag_t entry_flags;
++  uint32_t table_id;
++  fib_prefix_t pfx;
++  lcp_router_table_t *nlt;
++  uint8_t rtype, rproto;
++
++  rtype = rtnl_route_get_type (rr);
++  table_id = rtnl_route_get_table (rr);
++  rproto = rtnl_route_get_protocol (rr);
++
++  /* skip unsupported route types and local table */
++  if (!lcp_router_route_type_valid[rtype] || (table_id == 255))
++    return;
++
++  lcp_router_route_mk_prefix (rr, &pfx);
++  entry_flags = lcp_router_route_mk_entry_flags (rtype, table_id, rproto);
++
++  /* link local IPv6 */
++  if (FIB_PROTOCOL_IP6 == pfx.fp_proto &&
++      (ip6_address_is_multicast (&pfx.fp_addr.ip6) ||
++       ip6_address_is_link_local_unicast (&pfx.fp_addr.ip6)))
++    {
++      LCP_ROUTER_DBG ("route skip: %d:%U %U", rtnl_route_get_table (rr),
++		      format_fib_prefix, &pfx, format_fib_entry_flags,
++		      entry_flags);
++    }
++  else
++    {
++      LCP_ROUTER_DBG ("route add: %d:%U %U", rtnl_route_get_table (rr),
++		      format_fib_prefix, &pfx, format_fib_entry_flags,
++		      entry_flags);
++
++      lcp_router_route_path_parse_t np = {
++	.route_proto = pfx.fp_proto,
++	.is_mcast = (rtype == RTN_MULTICAST),
++	.type_flags = lcp_router_route_type_frpflags[rtype],
++	.preference = (u8) rtnl_route_get_priority (rr),
++      };
++
++      rtnl_route_foreach_nexthop (rr, lcp_router_route_path_parse, &np);
++      lcp_router_route_path_add_special (rr, &np);
++
++      if (0 != vec_len (np.paths))
++	{
++	  nlt = lcp_router_table_add_or_lock (table_id, pfx.fp_proto);
++	  if (rtype == RTN_MULTICAST)
++	    {
++	      /* it's not clear to me how linux expresses the RPF paramters
++	       * so we'll allow from all interfaces and hope for the best */
++	      mfib_prefix_t mpfx = {};
++
++	      lcp_router_route_mk_mprefix (rr, &mpfx);
++
++	      mfib_table_entry_update (
++		nlt->nlt_mfib_index, &mpfx, MFIB_SOURCE_PLUGIN_LOW,
++		MFIB_RPF_ID_NONE, MFIB_ENTRY_FLAG_ACCEPT_ALL_ITF);
++
++	      mfib_table_entry_paths_update (nlt->nlt_mfib_index, &mpfx,
++					     MFIB_SOURCE_PLUGIN_LOW, np.paths);
++	    }
++	  else
++	    {
++	      fib_source_t fib_src;
++
++	      fib_src = lcp_router_proto_fib_source (rproto);
++
++	      if (pfx.fp_proto == FIB_PROTOCOL_IP6)
++		fib_table_entry_path_add2 (nlt->nlt_fib_index, &pfx, fib_src,
++					   entry_flags, np.paths);
++	      else
++		fib_table_entry_update (nlt->nlt_fib_index, &pfx, fib_src,
++					entry_flags, np.paths);
++	    }
++	}
++      else
++	LCP_ROUTER_DBG ("no paths for route add: %d:%U %U",
++			rtnl_route_get_table (rr), format_fib_prefix, &pfx,
++			format_fib_entry_flags, entry_flags);
++      vec_free (np.paths);
++    }
++}
++
++const nl_vft_t lcp_router_vft = {
++  .nvl_rt_link_add = { .is_mp_safe = 0, .cb = lcp_router_link_add },
++  .nvl_rt_link_del = { .is_mp_safe = 0, .cb = lcp_router_link_del },
++  .nvl_rt_addr_add = { .is_mp_safe = 0, .cb = lcp_router_link_addr_add },
++  .nvl_rt_addr_del = { .is_mp_safe = 0, .cb = lcp_router_link_addr_del },
++  .nvl_rt_neigh_add = { .is_mp_safe = 0, .cb = lcp_router_neigh_add },
++  .nvl_rt_neigh_del = { .is_mp_safe = 0, .cb = lcp_router_neigh_del },
++  .nvl_rt_route_add = { .is_mp_safe = 1, .cb = lcp_router_route_add },
++  .nvl_rt_route_del = { .is_mp_safe = 1, .cb = lcp_router_route_del },
++};
++
++static clib_error_t *
++lcp_router_init (vlib_main_t *vm)
++{
++  lcp_router_logger = vlib_log_register_class ("linux-cp", "router");
++
++  nl_register_vft (&lcp_router_vft);
++
++  /*
++   * allocate 2 route sources. The low priority source will be for
++   * dynamic routes. If a dynamic route daemon (FRR) tries to remove its
++   * route, it will use the low priority source to ensure it will not
++   * remove static routes which were added with the higher priority source.
++   */
++  lcp_rt_fib_src =
++    fib_source_allocate ("lcp-rt", FIB_SOURCE_PRIORITY_HI, FIB_SOURCE_BH_API);
++
++  lcp_rt_fib_src_dynamic = fib_source_allocate (
++    "lcp-rt-dynamic", FIB_SOURCE_PRIORITY_HI + 1, FIB_SOURCE_BH_API);
++
++  return (NULL);
++}
++
++VLIB_INIT_FUNCTION (lcp_router_init) = {
++  .runs_before = VLIB_INITS ("lcp_nl_init"),
++};
++
++/*
++ * fd.io coding-style-patch-verification: ON
++ *
++ * Local Variables:
++ * eval: (c-set-style "gnu")
++ * End:
++ */
+-- 
+2.17.1
+
