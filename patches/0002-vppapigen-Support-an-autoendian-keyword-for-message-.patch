@@ -1,0 +1,114 @@
+From d6504904021f57bfadb847768f6aeb2db87a3815 Mon Sep 17 00:00:00 2001
+From: Neale Ranns <neale@graphiant.com>
+Date: Tue, 2 Feb 2021 09:21:52 +0000
+Subject: [PATCH 2/6] vppapigen: Support an 'autoendian' keyword for message
+ definitions in .api files
+
+Type: feature
+
+Make the auto-endian nature explicit, rather than hidden in the x_api.c
+file.
+
+Signed-off-by: Neale Ranns <neale@graphiant.com>
+Change-Id: Ibe647117ceeaf6f99a38a96576a5a41a3cbb1615
+---
+ src/plugins/map/map.api            |  2 +-
+ src/plugins/map/map_api.c          |  2 --
+ src/tools/vppapigen/vppapigen.py   |  5 +++++
+ src/tools/vppapigen/vppapigen_c.py | 10 ++++++----
+ 4 files changed, 12 insertions(+), 7 deletions(-)
+
+diff --git a/src/plugins/map/map.api b/src/plugins/map/map.api
+index dfe255bf3..ba733e35d 100644
+--- a/src/plugins/map/map.api
++++ b/src/plugins/map/map.api
+@@ -30,7 +30,7 @@ import "vnet/interface_types.api";
+     @param mtu - MTU. default 1280
+     @param tag - A user field stored with the MAP
+ */
+-define map_add_domain
++autoendian define map_add_domain
+ {
+   u32 client_index;
+   u32 context;
+diff --git a/src/plugins/map/map_api.c b/src/plugins/map/map_api.c
+index 4d2378a07..bcc0c27c7 100644
+--- a/src/plugins/map/map_api.c
++++ b/src/plugins/map/map_api.c
+@@ -560,8 +560,6 @@ map_plugin_api_hookup (vlib_main_t * vm)
+ 
+   mm->msg_id_base = setup_message_id_table ();
+ 
+-  api_main_t *am = vlibapi_get_main ();
+-  am->is_autoendian[mm->msg_id_base + VL_API_MAP_ADD_DOMAIN] = 1;
+   return 0;
+ }
+ 
+diff --git a/src/tools/vppapigen/vppapigen.py b/src/tools/vppapigen/vppapigen.py
+index 0782dd294..3fa5bac29 100755
+--- a/src/tools/vppapigen/vppapigen.py
++++ b/src/tools/vppapigen/vppapigen.py
+@@ -64,6 +64,7 @@ class VPPAPILexer(object):
+         'manual_endian': 'MANUAL_ENDIAN',
+         'dont_trace': 'DONT_TRACE',
+         'autoreply': 'AUTOREPLY',
++        'autoendian': 'AUTOENDIAN',
+         'option': 'OPTION',
+         'u8': 'U8',
+         'u16': 'U16',
+@@ -308,6 +309,7 @@ class Define(Processable):
+         self.manual_print = False
+         self.manual_endian = False
+         self.autoreply = False
++        self.autoendian = 0
+         self.options = {}
+         for f in flags:
+             if f == 'dont_trace':
+@@ -318,6 +320,8 @@ class Define(Processable):
+                 self.manual_endian = True
+             elif f == 'autoreply':
+                 self.autoreply = True
++            elif f == 'autoendian':
++                self.autoendian = 1
+ 
+         remove = []
+         for b in block:
+@@ -759,6 +763,7 @@ class VPPAPIParser(object):
+                 | MANUAL_ENDIAN
+                 | DONT_TRACE
+                 | TYPEONLY
++                | AUTOENDIAN
+                 | AUTOREPLY'''
+         if len(p) == 1:
+             return
+diff --git a/src/tools/vppapigen/vppapigen_c.py b/src/tools/vppapigen/vppapigen_c.py
+index 66e0c2f08..58d67b19a 100644
+--- a/src/tools/vppapigen/vppapigen_c.py
++++ b/src/tools/vppapigen/vppapigen_c.py
+@@ -1329,8 +1329,9 @@ def generate_c_boilerplate(services, defines, counters, file_crc,
+               '   .cleanup = vl_noop_handler,\n'
+               '   .endian = vl_api_{n}_t_endian,\n'
+               '   .print = vl_api_{n}_t_print,\n'
+-              '   .is_autoendian = 0}};\n'
+-              .format(n=s.caller, ID=s.caller.upper()))
++              '   .is_autoendian = {auto}}};\n'
++              .format(n=s.caller, ID=s.caller.upper(),
++                      auto=d.autoendian))
+         write('   vl_msg_api_config (&c);\n')
+         try:
+             d = define_hash[s.reply]
+@@ -1341,8 +1342,9 @@ def generate_c_boilerplate(services, defines, counters, file_crc,
+                   '  .cleanup = vl_noop_handler,\n'
+                   '  .endian = vl_api_{n}_t_endian,\n'
+                   '  .print = vl_api_{n}_t_print,\n'
+-                  '  .is_autoendian = 0}};\n'
+-                  .format(n=s.reply, ID=s.reply.upper()))
++                  '  .is_autoendian = {auto}}};\n'
++                  .format(n=s.reply, ID=s.reply.upper(),
++                          auto=d.autoendian))
+             write('   vl_msg_api_config (&c);\n')
+         except KeyError:
+             pass
+-- 
+2.17.1
+
