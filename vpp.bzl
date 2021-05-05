@@ -78,7 +78,7 @@ def mlx_libs(release, path, mlx4_glue_ver, mlx5_glue_ver):
     pkg_tar(
         name = "tar_mlx_libs_"+release,
         srcs = [
-            # FIXME
+            # FIXME(sgmonroy): Fix mellanox build (Anapaya/scion#5907)
             #path+"/external/lib/librte_pmd_mlx4_glue.so."+mlx4_glue_ver,
             #path+"/external/lib/librte_pmd_mlx5_glue.so."+mlx5_glue_ver,
         ],
