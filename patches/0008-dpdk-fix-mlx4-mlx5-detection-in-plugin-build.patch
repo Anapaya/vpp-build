@@ -1,0 +1,34 @@
+From 43ef56a408d39c9722482aecfe09c7cbc69babe5 Mon Sep 17 00:00:00 2001
+From: Sergio Gonzalez Monroy <sgmonroy@gmail.com>
+Date: Tue, 11 May 2021 08:19:50 +0200
+Subject: [PATCH] dpdk: fix mlx4 mlx5 detection in plugin build
+
+Since the move to DPDK 21.02, compatibility build symbols were depreca-
+ted, breaking the static linkage of the DPDK plugin to libibverbs.
+
+Change-Id: I2fec0807e4c0eb00268618f1495af862eede9081
+Type: fix
+Fixes: 5f35a185d5afee2c364fe84f33922bac1a808113
+Signed-off-by: Mohammed Hawari <mohammed@hawari.fr>
+
+Cherry-pick: 94761f6d427cc2bb01f37ba0ad46989869a5b436
+---
+ src/plugins/dpdk/CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/plugins/dpdk/CMakeLists.txt b/src/plugins/dpdk/CMakeLists.txt
+index 1dd7507c0..e68908362 100644
+--- a/src/plugins/dpdk/CMakeLists.txt
++++ b/src/plugins/dpdk/CMakeLists.txt
+@@ -85,7 +85,7 @@ list(APPEND DPDK_LINK_LIBRARIES ${NUMA_LIB})
+ ##############################################################################
+ # Mellanox libraries
+ ##############################################################################
+-if(DPDK_RTE_LIBRTE_MLX4_PMD OR DPDK_RTE_LIBRTE_MLX5_PMD)
++if(DPDK_RTE_NET_MLX4 OR DPDK_RTE_NET_MLX5)
+   if (DPDK_RTE_IBVERBS_LINK_DLOPEN)
+     message(STATUS "DPDK depends on libmnl (Mellanox PMD requirement)")
+     vpp_plugin_find_library(dpdk MNL_LIB "mnl")
+-- 
+2.17.1
+
