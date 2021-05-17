@@ -23,14 +23,23 @@ default: clean docker_build
 	cp -r install-vpp_debug-native/vpp/include/vppinfra/. src/vpp/src/vppinfra/
 	cp -r install-vpp_debug-native/vpp/include/vpp/api/. src/vpp/src/vpp/api/
 	cp -r install-vpp_debug-native/vpp/include/vpp_plugins/. src/vpp/src/plugins/
+
 	# manually copy .api and .def files to include so we can generate APIs if needed
 	# TODO instead provide tarball with generated JSON files, no need to generate VPP APIs
+
 	find src/vpp/src/vpp/ -name "*.api" | sed 's,src/vpp/src,,' | \
 		xargs -I{} cp src/vpp/src/{} include/{} || true
+
 	find src/vpp/src/plugins/ -name "*.api" | sed 's,src/vpp/src/plugins/,,' | \
-		xargs -I{} cp src/vpp/src/plugins/{} include/vpp_plugins/{} || true
+		xargs -I{} dirname include/vpp_plugins/{} | xargs -I{} mkdir -p {}
+	find src/vpp/src/plugins/ -name "*.api" | sed 's,src/vpp/src/plugins/,,' | \
+		xargs -I{} cp src/vpp/src/plugins/{} include/vpp_plugins/{}
+
 	find src/vpp/src/plugins/ -name "*.def" | sed 's,src/vpp/src/plugins/,,' | \
-		xargs -I{} cp src/vpp/src/plugins/{} include/vpp_plugins/{} || true
+		xargs -I{} dirname include/vpp_plugins/{} | xargs -I{} mkdir -p {}
+	find src/vpp/src/plugins/ -name "*.def" | sed 's,src/vpp/src/plugins/,,' | \
+		xargs -I{} cp src/vpp/src/plugins/{} include/vpp_plugins/{}
+
 	# extract DPDK sources
 	mkdir -p .$(VPP_EXTERNAL_SRC_DIR)
 	wget https://fast.dpdk.org/rel/dpdk-$(DPDK_VERSION).tar.xz
