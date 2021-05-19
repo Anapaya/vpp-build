@@ -12,8 +12,8 @@ default: clean docker_build
 	docker create --name vpp_build vpp_build
 	docker cp vpp_build:/src/vpp/build-root/install-vpp-native/. install-vpp-native
 	docker cp vpp_build:/src/vpp/build-root/install-vpp_debug-native/. install-vpp_debug-native
-	bazel build //:tar_libs_prod //:tar_plugins_prod //:tar_bins_prod //:tar_mlx_libs_prod
-	bazel build //:tar_libs_debug //:tar_plugins_debug //:tar_bins_debug //:tar_mlx_libs_debug
+	bazel build //:tar_libs_prod //:tar_plugins_prod //:tar_bins_prod
+	bazel build //:tar_libs_debug //:tar_plugins_debug //:tar_bins_debug
 	cp -r install-vpp-native/vpp/include .
 	mkdir -p src/vpp/src && docker cp vpp_build:/src/vpp/src/. src/vpp/src
 	# copy generated headers to the source, as they are used as include for debug image

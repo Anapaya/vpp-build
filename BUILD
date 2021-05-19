@@ -1,16 +1,10 @@
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
-load(":vpp.bzl", "vpp_libs", "mlx_libs")
+load(":vpp.bzl", "vpp_libs")
 
 VPP_VERSION = "21.01.0"
 
 vpp_libs("prod", "install-vpp-native/vpp", VPP_VERSION)
 vpp_libs("debug", "install-vpp_debug-native/vpp", VPP_VERSION)
-
-DPDK_MLX4_GLUE = "18.02.0"
-DPDK_MLX5_GLUE = "20.02.0"
-
-mlx_libs("prod", "install-vpp-native", DPDK_MLX4_GLUE, DPDK_MLX5_GLUE)
-mlx_libs("debug", "install-vpp_debug-native", DPDK_MLX4_GLUE, DPDK_MLX5_GLUE)
 
 #cc_library(
 #    name = "include_prod",
