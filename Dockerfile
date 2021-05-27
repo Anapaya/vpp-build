@@ -21,12 +21,12 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     strace \
     iptables
 
-ARG vpp_version
-RUN git clone --branch $vpp_version https://github.com/FDio/vpp.git /src/vpp
+ARG vpp_branch
+RUN git clone --branch $vpp_branch https://github.com/FDio/vpp.git /src/vpp
 WORKDIR /src/vpp
 RUN git config --global user.name "Anapaya"
 RUN git config --global user.email "anapaya@anapaya.net"
-RUN git checkout -b $vpp_version-anapaya
+RUN git checkout -b $vpp_branch-anapaya
 COPY patches/ .
 # git am fails if the patches were created with git option diff.noprefix=true
 RUN git am *.patch
