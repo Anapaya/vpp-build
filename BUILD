@@ -1,7 +1,7 @@
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 load(":vpp.bzl", "vpp_libs")
 
-VPP_VERSION = "21.01.0"
+VPP_VERSION = "21.06"
 
 vpp_libs("prod", "install-vpp-native/vpp", VPP_VERSION)
 vpp_libs("debug", "install-vpp_debug-native/vpp", VPP_VERSION)

@@ -1,5 +1,6 @@
-VPP_VERSION := v21.01
-DPDK_VERSION := 20.11
+VPP_VERSION := v21.06
+VPP_BRANCH := v21.06-rc1
+DPDK_VERSION := 21.02
 
 .PHONY: default clean
 
@@ -51,7 +52,7 @@ default: clean docker_build
 	mkdir -p tarballs && cp bazel-bin/*xz tarballs/
 
 docker_build:
-	DOCKER_BUILDKIT=1 docker build -t vpp_build --build-arg vpp_version=$(VPP_VERSION) .
+	DOCKER_BUILDKIT=1 docker build -t vpp_build --build-arg vpp_branch=$(VPP_BRANCH) .
 
 clean:
 	rm -rf install-vpp-native install-vpp_debug-native include src tarballs

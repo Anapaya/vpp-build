@@ -1,7 +1,7 @@
-From 05d77081dfbdde4717ddb5f9247c3aaa8700a101 Mon Sep 17 00:00:00 2001
+From 5a2530be1406f190c6382e1f0bc2edc36ed6ea3b Mon Sep 17 00:00:00 2001
 From: Martin Sustrik <sustrik@anapaya.net>
 Date: Thu, 25 Feb 2021 16:38:16 +0100
-Subject: [PATCH 6/6] BFD_TRANSPORT_PLUGIN added
+Subject: [PATCH] BFD_TRANSPORT_PLUGIN added
 
 Change-Id: I96b759972f88d216a04f3ba2ed7ed25f6197774f
 ---
@@ -31,13 +31,13 @@ index 2d787d41a..e02e60396 100644
      {
          /*
 diff --git a/src/vnet/bfd/bfd_api.c b/src/vnet/bfd/bfd_api.c
-index ba7783fd5..7d1dd7744 100644
+index 4760df2ac..83edf7fd1 100644
 --- a/src/vnet/bfd/bfd_api.c
 +++ b/src/vnet/bfd/bfd_api.c
-@@ -191,6 +191,8 @@ bfd_event (bfd_main_t * bm, bfd_session_t * bs)
+@@ -233,6 +233,8 @@ bfd_event (bfd_main_t * bm, bfd_session_t * bs)
  	  /* fallthrough */
  	  case BFD_TRANSPORT_UDP6:
- 	    send_bfd_udp_session_details (vl_reg, 0, bs);
+ 	    send_bfd_udp_session_event (vl_reg, 0, bs);
 +	  case BFD_TRANSPORT_PLUGIN:
 +	    bs->plugin->send_session_details(bs, vl_reg, 0);
  	  }
@@ -72,10 +72,10 @@ index 1d100b077..ad0069bac 100644
    s = format (s, "%10s %-32s %20s %20s\n", "", "Session state",
  	      bfd_state_string (bs->local_state),
 diff --git a/src/vnet/bfd/bfd_main.c b/src/vnet/bfd/bfd_main.c
-index 30d98f6ab..39613cac2 100644
+index c67317f57..672915ec5 100644
 --- a/src/vnet/bfd/bfd_main.c
 +++ b/src/vnet/bfd/bfd_main.c
-@@ -730,6 +730,10 @@ bfd_add_transport_layer (vlib_main_t * vm, u32 bi, bfd_session_t * bs)
+@@ -723,6 +723,10 @@ bfd_add_transport_layer (vlib_main_t * vm, u32 bi, bfd_session_t * bs)
        BFD_DBG ("Transport bfd via udp6, bs_idx=%u", bs->bs_idx);
        bfd_add_udp6_transport (vm, bi, bs, 0 /* is_echo */ );
        break;
@@ -86,7 +86,7 @@ index 30d98f6ab..39613cac2 100644
      }
  }
  
-@@ -746,6 +750,10 @@ bfd_transport_control_frame (vlib_main_t * vm, u32 bi, bfd_session_t * bs)
+@@ -739,6 +743,10 @@ bfd_transport_control_frame (vlib_main_t * vm, u32 bi, bfd_session_t * bs)
        BFD_DBG ("Transport bfd via udp6, bs_idx=%u", bs->bs_idx);
        return bfd_transport_udp6 (vm, bi, bs);
        break;
@@ -97,7 +97,7 @@ index 30d98f6ab..39613cac2 100644
      }
    return 0;
  }
-@@ -763,6 +771,10 @@ bfd_echo_add_transport_layer (vlib_main_t * vm, u32 bi, bfd_session_t * bs)
+@@ -756,6 +764,10 @@ bfd_echo_add_transport_layer (vlib_main_t * vm, u32 bi, bfd_session_t * bs)
        BFD_DBG ("Transport bfd echo via udp6, bs_idx=%u", bs->bs_idx);
        return bfd_add_udp6_transport (vm, bi, bs, 1 /* is_echo */ );
        break;
@@ -108,7 +108,7 @@ index 30d98f6ab..39613cac2 100644
      }
    return 0;
  }
-@@ -780,6 +792,10 @@ bfd_transport_echo (vlib_main_t * vm, u32 bi, bfd_session_t * bs)
+@@ -773,6 +785,10 @@ bfd_transport_echo (vlib_main_t * vm, u32 bi, bfd_session_t * bs)
        BFD_DBG ("Transport bfd echo via udp6, bs_idx=%u", bs->bs_idx);
        return bfd_transport_udp6 (vm, bi, bs);
        break;
@@ -119,7 +119,7 @@ index 30d98f6ab..39613cac2 100644
      }
    return 0;
  }
-@@ -867,6 +883,8 @@ bfd_is_echo_possible (bfd_session_t * bs)
+@@ -855,6 +871,8 @@ bfd_is_echo_possible (bfd_session_t * bs)
  	  return bfd_udp_is_echo_available (BFD_TRANSPORT_UDP4);
  	case BFD_TRANSPORT_UDP6:
  	  return bfd_udp_is_echo_available (BFD_TRANSPORT_UDP6);
@@ -128,8 +128,8 @@ index 30d98f6ab..39613cac2 100644
  	}
      }
    return 0;
-@@ -2280,6 +2298,31 @@ bfd_auth_del_key (u32 conf_key_id)
- #endif
+@@ -2233,6 +2251,31 @@ bfd_auth_del_key (u32 conf_key_id)
+   return 0;
  }
  
 +vnet_api_error_t
@@ -209,7 +209,7 @@ index a7540004d..0dcf32262 100644
  u32 bfd_nsec_to_usec (u64 nsec);
  const char *bfd_poll_state_string (bfd_poll_state_e state);
 diff --git a/src/vnet/bfd/bfd_udp.c b/src/vnet/bfd/bfd_udp.c
-index 1facb7310..50f72d8c1 100644
+index 4ad5660fd..d021d8133 100644
 --- a/src/vnet/bfd/bfd_udp.c
 +++ b/src/vnet/bfd/bfd_udp.c
 @@ -403,6 +403,8 @@ bfd_udp_calc_next_node (const struct bfd_session_s *bs, u32 * next_node)
