@@ -1,0 +1,49 @@
+From 45c42ececd5f7370ca9f38a36e2859f488ac90a5 Mon Sep 17 00:00:00 2001
+From: Sergio Gonzalez Monroy <monroy@anapaya.net>
+Date: Wed, 2 Jun 2021 19:48:14 +0200
+Subject: [PATCH] linux-cp: remove autoendian until GoVPP supports it
+
+Change-Id: I6e4473853dac2d56a87b9bd38991a4a1898726ae
+---
+ src/plugins/linux-cp/lcp.api   | 2 +-
+ src/plugins/linux-cp/lcp_api.c | 6 +++---
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/src/plugins/linux-cp/lcp.api b/src/plugins/linux-cp/lcp.api
+index 319dd3e64..a7383270a 100644
+--- a/src/plugins/linux-cp/lcp.api
++++ b/src/plugins/linux-cp/lcp.api
+@@ -79,7 +79,7 @@ autoreply autoendian define lcp_itf_pair_add_del
+   vl_api_lcp_itf_host_type_t host_if_type;
+   string namespace[32];			/* LCP_NS_LEN */
+ };
+-autoendian define lcp_itf_pair_add_del_v2
++define lcp_itf_pair_add_del_v2
+ {
+   u32 client_index;
+   u32 context;
+diff --git a/src/plugins/linux-cp/lcp_api.c b/src/plugins/linux-cp/lcp_api.c
+index c9aa01566..693bda64c 100644
+--- a/src/plugins/linux-cp/lcp_api.c
++++ b/src/plugins/linux-cp/lcp_api.c
+@@ -126,14 +126,14 @@ vl_api_lcp_itf_pair_add_del_v2_t_handler (vl_api_lcp_itf_pair_add_del_v2_t *mp)
+   lip_host_type_t lip_host_type;
+   int rv;
+ 
+-  if (!vnet_sw_if_index_is_api_valid (mp->sw_if_index))
++  phy_sw_if_index = ntohl (mp->sw_if_index);
++  if (!vnet_sw_if_index_is_api_valid (phy_sw_if_index))
+     {
+       rv = VNET_API_ERROR_INVALID_SW_IF_INDEX;
+       goto bad_sw_if_index;
+     }
+ 
+-  phy_sw_if_index = mp->sw_if_index;
+-  lip_host_type = api_decode_host_type (mp->host_if_type);
++  lip_host_type = api_decode_host_type (ntohl (mp->host_if_type));
+   if (mp->is_add)
+     {
+       rv = vl_api_lcp_itf_pair_add (phy_sw_if_index, lip_host_type,
+-- 
+2.17.1
+
